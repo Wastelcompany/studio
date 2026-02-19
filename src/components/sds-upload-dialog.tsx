@@ -24,10 +24,12 @@ interface SdsUploadDialogProps {
   onAddSubstance: (substance: Omit<Substance, 'id' | 'quantity'>) => void;
 }
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }: SdsUploadDialogProps) {
   const [files, setFiles] = useState<File[] | null>(null);
   const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
+  const { toast, dismiss } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -50,61 +52,84 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
     startTransition(async () => {
       let successCount = 0;
       const totalFiles = files.length;
-      
+      let fileIndex = 0;
+
       for (const file of files) {
-          try {
-            const dataUri = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result as string);
-                reader.onerror = (error) => reject(new Error(`Kon het bestand ${file.name} niet lezen`));
-            });
-
-            const result = await aiMsdsDataExtraction({ documentDataUri: dataUri });
-
-            if (!result.productName) {
-                throw new Error(`Kon productnaam niet extraheren uit ${file.name}.`);
-            }
-
-            const { categories, isNamed, namedSubstanceName } = classifySubstance(result.hStatements || [], result.casNumber || null);
-
-            onAddSubstance({
-                productName: result.productName,
-                casNumber: result.casNumber,
-                hStatements: result.hStatements || [],
-                sevesoCategories: categories,
-                isNamedSubstance: isNamed,
-                namedSubstanceName: namedSubstanceName,
-            });
-            successCount++;
-
-          } catch (error) {
-            console.error('SDS Extraction Error:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Analyse Mislukt',
-                description: error instanceof Error ? error.message : 'Er is een onbekende fout opgetreden.',
-            });
-          }
-      }
-
-      if (successCount > 0) {
-        toast({
-            title: 'Analyse voltooid',
-            description: `${successCount} van de ${totalFiles} bestand(en) succesvol geanalyseerd.`,
+        fileIndex++;
+        const { id: toastId } = toast({
+            title: 'Analyse bezig...',
+            description: `Bestand ${fileIndex} van ${totalFiles}: ${file.name}`,
         });
+          
+        try {
+          const dataUri = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.readAsDataURL(file);
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = (error) => reject(new Error(`Kon het bestand ${file.name} niet lezen`));
+          });
+
+          const result = await aiMsdsDataExtraction({ documentDataUri: dataUri });
+
+          if (!result.productName) {
+              throw new Error(`Kon productnaam niet extraheren uit ${file.name}.`);
+          }
+
+          const { categories, isNamed, namedSubstanceName } = classifySubstance(result.hStatements || [], result.casNumber || null);
+
+          onAddSubstance({
+              productName: result.productName,
+              casNumber: result.casNumber,
+              hStatements: result.hStatements || [],
+              sevesoCategories: categories,
+              isNamedSubstance: isNamed,
+              namedSubstanceName: namedSubstanceName,
+          });
+          successCount++;
+
+        } catch (error) {
+          dismiss(toastId); // Dismiss the progress toast on error
+          console.error('SDS Extraction Error:', error);
+          let errorMessage = error instanceof Error ? error.message : 'Er is een onbekende fout opgetreden.';
+          if (errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
+            errorMessage = 'De API-limiet is overschreden. Wacht even en probeer het opnieuw met minder bestanden.';
+          }
+          
+          toast({
+              variant: 'destructive',
+              title: `Analyse Mislukt voor ${file.name}`,
+              description: errorMessage,
+          });
+        } finally {
+            dismiss(toastId);
+        }
+        
+        // Add a delay between API calls to avoid rate limiting, but not after the last file.
+        if (fileIndex < totalFiles) {
+            await sleep(3500); // 3.5 seconds delay to stay within common API limits (e.g., 15-20/min)
+        }
       }
+
+      toast({
+          title: 'Analyse voltooid',
+          description: `${successCount} van de ${totalFiles} bestand(en) succesvol geanalyseerd.`,
+      });
       
-      onOpenChange(false);
+      // Close dialog after a short delay
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 1000);
     });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) {
-        setFiles(null);
+      if (!isPending) {
+        if (!open) {
+          setFiles(null);
+        }
+        onOpenChange(open);
       }
-      onOpenChange(open);
     }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -137,7 +162,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
           </Button>
           <Button onClick={handleSubmit} disabled={!files || files.length === 0 || isPending}>
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {isPending ? 'Bezig met analyseren...' : 'Analyseren en Toevoegen'}
+            {isPending ? 'Bezig met analyseren...' : `Analyseer ${files?.length || 0} bestand(en)`}
           </Button>
         </DialogFooter>
       </DialogContent>
