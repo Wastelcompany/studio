@@ -17,7 +17,6 @@ import { Loader2, UploadCloud } from 'lucide-react';
 import { aiMsdsDataExtraction } from '@/ai/flows/ai-msds-data-extraction';
 import { classifySubstance } from '@/lib/seveso';
 import type { Substance } from '@/lib/types';
-import { Progress } from './ui/progress';
 
 interface SdsUploadDialogProps {
   isOpen: boolean;
@@ -28,7 +27,6 @@ interface SdsUploadDialogProps {
 export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }: SdsUploadDialogProps) {
   const [files, setFiles] = useState<File[] | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [progress, setProgress] = useState<{ processed: number; total: number } | null>(null);
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,7 +50,6 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
     startTransition(async () => {
       let successCount = 0;
       const totalFiles = files.length;
-      setProgress({ processed: 0, total: totalFiles });
       
       for (const file of files) {
           try {
@@ -89,7 +86,6 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
                 description: error instanceof Error ? error.message : 'Er is een onbekende fout opgetreden.',
             });
           }
-          setProgress(prev => prev ? { ...prev, processed: prev.processed + 1 } : null);
       }
 
       if (successCount > 0) {
@@ -99,9 +95,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
         });
       }
       
-      setTimeout(() => {
-        onOpenChange(false);
-      }, 1500);
+      onOpenChange(false);
     });
   };
 
@@ -109,7 +103,6 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) {
         setFiles(null);
-        setProgress(null);
       }
       onOpenChange(open);
     }}>
@@ -137,15 +130,6 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
                 )}
             </div>
           </div>
-          {isPending && progress && (
-            <div className="space-y-2 pt-2">
-                <Label>Voortgang</Label>
-                <Progress value={progress.total > 0 ? (progress.processed / progress.total) * 100 : 0} />
-                <p className="text-sm text-muted-foreground text-center">
-                    {progress.processed} / {progress.total} bestanden verwerkt
-                </p>
-            </div>
-          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
