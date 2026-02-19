@@ -106,7 +106,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
         
         // Add a delay between API calls to avoid rate limiting, but not after the last file.
         if (fileIndex < totalFiles) {
-            await sleep(3500); // 3.5 seconds delay to stay within common API limits (e.g., 15-20/min)
+            await sleep(5000); // 5 seconds delay to stay within common API limits (e.g., 15/min -> 12/min)
         }
       }
 
