@@ -99,7 +99,9 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
         });
       }
       
-      setFiles(null);
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 1500);
     });
   };
 

@@ -139,7 +139,7 @@ export default function SevesoApp() {
             thresholdMode={thresholdMode}
           />
         </div>
-        <aside className="lg:w-1/3 lg:sticky lg:top-8 h-fit print-dashboard-container">
+        <aside className="lg:w-1/3 lg:sticky lg:top-8 h-fit print-dashboard-container print:static">
           <Dashboard
             inventory={inventory}
             thresholdMode={thresholdMode}
