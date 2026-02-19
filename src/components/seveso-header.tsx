@@ -8,6 +8,8 @@ interface SevesoHeaderProps {
   onClearAll: () => void;
   onShowReference: () => void;
   onPrint: () => void;
+  onImport: () => void;
+  onExport: () => void;
 }
 
 export default function SevesoHeader({
@@ -15,11 +17,9 @@ export default function SevesoHeader({
   onClearAll,
   onShowReference,
   onPrint,
+  onImport,
+  onExport,
 }: SevesoHeaderProps) {
-
-  // Mock functions for disabled features
-  const handleExport = () => alert("Export-functionaliteit is nog niet geïmplementeerd.");
-  const handleImport = () => alert("Import-functionaliteit is nog niet geïmplementeerd.");
 
   return (
     <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print-header no-print">
@@ -29,8 +29,8 @@ export default function SevesoHeader({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <Button onClick={onUpload}><Upload />Scan SDS</Button>
-        <Button variant="outline" onClick={handleImport}><FileUp />Import</Button>
-        <Button variant="outline" onClick={handleExport}><FileText />Export</Button>
+        <Button variant="outline" onClick={onImport}><FileUp />Import</Button>
+        <Button variant="outline" onClick={onExport}><FileText />Export</Button>
         <Button variant="outline" onClick={onPrint}><Printer />Afdrukken</Button>
         <Button variant="ghost" size="icon" onClick={onShowReference} aria-label="Referentiegids">
           <Info />

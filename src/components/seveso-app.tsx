@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { Substance, ThresholdMode } from '@/lib/types';
 import SevesoHeader from '@/components/seveso-header';
 import InventoryTable from '@/components/inventory-table';
@@ -8,6 +8,7 @@ import Dashboard from '@/components/dashboard';
 import SdsUploadDialog from './sds-upload-dialog';
 import ReferenceGuideDialog from './reference-guide-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SevesoApp() {
   const [inventory, setInventory] = useState<Substance[]>([]);
@@ -16,12 +17,13 @@ export default function SevesoApp() {
   const [isSdsUploadOpen, setIsSdsUploadOpen] = useState(false);
   const [isReferenceGuideOpen, setIsReferenceGuideOpen] = useState(false);
   const [isClearAlertOpen, setIsClearAlertOpen] = useState(false);
-  const [substanceToUpdate, setSubstanceToUpdate] = useState<Substance | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const handleAddSubstance = (newSubstance: Omit<Substance, 'id' | 'quantity' | 'sevesoCategories'> & {sevesoCategories: string[]}) => {
     setInventory(prev => [...prev, {
         ...newSubstance,
-        id: `sub-${Date.now()}`,
+        id: `sub-${Date.now()}-${Math.random()}`,
         quantity: 0
     }]);
   };
@@ -43,6 +45,73 @@ export default function SevesoApp() {
     window.print();
   };
 
+  const handleExport = () => {
+    if (inventory.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Export Mislukt',
+        description: 'De inventaris is leeg. Er is niets om te exporteren.',
+      });
+      return;
+    }
+    const dataStr = JSON.stringify(inventory, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'seveso-inventaris.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({
+      title: 'Export Succesvol',
+      description: 'Inventaris opgeslagen als seveso-inventaris.json.',
+    });
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result;
+        if (typeof text !== 'string') {
+          throw new Error('Ongeldige bestandsinhoud');
+        }
+        const data = JSON.parse(text);
+        
+        if (Array.isArray(data) && (data.length === 0 || (data[0].id && data[0].productName && 'quantity' in data[0]))) {
+          setInventory(data);
+          toast({
+            title: 'Inventaris succesvol geïmporteerd',
+            description: `${data.length} stoffen geladen.`,
+          });
+        } else {
+          throw new Error('Ongeldig bestandsformaat.');
+        }
+      } catch (error) {
+        console.error("Import Error:", error);
+        toast({
+          variant: "destructive",
+          title: "Import Mislukt",
+          description: error instanceof Error ? error.message : "Kon het bestand niet lezen.",
+        });
+      } finally {
+        if (event.target) {
+            event.target.value = '';
+        }
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 print-container">
       <SevesoHeader
@@ -50,6 +119,15 @@ export default function SevesoApp() {
         onClearAll={() => setIsClearAlertOpen(true)}
         onShowReference={() => setIsReferenceGuideOpen(true)}
         onPrint={handlePrint}
+        onImport={handleImportClick}
+        onExport={handleExport}
+      />
+       <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        className="hidden"
+        accept="application/json"
       />
       
       <div className="mt-6 flex flex-col lg:flex-row gap-8 print-main-content">
