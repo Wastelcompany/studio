@@ -92,7 +92,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
           console.error('SDS Extraction Error:', error);
           let errorMessage = error instanceof Error ? error.message : 'Er is een onbekende fout opgetreden.';
           if (errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
-            errorMessage = 'De API-limiet is overschreden. Wacht even en probeer het opnieuw met minder bestanden.';
+            errorMessage = 'De API-limiet (per minuut of per dag) is overschreden. Wacht alstublieft en probeer het later opnieuw met minder bestanden.';
           }
           
           toast({
