@@ -25,93 +25,108 @@ interface SdsUploadDialogProps {
 }
 
 export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }: SdsUploadDialogProps) {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[] | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      setFile(event.target.files[0]);
+    if (event.target.files && event.target.files.length > 0) {
+      setFiles(Array.from(event.target.files));
+    } else {
+      setFiles(null);
     }
   };
 
   const handleSubmit = async () => {
-    if (!file) {
+    if (!files || files.length === 0) {
       toast({
         variant: 'destructive',
-        title: 'Geen bestand geselecteerd',
-        description: 'Selecteer een PDF- of afbeeldingsbestand om door te gaan.',
+        title: 'Geen bestanden geselecteerd',
+        description: 'Selecteer één of meerdere PDF- of afbeeldingsbestanden om door te gaan.',
       });
       return;
     }
 
     startTransition(async () => {
-      try {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = async () => {
-          const dataUri = reader.result as string;
-          const result = await aiMsdsDataExtraction({ documentDataUri: dataUri });
+      let successCount = 0;
+      const totalFiles = files.length;
+      
+      for (const file of files) {
+          try {
+            const dataUri = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = (error) => reject(new Error(`Kon het bestand ${file.name} niet lezen`));
+            });
 
-          if (!result.productName) {
-            throw new Error("Kon productnaam niet extraheren.");
+            const result = await aiMsdsDataExtraction({ documentDataUri: dataUri });
+
+            if (!result.productName) {
+                throw new Error(`Kon productnaam niet extraheren uit ${file.name}.`);
+            }
+
+            const { categories, isNamed, namedSubstanceName } = classifySubstance(result.hStatements || [], result.casNumber || null);
+
+            onAddSubstance({
+                productName: result.productName,
+                casNumber: result.casNumber,
+                hStatements: result.hStatements || [],
+                sevesoCategories: categories,
+                isNamedSubstance: isNamed,
+                namedSubstanceName: namedSubstanceName,
+            });
+            successCount++;
+
+          } catch (error) {
+            console.error('SDS Extraction Error:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Analyse Mislukt',
+                description: error instanceof Error ? error.message : 'Er is een onbekende fout opgetreden.',
+            });
           }
+      }
 
-          const { categories, isNamed, namedSubstanceName } = classifySubstance(result.hStatements || [], result.casNumber || null);
-
-          onAddSubstance({
-            productName: result.productName,
-            casNumber: result.casNumber,
-            hStatements: result.hStatements || [],
-            sevesoCategories: categories,
-            isNamedSubstance: isNamed,
-            namedSubstanceName: namedSubstanceName,
-          });
-
-          toast({
-            title: 'Analyse Succesvol',
-            description: `"${result.productName}" is toegevoegd aan de inventaris.`,
-          });
-          setFile(null);
-          onOpenChange(false);
-        };
-        reader.onerror = (error) => {
-            throw new Error("Kon bestand niet lezen.");
-        }
-      } catch (error) {
-        console.error('SDS Extraction Error:', error);
+      if (successCount > 0) {
         toast({
-          variant: 'destructive',
-          title: 'Analyse Mislukt',
-          description: error instanceof Error ? error.message : 'Er is een onbekende fout opgetreden.',
+            title: 'Analyse voltooid',
+            description: `${successCount} van de ${totalFiles} bestand(en) succesvol geanalyseerd.`,
         });
       }
+      
+      setFiles(null);
+      onOpenChange(false);
     });
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        setFiles(null);
+      }
+      onOpenChange(open);
+    }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>SDS/MSDS Analyseren</DialogTitle>
           <DialogDescription>
-            Upload een PDF of afbeelding van een veiligheidsinformatieblad. De AI zal de relevante data extraheren.
+            Upload één of meerdere PDF's of afbeeldingen van veiligheidsinformatiebladen. De AI zal de relevante data extraheren.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="sds-file">SDS Document</Label>
+            <Label htmlFor="sds-file">SDS Document(en)</Label>
             <div className="relative">
-                <Input id="sds-file" type="file" onChange={handleFileChange} accept=".pdf,image/*" className="border-dashed h-24 p-4 flex items-center justify-center text-center cursor-pointer" />
-                {!file && (
+                <Input id="sds-file" type="file" onChange={handleFileChange} accept=".pdf,image/*" className="border-dashed h-24 p-4 flex items-center justify-center text-center cursor-pointer" multiple />
+                {!files || files.length === 0 ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-muted-foreground">
                         <UploadCloud className="w-8 h-8" />
-                        <p className="text-sm mt-2">Sleep bestand hier of klik</p>
+                        <p className="text-sm mt-2">Sleep bestanden hier of klik</p>
                     </div>
-                )}
-                {file && (
+                ) : (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-sm font-medium text-foreground">
-                        {file.name}
+                        {files.length} bestand(en) geselecteerd
                     </div>
                 )}
             </div>
@@ -121,7 +136,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
             Annuleren
           </Button>
-          <Button onClick={handleSubmit} disabled={!file || isPending}>
+          <Button onClick={handleSubmit} disabled={!files || files.length === 0 || isPending}>
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Analyseren en Toevoegen
           </Button>

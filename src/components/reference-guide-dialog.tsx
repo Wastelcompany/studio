@@ -28,12 +28,17 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Referentiegids</DialogTitle>
+          <DialogTitle>Referentiegids: Beoordelingsmethode</DialogTitle>
           <DialogDescription>
-            Een overzicht van H-zinnen en hun mapping naar Seveso-gevarencategorieën.
+            Hoe de Seveso Expert app stoffen classificeert op basis van H-zinnen.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[60vh] mt-4">
+        <div className="text-sm text-muted-foreground mt-4 space-y-2">
+            <p>De beoordeling is gebaseerd op de Seveso III-richtlijn (2012/18/EU). Elke gevarenaanduiding (H-zin) die op een veiligheidsinformatieblad (SDS) wordt vermeld, wordt gekoppeld aan een specifieke Seveso-gevarencategorie.</p>
+            <p>De totale hoeveelheid van stoffen binnen dezelfde categorie wordt opgeteld en vergeleken met de wettelijke drempelwaarden om de Seveso-status van de inrichting te bepalen.</p>
+            <p>De onderstaande tabel toont de exacte koppelingen die de app gebruikt.</p>
+        </div>
+        <ScrollArea className="h-[50vh] mt-4">
             <Table>
             <TableHeader className="sticky top-0 bg-background">
                 <TableRow>
