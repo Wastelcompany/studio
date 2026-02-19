@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -28,9 +28,7 @@ interface InventoryTableProps {
 }
 
 function ContributionCard({ substance, mode }: { substance: Substance, mode: ThresholdMode }) {
-  const [maxContribution, setMaxContribution] = useState({ ratio: 0, categoryName: '' });
-
-  useState(() => {
+  const maxContribution = useMemo(() => {
     let max = { ratio: 0, categoryName: '' };
     if (substance.quantity > 0) {
       substance.sevesoCategories.forEach(catId => {
@@ -46,26 +44,27 @@ function ContributionCard({ substance, mode }: { substance: Substance, mode: Thr
         }
       });
     }
-    setMaxContribution(max);
-  });
+    return max;
+  }, [substance.quantity, substance.sevesoCategories, mode]);
   
   if (maxContribution.ratio === 0) {
     return <div className="text-xs text-muted-foreground">-</div>;
   }
   
-  const percentage = Math.min(maxContribution.ratio * 100, 100);
+  const percentage = Math.round(maxContribution.ratio * 100);
+  const progressValue = Math.min(percentage, 100);
 
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="w-full">
-            <Progress value={percentage} className="h-2" />
-            <div className="text-xs text-muted-foreground mt-1 text-right">{Math.round(percentage)}%</div>
+            <Progress value={progressValue} className="h-2" />
+            <div className="text-xs text-muted-foreground mt-1 text-right">{percentage}%</div>
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{Math.round(maxContribution.ratio * 100)}% van drempelwaarde voor</p>
+          <p>{percentage}% van drempelwaarde voor</p>
           <p className="font-semibold">{maxContribution.categoryName}</p>
         </TooltipContent>
       </Tooltip>
@@ -100,7 +99,7 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
               <TableHead className="w-[25%]">Productnaam</TableHead>
               <TableHead>Seveso Categorieën</TableHead>
               <TableHead className="text-right">Voorraad (ton)</TableHead>
-              <TableHead className="w-[15%] text-center">Bijdrage</TableHead>
+              <TableHead className="w-[15%] text-center">Belangrijkste Bijdrage</TableHead>
               <TableHead className="text-right no-print">Acties</TableHead>
             </TableRow>
           </TableHeader>

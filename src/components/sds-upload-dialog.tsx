@@ -17,6 +17,7 @@ import { Loader2, UploadCloud } from 'lucide-react';
 import { aiMsdsDataExtraction } from '@/ai/flows/ai-msds-data-extraction';
 import { classifySubstance } from '@/lib/seveso';
 import type { Substance } from '@/lib/types';
+import { Progress } from './ui/progress';
 
 interface SdsUploadDialogProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ interface SdsUploadDialogProps {
 export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }: SdsUploadDialogProps) {
   const [files, setFiles] = useState<File[] | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [progress, setProgress] = useState<{ processed: number; total: number } | null>(null);
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,6 +52,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
     startTransition(async () => {
       let successCount = 0;
       const totalFiles = files.length;
+      setProgress({ processed: 0, total: totalFiles });
       
       for (const file of files) {
           try {
@@ -86,6 +89,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
                 description: error instanceof Error ? error.message : 'Er is een onbekende fout opgetreden.',
             });
           }
+          setProgress(prev => prev ? { ...prev, processed: prev.processed + 1 } : null);
       }
 
       if (successCount > 0) {
@@ -96,7 +100,6 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
       }
       
       setFiles(null);
-      onOpenChange(false);
     });
   };
 
@@ -104,6 +107,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) {
         setFiles(null);
+        setProgress(null);
       }
       onOpenChange(open);
     }}>
@@ -118,7 +122,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
           <div className="grid w-full max-w-sm items-center gap-1.5">
             <Label htmlFor="sds-file">SDS Document(en)</Label>
             <div className="relative">
-                <Input id="sds-file" type="file" onChange={handleFileChange} accept=".pdf,image/*" className="border-dashed h-24 p-4 flex items-center justify-center text-center cursor-pointer" multiple />
+                <Input id="sds-file" type="file" onChange={handleFileChange} accept=".pdf,image/*" className="border-dashed h-24 p-4 flex items-center justify-center text-center cursor-pointer" multiple disabled={isPending} />
                 {!files || files.length === 0 ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-muted-foreground">
                         <UploadCloud className="w-8 h-8" />
@@ -131,6 +135,15 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
                 )}
             </div>
           </div>
+          {isPending && progress && (
+            <div className="space-y-2 pt-2">
+                <Label>Voortgang</Label>
+                <Progress value={progress.total > 0 ? (progress.processed / progress.total) * 100 : 0} />
+                <p className="text-sm text-muted-foreground text-center">
+                    {progress.processed} / {progress.total} bestanden verwerkt
+                </p>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
@@ -138,7 +151,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
           </Button>
           <Button onClick={handleSubmit} disabled={!files || files.length === 0 || isPending}>
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Analyseren en Toevoegen
+            {isPending ? 'Bezig met analyseren...' : 'Analyseren en Toevoegen'}
           </Button>
         </DialogFooter>
       </DialogContent>

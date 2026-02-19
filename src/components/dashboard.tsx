@@ -1,12 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSevesoCalculator } from "@/hooks/use-seveso-calculator";
-import type { Substance, ThresholdMode } from "@/lib/types";
+import type { Substance, ThresholdMode, SummationGroup as SummationGroupType } from "@/lib/types";
 import { AlertCircle, CheckCircle2, ShieldAlert } from "lucide-react";
+import GroupDetailsDialog from "./group-details-dialog";
 
 interface DashboardProps {
   inventory: Substance[];
@@ -16,6 +18,7 @@ interface DashboardProps {
 
 export default function Dashboard({ inventory, thresholdMode, setThresholdMode }: DashboardProps) {
   const { summationGroups, overallStatus, criticalGroup } = useSevesoCalculator(inventory, thresholdMode);
+  const [selectedGroup, setSelectedGroup] = useState<SummationGroupType | null>(null);
 
   const getStatusIcon = () => {
     switch (overallStatus) {
@@ -64,14 +67,18 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
         <CardHeader>
           <CardTitle>Sommatie Overzicht</CardTitle>
           <CardDescription>
-            Ratio per gevarengroep. Een groep is kritiek als de som &gt;= 1 (100%).
+            Ratio per gevarengroep. Klik op een groep voor details.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-1">
           {summationGroups.map((group) => {
             const percentage = Math.round(group.totalRatio * 100);
             return (
-              <div key={group.group}>
+              <div 
+                key={group.group} 
+                onClick={() => group.totalRatio > 0 && setSelectedGroup(group)} 
+                className={group.totalRatio > 0 ? "cursor-pointer hover:bg-muted/50 p-2 -m-2 rounded-lg" : "p-2 -m-2"}
+              >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2 text-sm font-medium">
                     <group.icon className="w-4 h-4 text-muted-foreground" />
@@ -106,6 +113,13 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
             )}
         </CardContent>
       </Card>
+      <GroupDetailsDialog
+        isOpen={!!selectedGroup}
+        onOpenChange={(open) => !open && setSelectedGroup(null)}
+        group={selectedGroup}
+        inventory={inventory}
+        mode={thresholdMode}
+      />
     </div>
   );
 }
