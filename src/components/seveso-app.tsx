@@ -12,10 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import CompanyDetails from './company-details';
 
 export default function SevesoApp() {
   const [inventory, setInventory] = useState<Substance[]>([]);
   const [thresholdMode, setThresholdMode] = useState<ThresholdMode>('low');
+  const [companyDetails, setCompanyDetails] = useState({ name: '', address: '' });
   
   const [isSdsUploadOpen, setIsSdsUploadOpen] = useState(false);
   const [isReferenceGuideOpen, setIsReferenceGuideOpen] = useState(false);
@@ -59,7 +61,24 @@ export default function SevesoApp() {
         // Add title
         pdf.setFontSize(18);
         pdf.text("Seveso Drempelwaarde Rapport", margin, finalY + 5);
-        finalY += 15;
+        finalY += 10;
+
+        // Add company details
+        if (companyDetails.name || companyDetails.address) {
+            pdf.setFontSize(12);
+            pdf.setTextColor(100);
+            if(companyDetails.name) {
+                pdf.text(`Bedrijf: ${companyDetails.name}`, margin, finalY);
+                finalY += 6;
+            }
+            if(companyDetails.address) {
+                pdf.text(`Adres: ${companyDetails.address}`, margin, finalY);
+                finalY += 6;
+            }
+            pdf.setTextColor(0);
+        }
+        finalY += 10;
+
 
         // 1. Process Dashboard
         const dashboardCanvas = await html2canvas(dashboardEl, { scale: 2, backgroundColor: '#ffffff' });
@@ -94,6 +113,7 @@ export default function SevesoApp() {
 
         pdf.save('seveso-rapport.pdf');
 
+        dismiss(toastId);
         toast({
             title: "PDF opgeslagen",
             description: "Het rapport is succesvol gedownload."
@@ -101,6 +121,7 @@ export default function SevesoApp() {
 
     } catch (error) {
         console.error("PDF Generation Error:", error);
+        dismiss(toastId);
         toast({
             variant: "destructive",
             title: "PDF Generatie Mislukt",
@@ -108,7 +129,6 @@ export default function SevesoApp() {
         });
     } finally {
         setIsSavingPdf(false);
-        dismiss(toastId);
     }
   };
 
@@ -131,19 +151,24 @@ export default function SevesoApp() {
 
   const handleClearAll = () => {
     setInventory([]);
+    setCompanyDetails({ name: '', address: ''});
     setIsClearAlertOpen(false);
   };
   
   const handleExport = () => {
-    if (inventory.length === 0) {
+    if (inventory.length === 0 && !companyDetails.name && !companyDetails.address) {
       toast({
         variant: 'destructive',
         title: 'Export Mislukt',
-        description: 'De inventaris is leeg. Er is niets om te exporteren.',
+        description: 'Er zijn geen gegevens om te exporteren.',
       });
       return;
     }
-    const dataStr = JSON.stringify(inventory, null, 2);
+    const exportData = {
+        companyDetails,
+        inventory
+    };
+    const dataStr = JSON.stringify(exportData, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
@@ -172,14 +197,32 @@ export default function SevesoApp() {
         }
         const data = JSON.parse(text);
         
-        if (Array.isArray(data) && (data.length === 0 || (data[0].id && data[0].productName && 'quantity' in data[0]))) {
-          setInventory(data);
-          toast({
-            title: 'Inventaris succesvol geïmporteerd',
-            description: `${data.length} stoffen geladen.`,
-          });
+        if (data && (data.inventory || data.companyDetails)) {
+          const loadedInventory = data.inventory || [];
+          const loadedDetails = data.companyDetails || { name: '', address: ''};
+
+          if (Array.isArray(loadedInventory) && (loadedInventory.length === 0 || (loadedInventory[0].id && loadedInventory[0].productName && 'quantity' in loadedInventory[0]))) {
+              setInventory(loadedInventory);
+              setCompanyDetails(loadedDetails);
+              toast({
+                title: 'Inventaris succesvol geïmporteerd',
+                description: `${loadedInventory.length} stoffen geladen.`,
+              });
+          } else {
+              throw new Error('Ongeldig inventarisformaat.');
+          }
         } else {
-          throw new Error('Ongeldig bestandsformaat.');
+          // Legacy support
+          if (Array.isArray(data) && (data.length === 0 || (data[0].id && data[0].productName && 'quantity' in data[0]))) {
+            setInventory(data);
+            setCompanyDetails({ name: '', address: ''});
+            toast({
+              title: 'Inventaris succesvol geïmporteerd',
+              description: `${data.length} stoffen geladen.`,
+            });
+          } else {
+            throw new Error('Ongeldig bestandsformaat.');
+          }
         }
       } catch (error) {
         console.error("Import Error:", error);
@@ -227,7 +270,9 @@ export default function SevesoApp() {
         accept="application/json"
       />
       
-      <div className="mt-6 flex flex-col lg:flex-row gap-8">
+      <CompanyDetails details={companyDetails} onDetailsChange={setCompanyDetails} />
+      
+      <div className="mt-8 flex flex-col lg:flex-row gap-8">
         <div className="flex-grow lg:w-2/3" ref={tableRef}>
           <InventoryTable
             inventory={inventory}
@@ -263,7 +308,7 @@ export default function SevesoApp() {
           <AlertDialogHeader>
             <AlertDialogTitle>Weet je het zeker?</AlertDialogTitle>
             <AlertDialogDescription>
-              Deze actie kan niet ongedaan worden gemaakt. Dit zal de volledige inventarisatie permanent verwijderen.
+              Deze actie kan niet ongedaan worden gemaakt. Dit zal de volledige inventarisatie en bedrijfsgegevens permanent verwijderen.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
