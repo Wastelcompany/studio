@@ -40,8 +40,8 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
   }
 
   return (
-    <div className="space-y-6 print:flex print:flex-row print:gap-6 print:space-y-0">
-      <Card className="print:hidden">
+    <div className="space-y-6">
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium">Drempelwaarde Modus</CardTitle>
           <div className="flex items-center space-x-2">
@@ -63,7 +63,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
         </CardContent>
       </Card>
 
-      <Card className="print:flex-[2]">
+      <Card>
         <CardHeader>
           <CardTitle>Sommatie Overzicht</CardTitle>
           <CardDescription>
@@ -95,7 +95,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
         </CardContent>
       </Card>
       
-      <Card className="bg-primary/5 print:flex-[1] print:bg-white">
+      <Card className="bg-primary/5">
         <CardHeader className="items-center">
           <CardTitle>Seveso Conclusie</CardTitle>
         </CardHeader>

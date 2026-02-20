@@ -123,7 +123,7 @@ export default function SevesoApp() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 print:p-0">
+    <div className="p-4 sm:p-6 lg:p-8">
       <SevesoHeader
         onUpload={() => setIsSdsUploadOpen(true)}
         onClearAll={() => setIsClearAlertOpen(true)}
@@ -140,8 +140,8 @@ export default function SevesoApp() {
         accept="application/json"
       />
       
-      <div className="mt-6 flex flex-col lg:flex-row gap-8 print:flex-col">
-        <div className="flex-grow lg:w-2/3 print:order-2 print:w-full">
+      <div className="mt-6 flex flex-col lg:flex-row gap-8">
+        <div className="flex-grow lg:w-2/3">
           <InventoryTable
             inventory={inventory}
             onUpdateQuantity={handleUpdateSubstanceQuantity}
@@ -151,7 +151,7 @@ export default function SevesoApp() {
             onShowExplanation={handleShowExplanation}
           />
         </div>
-        <aside className="lg:w-1/3 lg:sticky lg:top-8 h-fit print:order-1 print:w-full print:static print:border-b print:pb-8 print:mb-8">
+        <aside className="lg:w-1/3 lg:sticky lg:top-8 h-fit">
           <Dashboard
             inventory={inventory}
             thresholdMode={thresholdMode}
