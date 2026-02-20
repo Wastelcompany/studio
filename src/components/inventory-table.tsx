@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -19,7 +19,6 @@ import { SEVESO_CATEGORIES, NAMED_SUBSTANCES, SUMMATION_GROUPS_CONFIG } from "@/
 import { Progress } from './ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { cn } from '@/lib/utils';
-import CategoryJustificationDialog from './category-justification-dialog';
 
 interface InventoryTableProps {
   inventory: Substance[];
@@ -87,9 +86,6 @@ function ContributionCard({ substance, mode }: { substance: Substance, mode: Thr
 
 
 export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, thresholdMode, onUpload }: InventoryTableProps) {
-  const [isJustificationOpen, setIsJustificationOpen] = useState(false);
-  const [selectedDataForJustification, setSelectedDataForJustification] = useState<{substance: Substance, category: {id: string, name: string, group: string}} | null>(null);
-
   if (inventory.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-16 px-4 border-2 border-dashed rounded-lg">
@@ -102,81 +98,69 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
   }
 
   return (
-    <>
-      <Card className="overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[25%]">Productnaam</TableHead>
-              <TableHead>Seveso Categorieën</TableHead>
-              <TableHead className="text-right">Voorraad (ton)</TableHead>
-              <TableHead className="w-[15%] text-center">Belangrijkste Bijdrage</TableHead>
-              <TableHead className="text-right no-print">Acties</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {inventory.map((substance) => {
-              const allCategories = substance.sevesoCategories.map(id => SEVESO_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id)).filter(Boolean);
-              
-              return (
-                <TableRow key={substance.id}>
-                  <TableCell className="font-medium">
-                    {substance.productName}
-                    <div className="text-xs text-muted-foreground">{substance.casNumber || 'N/A'}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {allCategories.map((cat) => (
-                        <TooltipProvider key={cat.id}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Badge 
-                                className={cn("border-transparent cursor-pointer", groupToColorMap[cat.group])}
-                                onClick={() => {
-                                  setSelectedDataForJustification({substance, category: cat});
-                                  setIsJustificationOpen(true);
-                                }}
-                              >
-                                {cat.id}
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>{cat.name}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Input
-                      type="number"
-                      value={substance.quantity}
-                      onChange={(e) => onUpdateQuantity(substance.id, parseFloat(e.target.value))}
-                      className="w-24 h-9 ml-auto text-right"
-                      min="0"
-                    />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <ContributionCard substance={substance} mode={thresholdMode} />
-                  </TableCell>
-                  <TableCell className="text-right no-print">
-                    <Button variant="ghost" size="icon" onClick={() => onDelete(substance.id)} aria-label={`Verwijder ${substance.productName}`}>
-                      <Trash2 className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </Card>
-      <CategoryJustificationDialog
-        isOpen={isJustificationOpen}
-        onOpenChange={setIsJustificationOpen}
-        substance={selectedDataForJustification?.substance || null}
-        category={selectedDataForJustification?.category || null}
-      />
-    </>
+    <Card className="overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[25%]">Productnaam</TableHead>
+            <TableHead>Seveso Categorieën</TableHead>
+            <TableHead className="text-right">Voorraad (ton)</TableHead>
+            <TableHead className="w-[15%] text-center">Belangrijkste Bijdrage</TableHead>
+            <TableHead className="text-right no-print">Acties</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {inventory.map((substance) => {
+            const allCategories = substance.sevesoCategories.map(id => SEVESO_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id)).filter(Boolean);
+            
+            return (
+              <TableRow key={substance.id}>
+                <TableCell className="font-medium">
+                  {substance.productName}
+                  <div className="text-xs text-muted-foreground">{substance.casNumber || 'N/A'}</div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {allCategories.map((cat) => (
+                      <TooltipProvider key={cat.id}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              className={cn("border-transparent", groupToColorMap[cat.group])}
+                            >
+                              {cat.id}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{cat.name}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Input
+                    type="number"
+                    value={substance.quantity}
+                    onChange={(e) => onUpdateQuantity(substance.id, parseFloat(e.target.value))}
+                    className="w-24 h-9 ml-auto text-right"
+                    min="0"
+                  />
+                </TableCell>
+                <TableCell className="text-center">
+                  <ContributionCard substance={substance} mode={thresholdMode} />
+                </TableCell>
+                <TableCell className="text-right no-print">
+                  <Button variant="ghost" size="icon" onClick={() => onDelete(substance.id)} aria-label={`Verwijder ${substance.productName}`}>
+                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </Card>
   );
 }
