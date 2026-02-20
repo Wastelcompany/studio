@@ -21,7 +21,7 @@ export default function SevesoApp() {
   const [isReferenceGuideOpen, setIsReferenceGuideOpen] = useState(false);
   const [isClearAlertOpen, setIsClearAlertOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
+  const { toast, dismiss } = useToast();
 
   const [explanationData, setExplanationData] = useState<{ substance: Substance | null; categoryId: string | null }>({ substance: null, categoryId: null });
   
@@ -108,7 +108,7 @@ export default function SevesoApp() {
         });
     } finally {
         setIsSavingPdf(false);
-        toast().dismiss(toastId);
+        dismiss(toastId);
     }
   };
 
