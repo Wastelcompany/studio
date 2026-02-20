@@ -45,6 +45,7 @@ export default function SevesoApp() {
   };
   
   const handlePrint = () => {
+    console.log("🔥 Print functie is aangeroepen!");
     window.print();
   };
 
