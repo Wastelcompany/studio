@@ -9,7 +9,6 @@ import { useSevesoCalculator } from "@/hooks/use-seveso-calculator";
 import type { Substance, SummationGroup as SummationGroupType } from "@/lib/types";
 import { AlertCircle, CheckCircle2, ShieldAlert, Briefcase } from "lucide-react";
 import GroupDetailsDialog from "./group-details-dialog";
-import { Separator } from "./ui/separator";
 import { cn } from "@/lib/utils";
 
 interface DashboardProps {
@@ -69,9 +68,9 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
 
       <Card>
         <CardHeader>
-          <CardTitle>Sommatie Overzicht</CardTitle>
+          <CardTitle>Seveso Sommatie</CardTitle>
           <CardDescription>
-            Ratio per Seveso gevarengroep en ARIE. Klik op een groep voor details.
+            Ratio per Seveso gevarengroep. Klik op een groep voor details.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-1">
@@ -96,14 +95,20 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
               </div>
             );
           })}
-
-          <Separator className="my-3" />
-
-          <div className="p-2 -m-2 rounded-lg">
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>ARIE Sommatie</CardTitle>
+          <CardDescription>Totale ratio voor de ARIE-regeling.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-lg">
              <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2 text-sm font-medium">
                     <Briefcase className="w-4 h-4 text-muted-foreground" />
-                    <span>ARIE Sommatie</span>
+                    <span>ARIE Totaal</span>
                 </div>
                 <span className={cn("text-sm font-semibold", arieSummation.isExceeded && "text-destructive")}>
                     {ariePercentage}%
@@ -117,10 +122,9 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
                 )} 
               />
           </div>
-
         </CardContent>
       </Card>
-      
+
       <Card className="bg-primary/5">
         <CardHeader className="items-center">
           <CardTitle>Seveso Conclusie</CardTitle>
