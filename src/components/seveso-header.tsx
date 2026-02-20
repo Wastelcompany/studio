@@ -22,7 +22,7 @@ export default function SevesoHeader({
 }: SevesoHeaderProps) {
 
   return (
-    <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print-header no-print">
+    <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 no-print">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-primary tracking-tight">Seveso en ARIE</h1>
         <p className="text-muted-foreground">Drempelwaarde Check</p>

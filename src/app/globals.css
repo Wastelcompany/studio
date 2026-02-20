@@ -96,46 +96,76 @@
     print-color-adjust: exact;
   }
   @page {
-    size: landscape;
-    margin: 1cm;
+    size: A4 portrait; /* More standard for documents */
+    margin: 1.5cm;
   }
   .no-print {
     display: none !important;
   }
+
+  /* Reset main containers for printing */
   .print-container {
     display: block !important;
     width: 100%;
+    padding: 0 !important;
   }
-  .print-header {
-    padding-bottom: 1rem;
-    border-bottom-width: 1px;
-    margin-bottom: 1rem;
-  }
+
   .print-main-content {
     display: flex;
-    flex-direction: row;
-    gap: 1rem;
+    flex-direction: column; /* Stack dashboard and table */
+    gap: 2rem;
   }
-  .print-table-container {
-    flex: 3;
-  }
+
+  /* --- Dashboard / Header of print --- */
   .print-dashboard-container {
-    flex: 1;
-    border-left-width: 1px;
-    padding-left: 1rem;
+    order: 1; /* Dashboard comes first */
+    width: 100%;
+    position: static !important; /* Override sticky positioning */
+    border-left-width: 0;
+    padding-left: 0;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #ccc;
   }
+  
+  /* Arrange dashboard cards side-by-side */
+  .print-dashboard-container > .space-y-6 {
+    display: flex;
+    flex-direction: row;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+  .print-dashboard-container > .space-y-6 > * {
+    margin-top: 0 !important; /* remove space-y behavior */
+  }
+  /* Give conclusion more prominence */
+  .print-dashboard-container .card-sommatie { flex: 2; }
+  .print-dashboard-container .card-conclusie { flex: 1; }
+  
+
+  /* --- Table --- */
+  .print-table-container {
+    order: 2; /* Table is second */
+    width: 100%;
+  }
+
+  /* General print appearance */
   body, .bg-background {
     background-color: #fff !important;
   }
   .bg-card {
     background-color: #fff !important;
-    border: 1px solid #ddd;
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
   }
   .text-foreground, .text-card-foreground {
     color: #000 !important;
   }
   .text-muted-foreground {
     color: #555 !important;
+  }
+  .bg-primary\/5 {
+      background-color: #fafafa !important;
   }
   .shadow-lg, .shadow-md {
     box-shadow: none !important;
