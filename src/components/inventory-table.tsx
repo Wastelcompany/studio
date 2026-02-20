@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Trash2, FileSpreadsheet, Upload } from "lucide-react";
-import type { Substance, ThresholdMode } from "@/lib/types";
+import type { Substance, ThresholdMode, SevesoCategory, NamedSubstance } from "@/lib/types";
 import { SEVESO_CATEGORIES, NAMED_SUBSTANCES, SUMMATION_GROUPS_CONFIG } from "@/lib/seveso";
 import { Progress } from './ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -34,54 +34,71 @@ const groupToColorMap: Record<string, string> = SUMMATION_GROUPS_CONFIG.reduce((
   return acc;
 }, {} as Record<string, string>);
 
-const groupToIndicatorColorMap: Record<string, string> = SUMMATION_GROUPS_CONFIG.reduce((acc, group) => {
-    acc[group.group] = `bg-${group.colorClass}`;
-    return acc;
-}, {} as Record<string, string>);
+function SubstanceContributions({ substance, mode }: { substance: Substance, mode: ThresholdMode }) {
+  const contributions = useMemo(() => {
+    if (substance.quantity <= 0) return [];
+    
+    const categoryContributions: Record<string, {
+        ratio: number;
+        category: SevesoCategory | NamedSubstance;
+    }> = {};
 
-function ContributionCard({ substance, mode }: { substance: Substance, mode: ThresholdMode }) {
-  const maxContribution = useMemo(() => {
-    let max = { ratio: 0, categoryName: '', group: '' };
-    if (substance.quantity > 0) {
-      substance.sevesoCategories.forEach(catId => {
+    substance.sevesoCategories.forEach(catId => {
         const category = SEVESO_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
         if (category) {
-          const threshold = category.threshold[mode];
-          if (threshold > 0) {
-            const ratio = (substance.quantity / threshold);
-            if (ratio > max.ratio) {
-              max = { ratio, categoryName: category.name, group: category.group };
+            const threshold = category.threshold[mode];
+            if (threshold > 0) {
+                const ratio = substance.quantity / threshold;
+                if (!categoryContributions[category.id] || ratio > categoryContributions[category.id].ratio) {
+                    categoryContributions[category.id] = { ratio, category };
+                }
             }
-          }
         }
-      });
-    }
-    return max;
-  }, [substance.quantity, substance.sevesoCategories, mode]);
-  
-  if (maxContribution.ratio === 0) {
+    });
+
+    return Object.values(categoryContributions).map(({ ratio, category }) => {
+        const percentage = Math.round(ratio * 100);
+        return {
+            key: `${substance.id}-${category.id}`,
+            percentage,
+            progressValue: Math.min(percentage, 100),
+            categoryName: category.name,
+            categoryId: category.id,
+            isExceeded: percentage >= 100,
+        };
+    }).filter(item => item.percentage > 0).sort((a,b) => b.percentage - a.percentage);
+
+  }, [substance.quantity, substance.sevesoCategories, mode, substance.id]);
+
+  if (contributions.length === 0) {
     return <div className="text-xs text-muted-foreground">-</div>;
   }
-  
-  const percentage = Math.round(maxContribution.ratio * 100);
-  const progressValue = Math.min(percentage, 100);
-  const indicatorColorClass = groupToIndicatorColorMap[maxContribution.group] || 'bg-primary';
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="w-full">
-            <Progress value={progressValue} className="h-2" indicatorClassName={indicatorColorClass} />
-            <div className="text-xs text-muted-foreground mt-1 text-right">{percentage}%</div>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{percentage}% van drempelwaarde voor</p>
-          <p className="font-semibold">{maxContribution.categoryName}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <div className="space-y-2 py-1">
+      {contributions.map(contrib => (
+        <TooltipProvider key={contrib.key}>
+          <Tooltip>
+            <TooltipTrigger className="w-full text-left">
+              <div className="w-full">
+                 <div className="flex justify-between items-center mb-0.5">
+                    <span className="text-xs font-medium text-muted-foreground">{contrib.categoryId}</span>
+                    <span className={`text-xs font-semibold ${contrib.isExceeded ? 'text-destructive' : 'text-foreground'}`}>{contrib.percentage}%</span>
+                 </div>
+                <Progress 
+                  value={contrib.progressValue} 
+                  className="h-2" 
+                  indicatorClassName={contrib.isExceeded ? 'bg-destructive' : 'bg-green-600'} 
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="font-semibold">{contrib.categoryName}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ))}
+    </div>
   );
 }
 
@@ -106,7 +123,7 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
             <TableHead className="w-[25%]">Productnaam</TableHead>
             <TableHead>Seveso Categorieën</TableHead>
             <TableHead className="text-right">Voorraad (ton)</TableHead>
-            <TableHead className="w-[15%] text-center">Belangrijkste Bijdrage</TableHead>
+            <TableHead className="w-[25%]">Bijdrage per Categorie</TableHead>
             <TableHead className="text-right no-print">Acties</TableHead>
           </TableRow>
         </TableHeader>
@@ -151,8 +168,8 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                     min="0"
                   />
                 </TableCell>
-                <TableCell className="text-center">
-                  <ContributionCard substance={substance} mode={thresholdMode} />
+                <TableCell>
+                  <SubstanceContributions substance={substance} mode={thresholdMode} />
                 </TableCell>
                 <TableCell className="text-right no-print">
                   <Button variant="ghost" size="icon" onClick={() => onDelete(substance.id)} aria-label={`Verwijder ${substance.productName}`}>
