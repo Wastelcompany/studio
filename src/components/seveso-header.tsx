@@ -30,7 +30,7 @@ export default function SevesoHeader({
           <span className="text-primary">Chem</span>
           <span className="text-foreground">Stats</span>
         </h1>
-        <p className="text-muted-foreground">Gevaarlijke Stoffen Analyse</p>
+        <p className="text-muted-foreground">Gevaarlijke Stoffen Analyse - Seveso en ARIE drempelwaarde check</p>
       </div>
       <div className="relative z-10 flex flex-wrap items-center gap-2">
         <Button onClick={onUpload} type="button"><Upload />Upload SDS</Button>
