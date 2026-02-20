@@ -70,6 +70,44 @@ export const H_PHRASE_MAPPING: Record<string, string> = {
   'H350': 'O3', 'H340': 'O3', 'H360': 'O3',
 };
 
+export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
+    'H300': 'Dodelijk bij inslikken',
+    'H310': 'Dodelijk bij contact met de huid',
+    'H330': 'Dodelijk bij inademing',
+    'H301': 'Giftig bij inslikken',
+    'H311': 'Giftig bij contact met de huid',
+    'H331': 'Giftig bij inademing',
+    'H332': 'Schadelijk bij inademing',
+    'H370': 'Veroorzaakt schade aan organen',
+    'EUH001': 'In droge toestand ontplofbaar',
+    'H200': 'Ontplofbaar, gevaar voor massa-explosie',
+    'H201': 'Ontplofbaar, gevaar voor scherfwerking, maar geen gevaar voor massa-explosie',
+    'H202': 'Ontplofbaar, ernstig gevaar voor scherfwerking',
+    'H203': 'Ontplofbaar, gevaar voor brand, scherfwerking of drukgolf',
+    'H220': 'Zeer licht ontvlambaar gas',
+    'H221': 'Ontvlambaar gas',
+    'H222': 'Zeer licht ontvlambare aerosol',
+    'H223': 'Ontvlambare aerosol',
+    'H270': 'Kan brand veroorzaken of bevorderen; oxiderend',
+    'H224': 'Zeer licht ontvlambare vloeistof en damp',
+    'H225': 'Licht ontvlambare vloeistof en damp',
+    'H226': 'Ontvlambare vloeistof en damp',
+    'H241': 'Kan brand of een explosie veroorzaken bij verhitting',
+    'H242': 'Brandgevaar bij verhitting',
+    'H250': 'Vatbaar voor zelfontbranding in lucht',
+    'H271': 'Kan brand of een explosie veroorzaken; sterk oxiderend',
+    'H272': 'Kan brand bevorderen; oxiderend',
+    'H400': 'Zeer giftig voor in het water levende organismen',
+    'H410': 'Zeer giftig voor in het water levende organismen, met langdurige gevolgen',
+    'H411': 'Giftig voor in het water levende organismen, met langdurige gevolgen',
+    'H260': 'Vormt in contact met water ontvlambare gassen die spontaan kunnen ontbranden',
+    'H261': 'Vormt in contact met water ontvlambare gassen',
+    'H350': 'Kan kanker veroorzaken',
+    'H340': 'Kan genetische afwijkingen veroorzaken',
+    'H360': 'Kan de vruchtbaarheid of het ongeboren kind schaden',
+};
+
+
 export const classifySubstance = (hStatements: string[], casNumber: string | null): { categories: string[], isNamed: boolean, namedSubstanceName: string | null } => {
   const categories = new Set<string>();
   

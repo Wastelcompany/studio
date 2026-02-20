@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea } from './ui/scroll-area';
 import type { Substance } from '@/lib/types';
-import { H_PHRASE_MAPPING, NAMED_SUBSTANCES, SEVESO_CATEGORIES } from '@/lib/seveso';
+import { H_PHRASE_DESCRIPTIONS, H_PHRASE_MAPPING, NAMED_SUBSTANCES, SEVESO_CATEGORIES } from '@/lib/seveso';
 
 interface CategoryExplanationDialogProps {
   isOpen: boolean;
@@ -48,7 +48,7 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
     if (H_PHRASE_MAPPING[code] === categoryId) {
         explanations.push({
             source: code,
-            description: hStatement,
+            description: H_PHRASE_DESCRIPTIONS[code] || hStatement,
             category: categoryId,
             categoryName: category?.name || 'Onbekend'
         });
