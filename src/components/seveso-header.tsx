@@ -26,8 +26,11 @@ export default function SevesoHeader({
   return (
     <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-primary tracking-tight">Seveso en ARIE</h1>
-        <p className="text-muted-foreground">Drempelwaarde Check</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          <span className="text-primary">Chem</span>
+          <span className="text-foreground">Stats</span>
+        </h1>
+        <p className="text-muted-foreground">Gevaarlijke Stoffen Analyse</p>
       </div>
       <div className="relative z-10 flex flex-wrap items-center gap-2">
         <Button onClick={onUpload} type="button"><Upload />Upload SDS</Button>
@@ -40,7 +43,7 @@ export default function SevesoHeader({
         <Button variant="outline" size="icon" onClick={onShowReference} aria-label="Referentiegids" type="button">
           <Info />
         </Button>
-        <Button variant="outline" size="icon" onClick={onClearAll} className="text-destructive hover:bg-destructive/10 hover:text-destructive-foreground" aria-label="Alles wissen" type="button">
+        <Button variant="outline" size="icon" onClick={onClearAll} className="text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label="Alles wissen" type="button">
           <Trash2 />
         </Button>
       </div>

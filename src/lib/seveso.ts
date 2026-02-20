@@ -238,11 +238,11 @@ export const classifySubstance = (hStatements: string[], casNumber: string | nul
 
 
 export const SUMMATION_GROUPS_CONFIG = [
-  { name: 'Gezondheidsgevaren', icon: FlaskConical, group: 'health', colorClass: 'seveso-health' },
-  { name: 'Fysische gevaren', icon: Flame, group: 'physical', colorClass: 'seveso-physical' },
-  { name: 'Milieugevaren', icon: Leaf, group: 'environment', colorClass: 'seveso-environment' },
-  { name: 'Overige gevaren', icon: AlertTriangle, group: 'other', colorClass: 'seveso-other' },
-  { name: 'Benoemde Stoffen', icon: Atom, group: 'named', colorClass: 'seveso-named' },
+  { name: 'Gezondheidsgevaren', icon: FlaskConical, group: 'health' },
+  { name: 'Fysische gevaren', icon: Flame, group: 'physical' },
+  { name: 'Milieugevaren', icon: Leaf, group: 'environment' },
+  { name: 'Overige gevaren', icon: AlertTriangle, group: 'other' },
+  { name: 'Benoemde Stoffen', icon: Atom, group: 'named' },
 ] as const;
 
 

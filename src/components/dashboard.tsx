@@ -24,19 +24,19 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
   const getStatusIcon = () => {
     switch (overallStatus) {
       case 'Hogedrempel':
-        return <ShieldAlert className="w-6 h-6 text-destructive" />;
+        return <ShieldAlert className="w-5 h-5 text-destructive" />;
       case 'Lagedrempel':
-        return <AlertCircle className="w-6 h-6 text-yellow-500" />;
+        return <AlertCircle className="w-5 h-5 text-primary" />;
       default:
-        return <CheckCircle2 className="w-6 h-6 text-green-500" />;
+        return <CheckCircle2 className="w-5 h-5 text-foreground/80" />;
     }
   };
 
   const getStatusColor = () => {
     switch(overallStatus) {
       case 'Hogedrempel': return 'text-destructive';
-      case 'Lagedrempel': return 'text-yellow-600 dark:text-yellow-400';
-      default: return 'text-green-600 dark:text-green-400';
+      case 'Lagedrempel': return 'text-primary';
+      default: return 'text-foreground/80';
     }
   }
   
@@ -54,7 +54,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
             </CardDescription>
           </div>
           <div className="flex items-center space-x-2 shrink-0 ml-4">
-            <Label htmlFor="threshold-mode" className={cn("text-sm", thresholdMode === 'low' ? 'text-primary font-semibold' : 'text-muted-foreground')}>
+            <Label htmlFor="threshold-mode" className={cn("text-sm", thresholdMode === 'low' ? 'font-semibold text-primary' : 'text-muted-foreground')}>
               Lage
             </Label>
             <Switch
@@ -62,12 +62,12 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
               checked={thresholdMode === 'high'}
               onCheckedChange={(checked) => setThresholdMode(checked ? 'high' : 'low')}
             />
-            <Label htmlFor="threshold-mode" className={cn("text-sm", thresholdMode === 'high' ? 'text-primary font-semibold' : 'text-muted-foreground')}>
+            <Label htmlFor="threshold-mode" className={cn("text-sm", thresholdMode === 'high' ? 'font-semibold text-primary' : 'text-muted-foreground')}>
               Hoge
             </Label>
           </div>
         </CardHeader>
-        <CardContent className="space-y-1">
+        <CardContent className="space-y-2">
           {summationGroups.map((group) => {
             const percentage = Math.round(group.totalRatio * 100);
             return (
@@ -85,25 +85,25 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
                     {percentage}%
                   </span>
                 </div>
-                <Progress value={Math.min(percentage, 100)} className="h-2" indicatorClassName={group.isExceeded ? 'bg-destructive' : 'bg-green-600'} />
+                <Progress value={Math.min(percentage, 100)} className="h-2" indicatorClassName={group.isExceeded ? 'bg-destructive' : 'bg-primary'} />
               </div>
             );
           })}
         </CardContent>
       </Card>
       
-      <Card className="bg-primary/5">
-        <CardContent className="flex items-center justify-center text-center p-3 gap-4">
+      <Card>
+        <CardContent className="flex items-center justify-center text-center p-3 gap-3">
             {getStatusIcon()}
             <div>
-                <p className={`text-lg font-bold ${getStatusColor()}`}>{overallStatus === 'Geen' ? 'Geen Seveso-inrichting' : `${overallStatus}-inrichting`}</p>
+                <p className={`text-base font-bold ${getStatusColor()}`}>{overallStatus === 'Geen' ? 'Geen Seveso-inrichting' : `${overallStatus}-inrichting`}</p>
                 {overallStatus !== 'Geen' ? (
                     <p className="text-xs text-muted-foreground">
-                        Meest kritieke Seveso groep: <span className="font-semibold text-foreground">{criticalGroup}</span>
+                        Kritieke groep: <span className="font-semibold text-foreground">{criticalGroup}</span>
                     </p>
                 ) : (
                     <p className="text-xs text-muted-foreground">
-                        Geen Seveso drempelwaarden overschreden.
+                        Geen drempelwaarden overschreden.
                     </p>
                 )}
             </div>
@@ -117,7 +117,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
             Bijdrage per gevarengroep aan de totale ARIE-som.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-1">
+        <CardContent className="space-y-2">
           {arieSummationGroups.map((group) => {
             const percentage = Math.round(group.totalRatio * 100);
             return (
@@ -131,33 +131,27 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
                     {percentage}%
                   </span>
                 </div>
-                <Progress value={Math.min(percentage, 100)} className="h-2" indicatorClassName="bg-[hsl(var(--arie-fg))]" />
+                <Progress value={Math.min(percentage, 100)} className="h-2" indicatorClassName="bg-foreground" />
               </div>
             );
           })}
         </CardContent>
       </Card>
 
-      <Card className="bg-arie-bg">
-        <CardContent className="flex items-center justify-center text-center p-3 gap-4">
+      <Card>
+        <CardContent className="flex items-center justify-center text-center p-3 gap-3">
             {arieExceeded ? (
-                <ShieldAlert className="w-6 h-6 text-arie-fg" />
+                <ShieldAlert className="w-5 h-5 text-destructive" />
             ) : (
-                <CheckCircle2 className="w-6 h-6 text-green-500" />
+                <CheckCircle2 className="w-5 h-5 text-foreground/80" />
             )}
             <div>
-                <p className={cn("text-lg font-bold", arieExceeded ? 'text-arie-fg' : 'text-green-600 dark:text-green-400')}>
+                <p className={cn("text-base font-bold", arieExceeded ? 'text-destructive' : 'text-foreground/80')}>
                     {arieExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig'}
                 </p>
-                 {arieExceeded ? (
-                     <p className="text-xs text-muted-foreground">
-                        De sommatiewaarde van {ariePercentage}% overschrijdt de drempel.
-                    </p>
-                ) : (
-                     <p className="text-xs text-muted-foreground">
-                        De sommatiewaarde van {ariePercentage}% is onder de drempel.
-                    </p>
-                )}
+                 <p className="text-xs text-muted-foreground">
+                    Totale sommatiewaarde: {ariePercentage}%
+                </p>
             </div>
         </CardContent>
       </Card>

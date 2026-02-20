@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Trash2, FileSpreadsheet, Upload } from "lucide-react";
 import type { Substance, ThresholdMode, HazardCategory } from "@/lib/types";
-import { ALL_CATEGORIES, NAMED_SUBSTANCES, SUMMATION_GROUPS_CONFIG, SEVESO_THRESHOLDS, ARIE_THRESHOLDS } from "@/lib/seveso";
+import { ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, ARIE_THRESHOLDS } from "@/lib/seveso";
 import { Progress } from './ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -28,14 +28,6 @@ interface InventoryTableProps {
   onUpload: () => void;
   onShowExplanation: (substanceId: string, categoryId: string, type: 'seveso' | 'arie') => void;
 }
-
-const groupToColorMap: Record<string, string> = {
-  ...SUMMATION_GROUPS_CONFIG.reduce((acc, group) => {
-    acc[group.group] = `bg-${group.colorClass} text-${group.colorClass}-foreground`;
-    return acc;
-  }, {} as Record<string, string>),
-};
-
 
 function Contributions({ substance, mode }: { substance: Substance, mode: ThresholdMode }) {
   const contributions = useMemo(() => {
@@ -134,7 +126,7 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
                   value={contrib.progressValue} 
                   className="h-2" 
                   indicatorClassName={cn(
-                    contrib.isExceeded ? 'bg-destructive' : (contrib.type === 'ARIE' ? 'bg-[hsl(var(--arie-fg))]' : 'bg-green-600')
+                    contrib.isExceeded ? 'bg-destructive' : (contrib.type === 'ARIE' ? 'bg-foreground' : 'bg-primary')
                   )} 
                 />
               </div>
@@ -194,7 +186,8 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                           <TooltipTrigger asChild>
                             <Badge
                               onClick={() => onShowExplanation(substance.id, cat.id, 'seveso')}
-                              className={cn("border-transparent cursor-pointer", groupToColorMap[cat.group])}
+                              className="cursor-pointer"
+                              variant="default"
                             >
                               {cat.displayId || cat.id}
                             </Badge>
@@ -215,8 +208,9 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                                 <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Badge
-                                    onClick={() => onShowExplanation(substance.id, cat.id, 'arie')}
-                                    className="border-transparent cursor-pointer bg-[hsl(var(--arie-bg))] text-[hsl(var(--arie-fg))]"
+                                      onClick={() => onShowExplanation(substance.id, cat.id, 'arie')}
+                                      className="cursor-pointer"
+                                      variant="secondary"
                                     >
                                     {cat.displayId || cat.id}
                                     </Badge>

@@ -3,8 +3,8 @@ import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Seveso en ARIE',
-  description: 'An advanced tool to determine the Seveso status of a facility.',
+  title: 'ChemStats - Gevaarlijke Stoffen Analyse',
+  description: 'Analyseer veiligheidsinformatiebladen (SDS) om uw Seveso en ARIE status te bepalen.',
 };
 
 export default function RootLayout({
