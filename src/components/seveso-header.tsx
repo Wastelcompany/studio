@@ -30,7 +30,7 @@ export default function SevesoHeader({
         <h1 className="text-2xl sm:text-3xl font-bold text-primary tracking-tight">Seveso en ARIE</h1>
         <p className="text-muted-foreground">Drempelwaarde Check</p>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="relative z-10 flex flex-wrap items-center gap-2">
         <Button onClick={onUpload} type="button"><Upload />Upload SDS</Button>
         <Button variant="outline" onClick={onImport} type="button"><FileUp />Import</Button>
         <Button variant="outline" onClick={onExport} type="button"><FileText />Export</Button>
