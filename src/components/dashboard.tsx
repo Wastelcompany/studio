@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSevesoCalculator } from "@/hooks/use-seveso-calculator";
-import type { Substance, ThresholdMode, SummationGroup as SummationGroupType } from "@/lib/types";
+import type { Substance, SummationGroup as SummationGroupType } from "@/lib/types";
 import { AlertCircle, CheckCircle2, ShieldAlert, Briefcase } from "lucide-react";
 import GroupDetailsDialog from "./group-details-dialog";
 import { Separator } from "./ui/separator";
@@ -113,7 +113,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
                 value={Math.min(ariePercentage, 100)} 
                 className="h-2" 
                 indicatorClassName={cn(
-                  arieSummation.isExceeded ? 'bg-destructive' : 'bg-[hsl(var(--arie-fg))]'
+                  arieSummation.isExceeded ? 'bg-destructive' : 'bg-arie-foreground'
                 )} 
               />
           </div>
@@ -139,6 +139,32 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
             )}
         </CardContent>
       </Card>
+
+      <Card className="bg-arie">
+        <CardHeader className="items-center">
+          <CardTitle>ARIE Conclusie</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center text-center">
+            {arieSummation.isExceeded ? (
+                <ShieldAlert className="w-10 h-10 text-arie-foreground" />
+            ) : (
+                <CheckCircle2 className="w-10 h-10 text-green-500" />
+            )}
+            <p className={cn("mt-2 text-2xl font-bold", arieSummation.isExceeded ? 'text-arie-foreground' : 'text-green-600 dark:text-green-400')}>
+                {arieSummation.isExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig'}
+            </p>
+             {arieSummation.isExceeded ? (
+                 <p className="text-muted-foreground mt-1">
+                    De sommatiewaarde van {ariePercentage}% overschrijdt de drempel.
+                </p>
+            ) : (
+                 <p className="text-muted-foreground mt-1">
+                    De sommatiewaarde van {ariePercentage}% is onder de drempel.
+                </p>
+            )}
+        </CardContent>
+      </Card>
+
       <GroupDetailsDialog
         isOpen={!!selectedGroup}
         onOpenChange={(open) => !open && setSelectedGroup(null)}
