@@ -123,7 +123,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
                 <Progress
                   value={Math.min(percentage, 100)}
                   className="h-2"
-                  indicatorClassName='bg-arie-foreground'
+                  indicatorClassName='bg-arie-fg'
                 />
               </div>
             );
@@ -142,7 +142,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
                 value={Math.min(ariePercentage, 100)} 
                 className="h-2" 
                 indicatorClassName={cn(
-                  arieExceeded ? 'bg-destructive' : 'bg-arie-foreground'
+                  arieExceeded ? 'bg-destructive' : 'bg-arie-fg'
                 )} 
               />
           </div>
@@ -174,11 +174,11 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center text-center">
             {arieExceeded ? (
-                <ShieldAlert className="w-10 h-10 text-arie-foreground" />
+                <ShieldAlert className="w-10 h-10 text-arie-fg" />
             ) : (
                 <CheckCircle2 className="w-10 h-10 text-green-500" />
             )}
-            <p className={cn("mt-2 text-2xl font-bold", arieExceeded ? 'text-arie-foreground' : 'text-green-600 dark:text-green-400')}>
+            <p className={cn("mt-2 text-2xl font-bold", arieExceeded ? 'text-arie-fg' : 'text-green-600 dark:text-green-400')}>
                 {arieExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig'}
             </p>
              {arieExceeded ? (
