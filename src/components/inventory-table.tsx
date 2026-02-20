@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -18,7 +18,6 @@ import type { Substance, ThresholdMode } from "@/lib/types";
 import { SEVESO_CATEGORIES, NAMED_SUBSTANCES, SUMMATION_GROUPS_CONFIG } from "@/lib/seveso";
 import { Progress } from './ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import AuditTrailDialog from './audit-trail-dialog';
 import { cn } from '@/lib/utils';
 
 interface InventoryTableProps {
@@ -87,11 +86,6 @@ function ContributionCard({ substance, mode }: { substance: Substance, mode: Thr
 
 
 export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, thresholdMode, onUpload }: InventoryTableProps) {
-  const [auditSubstance, setAuditSubstance] = useState<{ substance: Substance, categoryId: string } | null>(null);
-
-  const handleBadgeClick = (substance: Substance, categoryId: string) => {
-    setAuditSubstance({ substance, categoryId });
-  };
   
   if (inventory.length === 0) {
     return (
@@ -134,8 +128,7 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Badge 
-                                className={cn("cursor-pointer hover:opacity-80 border-transparent", groupToColorMap[cat.group])}
-                                onClick={() => handleBadgeClick(substance, cat.id)}
+                                className={cn("border-transparent", groupToColorMap[cat.group])}
                               >
                                 {cat.id}
                               </Badge>
@@ -171,14 +164,6 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
           </TableBody>
         </Table>
       </Card>
-      {auditSubstance && (
-        <AuditTrailDialog
-          isOpen={!!auditSubstance}
-          onOpenChange={(open) => !open && setAuditSubstance(null)}
-          substance={auditSubstance.substance}
-          categoryId={auditSubstance.categoryId}
-        />
-      )}
     </>
   );
 }
