@@ -65,7 +65,7 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   O3: { low: 10, high: 50 },
 };
 
-// ARIE-specific thresholds, mapping category ID to a single threshold
+// ARIE-specific thresholds, mapping a UNIQUE category ID to a single threshold
 export const ARIE_THRESHOLDS: Record<string, number> = {
     H1: 0.05,
     H2: 0.2,
@@ -76,25 +76,25 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
     P6a: 0.05, // organische peroxiden en zelfontledende stoffen en mengsels, type A of B
     P7: 0.05,
     O2: 0.05, // H260
-    'ARIE-Gas-1': 5, // Custom ARIE category for H220
-    'ARIE-Gas-2': 50, // Custom ARIE category for H221
-    'ARIE-Vloeistof-1': 1, // Custom ARIE for H224
-    'ARIE-Vloeistof-2': 10, // Custom ARIE for H225
-    'ARIE-Vloeistof-3': 100, // Custom ARIE for H226
-    'ARIE-Ox-Gas-1': 5, // Custom ARIE for H270
-    'ARIE-Ox-Vloeistof-1': 5, // Custom ARIE for H271/H272
-    'ARIE-Ox-Vast-1': 5, // Custom ARIE for H271/H272
+    'ARIE-Gas-1': 5,
+    'ARIE-Gas-2': 50,
+    'ARIE-Vloeistof-1': 1,
+    'ARIE-Vloeistof-2': 10,
+    'ARIE-Vloeistof-3': 100,
+    'ARIE-Ox-Gas-1': 5,
+    'ARIE-Ox-Vloeistof-1': 5,
+    'ARIE-Ox-Vast-1': 5,
 };
 
-// Add custom ARIE categories to the master list
-ALL_CATEGORIES['ARIE-Gas-1'] = { id: 'ARIE-Gas-1', name: 'Ontvlambare gassen, cat. 1 (ARIE)', group: 'physical' };
-ALL_CATEGORIES['ARIE-Gas-2'] = { id: 'ARIE-Gas-2', name: 'Ontvlambare gassen, cat. 2 (ARIE)', group: 'physical' };
-ALL_CATEGORIES['ARIE-Vloeistof-1'] = { id: 'ARIE-Vloeistof-1', name: 'Ontvlambare vloeistoffen, cat. 1 (ARIE)', group: 'physical' };
-ALL_CATEGORIES['ARIE-Vloeistof-2'] = { id: 'ARIE-Vloeistof-2', name: 'Ontvlambare vloeistoffen, cat. 2 (ARIE)', group: 'physical' };
-ALL_CATEGORIES['ARIE-Vloeistof-3'] = { id: 'ARIE-Vloeistof-3', name: 'Ontvlambare vloeistoffen, cat. 3 (ARIE)', group: 'physical' };
-ALL_CATEGORIES['ARIE-Ox-Gas-1'] = { id: 'ARIE-Ox-Gas-1', name: 'Oxiderende gassen, cat. 1 (ARIE)', group: 'physical' };
-ALL_CATEGORIES['ARIE-Ox-Vloeistof-1'] = { id: 'ARIE-Ox-Vloeistof-1', name: 'Oxiderende vloeistoffen, cat. 1 (ARIE)', group: 'physical' };
-ALL_CATEGORIES['ARIE-Ox-Vast-1'] = { id: 'ARIE-Ox-Vast-1', name: 'Oxiderende vaste stoffen, cat. 1 (ARIE)', group: 'physical' };
+// Add custom ARIE categories to the master list, with a displayId to show the Seveso equivalent
+ALL_CATEGORIES['ARIE-Gas-1'] = { id: 'ARIE-Gas-1', name: 'Ontvlambare gassen, cat. 1 (ARIE)', group: 'physical', displayId: 'P2' };
+ALL_CATEGORIES['ARIE-Gas-2'] = { id: 'ARIE-Gas-2', name: 'Ontvlambare gassen, cat. 2 (ARIE)', group: 'physical', displayId: 'P2' };
+ALL_CATEGORIES['ARIE-Vloeistof-1'] = { id: 'ARIE-Vloeistof-1', name: 'Ontvlambare vloeistoffen, cat. 1 (ARIE)', group: 'physical', displayId: 'P5a' };
+ALL_CATEGORIES['ARIE-Vloeistof-2'] = { id: 'ARIE-Vloeistof-2', name: 'Ontvlambare vloeistoffen, cat. 2 (ARIE)', group: 'physical', displayId: 'P5c' };
+ALL_CATEGORIES['ARIE-Vloeistof-3'] = { id: 'ARIE-Vloeistof-3', name: 'Ontvlambare vloeistoffen, cat. 3 (ARIE)', group: 'physical', displayId: 'P5c' };
+ALL_CATEGORIES['ARIE-Ox-Gas-1'] = { id: 'ARIE-Ox-Gas-1', name: 'Oxiderende gassen, cat. 1 (ARIE)', group: 'physical', displayId: 'P4' };
+ALL_CATEGORIES['ARIE-Ox-Vloeistof-1'] = { id: 'ARIE-Ox-Vloeistof-1', name: 'Oxiderende vloeistoffen, cat. 1/2 (ARIE)', group: 'physical', displayId: 'P8' };
+ALL_CATEGORIES['ARIE-Ox-Vast-1'] = { id: 'ARIE-Ox-Vast-1', name: 'Oxiderende vaste stoffen, cat. 1/2 (ARIE)', group: 'physical', displayId: 'P8' };
 
 
 export const H_PHRASE_MAPPING: Record<string, string[]> = {

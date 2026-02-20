@@ -47,6 +47,7 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
         progressValue: number;
         categoryName: string;
         categoryId: string;
+        displayCategoryId: string;
         isExceeded: boolean;
         type: 'Seveso' | 'ARIE';
     }[] = [];
@@ -70,6 +71,7 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
                   progressValue: Math.min(percentage, 100),
                   categoryName: category.name,
                   categoryId: catId,
+                  displayCategoryId: category.displayId || catId,
                   isExceeded: percentage >= 100,
                   type: 'Seveso',
               });
@@ -94,6 +96,7 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
                   progressValue: Math.min(percentage, 100),
                   categoryName: category.name,
                   categoryId: catId,
+                  displayCategoryId: category.displayId || catId,
                   isExceeded: percentage >= 100,
                   type: 'ARIE',
               });
@@ -124,7 +127,7 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
             <TooltipTrigger className="w-full text-left">
               <div className="w-full">
                  <div className="flex justify-between items-center mb-0.5">
-                    <span className="text-xs font-medium text-muted-foreground">{contrib.categoryId} ({contrib.type})</span>
+                    <span className="text-xs font-medium text-muted-foreground">{contrib.displayCategoryId} ({contrib.type})</span>
                     <span className={`text-xs font-semibold ${contrib.isExceeded ? 'text-destructive' : 'text-foreground'}`}>{contrib.percentage}%</span>
                  </div>
                 <Progress 
@@ -193,7 +196,7 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                               onClick={() => onShowExplanation(substance.id, cat.id, 'seveso')}
                               className={cn("border-transparent cursor-pointer", groupToColorMap[cat.group])}
                             >
-                              {cat.id}
+                              {cat.displayId || cat.id}
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -215,7 +218,7 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                                     onClick={() => onShowExplanation(substance.id, cat.id, 'arie')}
                                     className="border-transparent cursor-pointer bg-[hsl(var(--arie-bg))] text-[hsl(var(--arie-fg))]"
                                     >
-                                    {cat.id}
+                                    {cat.displayId || cat.id}
                                     </Badge>
                                 </TooltipTrigger>
                                 <TooltipContent>

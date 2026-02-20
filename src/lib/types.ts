@@ -4,6 +4,7 @@ export interface HazardCategory {
   id: string;
   name: string;
   group: 'health' | 'physical' | 'environment' | 'other' | 'named';
+  displayId?: string;
 }
 
 export interface NamedSubstance extends HazardCategory {
