@@ -106,7 +106,7 @@ function SubstanceContributions({ substance, mode }: { substance: Substance, mod
 export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, thresholdMode, onUpload, onShowExplanation }: InventoryTableProps) {
   if (inventory.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center text-center py-16 px-4 border-2 border-dashed rounded-lg">
+      <div className="flex flex-col items-center justify-center text-center py-16 px-4 border-2 border-dashed rounded-lg print:hidden">
         <FileSpreadsheet className="w-16 h-16 text-muted-foreground mb-4" />
         <h3 className="text-xl font-semibold">Inventaris is leeg</h3>
         <p className="text-muted-foreground mt-2 mb-6">Begin met het uploaden van een Veiligheidsinformatieblad (SDS) om stoffen toe te voegen.</p>
@@ -124,7 +124,7 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
             <TableHead>Seveso Categorieën</TableHead>
             <TableHead className="text-right">Voorraad (ton)</TableHead>
             <TableHead className="w-[25%]">Bijdrage per Categorie</TableHead>
-            <TableHead className="text-right no-print">Acties</TableHead>
+            <TableHead className="text-right print:hidden">Acties</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -164,14 +164,15 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                     type="number"
                     value={substance.quantity}
                     onChange={(e) => onUpdateQuantity(substance.id, parseFloat(e.target.value))}
-                    className="w-24 h-9 ml-auto text-right"
+                    className="w-24 h-9 ml-auto text-right print:hidden"
                     min="0"
                   />
+                  <span className="hidden print:inline">{substance.quantity.toFixed(2)}</span>
                 </TableCell>
                 <TableCell>
                   <SubstanceContributions substance={substance} mode={thresholdMode} />
                 </TableCell>
-                <TableCell className="text-right no-print">
+                <TableCell className="text-right print:hidden">
                   <Button variant="ghost" size="icon" onClick={() => onDelete(substance.id)} aria-label={`Verwijder ${substance.productName}`}>
                     <Trash2 className="h-4 w-4 text-muted-foreground" />
                   </Button>
