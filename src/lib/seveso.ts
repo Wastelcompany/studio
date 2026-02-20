@@ -256,12 +256,10 @@ export const calculateSummations = (inventory: Substance[], mode: ThresholdMode)
 } => {
   const sevesoGroupTotals: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0, named: 0 };
   const arieGroupTotals: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0, named: 0 };
-  let totalArieRatio = 0;
-
+  
   inventory.forEach(substance => {
     if (substance.quantity > 0) {
-      // --- Seveso summation ---
-      // For a single substance, find its highest contribution (max ratio) per group and add that to the group total.
+      // --- Seveso summation: For a single substance, find its highest contribution (max ratio) per group and add that to the group total. ---
       const perGroupMaxRatio: Record<string, number> = {};
       substance.sevesoCategoryIds.forEach(catId => {
         const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
@@ -280,28 +278,20 @@ export const calculateSummations = (inventory: Substance[], mode: ThresholdMode)
           sevesoGroupTotals[group] += perGroupMaxRatio[group];
       }
 
-      // --- ARIE summation ---
-      // For a single substance, find the lowest threshold across all its ARIE categories, calculate the ratio, and add that to the total.
-      // Then attribute this single contribution to the group of the "winning" category.
-      let maxArieRatioForSubstance = 0;
-      let winningCatId: string | null = null;
+      // --- ARIE summation: For UI consistency, calculate contribution per group, similar to Seveso. ---
+      const perGroupMaxArieRatio: Record<string, number> = {};
       substance.arieCategoryIds.forEach(catId => {
-          const arieThreshold = ARIE_THRESHOLDS[catId];
-          if (arieThreshold && arieThreshold > 0) {
-              const ratio = substance.quantity / arieThreshold;
-              if (ratio > maxArieRatioForSubstance) {
-                  maxArieRatioForSubstance = ratio;
-                  winningCatId = catId;
-              }
-          }
-      });
-      
-      if(maxArieRatioForSubstance > 0 && winningCatId) {
-        totalArieRatio += maxArieRatioForSubstance;
-        const category = ALL_CATEGORIES[winningCatId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === winningCatId);
-        if(category) {
-            arieGroupTotals[category.group] += maxArieRatioForSubstance;
+        const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+        const arieThreshold = ARIE_THRESHOLDS[catId];
+        if (category && arieThreshold && arieThreshold > 0) {
+            const ratio = substance.quantity / arieThreshold;
+            if (!perGroupMaxArieRatio[category.group] || ratio > perGroupMaxArieRatio[category.group]) {
+                perGroupMaxArieRatio[category.group] = ratio;
+            }
         }
+      });
+      for (const group in perGroupMaxArieRatio) {
+        arieGroupTotals[group] = (arieGroupTotals[group] || 0) + perGroupMaxArieRatio[group];
       }
     }
   });
@@ -315,8 +305,10 @@ export const calculateSummations = (inventory: Substance[], mode: ThresholdMode)
   const arieSummationGroups: SummationGroup[] = SUMMATION_GROUPS_CONFIG.map(config => ({
     ...config,
     totalRatio: arieGroupTotals[config.group] || 0,
-    isExceeded: false, // For ARIE, only the total matters, not individual group excess.
+    isExceeded: false, // Not applicable per group for ARIE
   }));
+
+  const totalArieRatio = Object.values(arieGroupTotals).reduce((sum, current) => sum + current, 0);
 
   const isHighThreshold = summationGroups.some(g => g.totalRatio >= 1 && mode === 'high');
   const isLowThreshold = summationGroups.some(g => g.totalRatio >= 1);
