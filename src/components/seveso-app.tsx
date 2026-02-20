@@ -25,7 +25,7 @@ export default function SevesoApp() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast, dismiss } = useToast();
 
-  const [explanationData, setExplanationData] = useState<{ substance: Substance | null; categoryId: string | null }>({ substance: null, categoryId: null });
+  const [explanationData, setExplanationData] = useState<{ substance: Substance | null; categoryId: string | null; type: 'seveso' | 'arie' | null }>({ substance: null, categoryId: null, type: null });
   
   const [isSavingPdf, setIsSavingPdf] = useState(false);
   const dashboardRef = useRef<HTMLDivElement>(null);
@@ -200,8 +200,10 @@ export default function SevesoApp() {
         // Ensure new properties exist, providing defaults if they don't
         const importedInventory = (data.inventory || data).map((sub: any) => ({
           ...sub,
-          sevesoCategories: sub.sevesoCategories || [],
-          // Legacy support: remove arieCategories if it exists from old format
+          sevesoCategoryIds: sub.sevesoCategoryIds || sub.sevesoCategories || [],
+          arieCategoryIds: sub.arieCategoryIds || [],
+          // Legacy support: remove old properties if they exist
+          sevesoCategories: undefined, 
           arieCategories: undefined,
         }));
         const importedDetails = data.companyDetails || { name: '', address: '' };
@@ -237,10 +239,10 @@ export default function SevesoApp() {
     fileInputRef.current?.click();
   };
 
-  const handleShowExplanation = (substanceId: string, categoryId: string) => {
+  const handleShowExplanation = (substanceId: string, categoryId: string, type: 'seveso' | 'arie') => {
     const substance = inventory.find(sub => sub.id === substanceId);
     if (substance) {
-      setExplanationData({ substance, categoryId });
+      setExplanationData({ substance, categoryId, type });
     }
   };
 
@@ -315,9 +317,10 @@ export default function SevesoApp() {
 
       <CategoryExplanationDialog
         isOpen={!!explanationData.substance}
-        onOpenChange={(open) => !open && setExplanationData({ substance: null, categoryId: null })}
+        onOpenChange={(open) => !open && setExplanationData({ substance: null, categoryId: null, type: null })}
         substance={explanationData.substance}
         categoryId={explanationData.categoryId}
+        categoryType={explanationData.type}
       />
     </div>
   );

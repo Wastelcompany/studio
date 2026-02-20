@@ -17,13 +17,14 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea } from './ui/scroll-area';
 import type { Substance } from '@/lib/types';
-import { H_PHRASE_DESCRIPTIONS, H_PHRASE_MAPPING, NAMED_SUBSTANCES, SEVESO_CATEGORIES } from '@/lib/seveso';
+import { H_PHRASE_DESCRIPTIONS, SEVESO_H_PHRASE_MAPPING, ARIE_H_PHRASE_MAPPING, SEVESO_CATEGORIES, ARIE_CATEGORIES, NAMED_SUBSTANCES } from '@/lib/seveso';
 
 interface CategoryExplanationDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   substance: Substance | null;
   categoryId: string | null;
+  categoryType: 'seveso' | 'arie' | null;
 }
 
 interface Explanation {
@@ -33,19 +34,26 @@ interface Explanation {
     categoryName: string;
 }
 
-export default function CategoryExplanationDialog({ isOpen, onOpenChange, substance, categoryId }: CategoryExplanationDialogProps) {
-  if (!isOpen || !substance || !categoryId) {
+export default function CategoryExplanationDialog({ isOpen, onOpenChange, substance, categoryId, categoryType }: CategoryExplanationDialogProps) {
+  if (!isOpen || !substance || !categoryId || !categoryType) {
     return null;
   }
   
-  const category = SEVESO_CATEGORIES[categoryId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === categoryId);
+  const isSeveso = categoryType === 'seveso';
+  const category = isSeveso 
+    ? SEVESO_CATEGORIES[categoryId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === categoryId)
+    : ARIE_CATEGORIES[categoryId];
+
+  const mapping = isSeveso ? SEVESO_H_PHRASE_MAPPING : ARIE_H_PHRASE_MAPPING;
 
   const explanations: Explanation[] = [];
 
-  // Check H-phrases for Seveso mapping
+  // Check H-phrases for mapping
   substance.hStatements.forEach(hStatement => {
     const code = hStatement.split(' ')[0].toUpperCase();
-    const isMatch = H_PHRASE_MAPPING[code] === categoryId;
+    const isMatch = isSeveso
+      ? (mapping as Record<string, string>)[code] === categoryId
+      : (mapping as Record<string, string[]>)[code]?.includes(categoryId);
 
     if (isMatch) {
         explanations.push({
@@ -57,8 +65,8 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
     }
   });
 
-  // Check for named substance match
-  if (substance.casNumber && NAMED_SUBSTANCES[substance.casNumber]?.id === categoryId) {
+  // Check for named substance match (only for Seveso)
+  if (isSeveso && substance.casNumber && NAMED_SUBSTANCES[substance.casNumber]?.id === categoryId) {
     const namedSubstance = NAMED_SUBSTANCES[substance.casNumber];
     explanations.push({
         source: `CAS: ${substance.casNumber}`,
@@ -72,7 +80,7 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Onderbouwing voor Categorie {categoryId}</DialogTitle>
+          <DialogTitle>Onderbouwing voor Categorie {categoryId} ({categoryType.toUpperCase()})</DialogTitle>
           <DialogDescription>
             De stof '{substance.productName}' is geclassificeerd in categorie {categoryId} ({category?.name}) op basis van de volgende gegevens:
           </DialogDescription>

@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Trash2, FileSpreadsheet, Upload } from "lucide-react";
 import type { Substance, ThresholdMode, SevesoCategory, NamedSubstance } from "@/lib/types";
-import { SEVESO_CATEGORIES, NAMED_SUBSTANCES, SUMMATION_GROUPS_CONFIG, ARIE_THRESHOLDS } from "@/lib/seveso";
+import { SEVESO_CATEGORIES, NAMED_SUBSTANCES, SUMMATION_GROUPS_CONFIG, ARIE_CATEGORIES } from "@/lib/seveso";
 import { Progress } from './ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -26,7 +26,7 @@ interface InventoryTableProps {
   onDelete: (id: string) => void;
   thresholdMode: ThresholdMode;
   onUpload: () => void;
-  onShowExplanation: (substanceId: string, categoryId: string) => void;
+  onShowExplanation: (substanceId: string, categoryId: string, type: 'seveso' | 'arie') => void;
 }
 
 const groupToColorMap: Record<string, string> = {
@@ -37,7 +37,7 @@ const groupToColorMap: Record<string, string> = {
 };
 
 
-function SubstanceContributions({ substance, mode }: { substance: Substance, mode: ThresholdMode }) {
+function Contributions({ substance, mode }: { substance: Substance, mode: ThresholdMode }) {
   const contributions = useMemo(() => {
     if (substance.quantity <= 0) return [];
     
@@ -51,40 +51,45 @@ function SubstanceContributions({ substance, mode }: { substance: Substance, mod
         type: 'Seveso' | 'ARIE';
     }[] = [];
 
-    const uniqueCategories = [...new Set(substance.sevesoCategories)];
-
-    uniqueCategories.forEach(catId => {
+    // Seveso contributions
+    const uniqueSevesoCategories = [...new Set(substance.sevesoCategoryIds)];
+    uniqueSevesoCategories.forEach(catId => {
         const category = SEVESO_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-        if (!category) return;
-
-        // Seveso contribution
-        const sevesoThreshold = category.threshold[mode];
-        if (sevesoThreshold > 0) {
-            const percentage = Math.round((substance.quantity / sevesoThreshold) * 100);
-            results.push({
-                key: `${substance.id}-${catId}-seveso`,
-                percentage,
-                progressValue: Math.min(percentage, 100),
-                categoryName: category.name,
-                categoryId: catId,
-                isExceeded: percentage >= 100,
-                type: 'Seveso',
-            });
+        if (category) {
+            const threshold = category.threshold[mode];
+            if (threshold > 0) {
+                const percentage = Math.round((substance.quantity / threshold) * 100);
+                results.push({
+                    key: `${substance.id}-${catId}-seveso`,
+                    percentage,
+                    progressValue: Math.min(percentage, 100),
+                    categoryName: category.name,
+                    categoryId: catId,
+                    isExceeded: percentage >= 100,
+                    type: 'Seveso',
+                });
+            }
         }
+    });
 
-        // ARIE contribution
-        const arieThreshold = ARIE_THRESHOLDS[catId];
-        if (arieThreshold && arieThreshold > 0) {
-            const percentage = Math.round((substance.quantity / arieThreshold) * 100);
-            results.push({
-                key: `${substance.id}-${catId}-arie`,
-                percentage,
-                progressValue: Math.min(percentage, 100),
-                categoryName: category.name, // Same name
-                categoryId: catId,
-                isExceeded: percentage >= 100,
-                type: 'ARIE',
-            });
+    // ARIE contributions
+    const uniqueArieCategories = [...new Set(substance.arieCategoryIds)];
+    uniqueArieCategories.forEach(catId => {
+        const category = ARIE_CATEGORIES[catId];
+        if (category) {
+            const threshold = category.threshold;
+            if (threshold > 0) {
+                const percentage = Math.round((substance.quantity / threshold) * 100);
+                results.push({
+                    key: `${substance.id}-${catId}-arie`,
+                    percentage,
+                    progressValue: Math.min(percentage, 100),
+                    categoryName: category.name,
+                    categoryId: catId,
+                    isExceeded: percentage >= 100,
+                    type: 'ARIE',
+                });
+            }
         }
     });
 
@@ -96,7 +101,7 @@ function SubstanceContributions({ substance, mode }: { substance: Substance, mod
         return -1;
     });
 
-  }, [substance.quantity, substance.sevesoCategories, mode, substance.id]);
+  }, [substance.quantity, substance.sevesoCategoryIds, substance.arieCategoryIds, mode, substance.id]);
 
   if (contributions.length === 0) {
     return <div className="text-xs text-muted-foreground">-</div>;
@@ -150,16 +155,18 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[25%]">Productnaam</TableHead>
-            <TableHead>Categorieën</TableHead>
+            <TableHead className="w-[20%]">Productnaam</TableHead>
+            <TableHead className="w-[15%]">Seveso Categorieën</TableHead>
+            <TableHead className="w-[15%]">ARIE Categorieën</TableHead>
             <TableHead className="text-right w-24">Voorraad (ton)</TableHead>
-            <TableHead className="w-[25%]">Bijdrage per Categorie</TableHead>
+            <TableHead className="w-[20%]">Bijdrage per Categorie</TableHead>
             <TableHead className="text-right">Acties</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {inventory.map((substance) => {
-            const allSevesoCategories = (substance.sevesoCategories || []).map(id => SEVESO_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id)).filter(Boolean);
+            const allSevesoCategories = (substance.sevesoCategoryIds || []).map(id => SEVESO_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id)).filter(Boolean);
+            const allArieCategories = (substance.arieCategoryIds || []).map(id => ARIE_CATEGORIES[id]).filter(Boolean);
             
             return (
               <TableRow key={substance.id}>
@@ -174,7 +181,7 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Badge
-                              onClick={() => onShowExplanation(substance.id, cat.id)}
+                              onClick={() => onShowExplanation(substance.id, cat.id, 'seveso')}
                               className={cn("border-transparent cursor-pointer", groupToColorMap[cat.group])}
                             >
                               {cat.id}
@@ -182,13 +189,34 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{cat.name}</p>
-                            {ARIE_THRESHOLDS[cat.id] && <p className="text-xs text-[hsl(var(--arie-fg))]">Ook ARIE-relevant</p>}
                             <p className="text-xs text-muted-foreground">Klik voor onderbouwing</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     ))}
                   </div>
+                </TableCell>
+                <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                        {allArieCategories.map((cat) => (
+                            <TooltipProvider key={cat.id}>
+                                <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Badge
+                                    onClick={() => onShowExplanation(substance.id, cat.id, 'arie')}
+                                    className="border-transparent cursor-pointer bg-[hsl(var(--arie-bg))] text-[hsl(var(--arie-fg))]"
+                                    >
+                                    {cat.id}
+                                    </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{cat.name}</p>
+                                    <p className="text-xs text-muted-foreground">Klik voor onderbouwing</p>
+                                </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        ))}
+                    </div>
                 </TableCell>
                 <TableCell>
                   <Input
@@ -200,7 +228,7 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                   />
                 </TableCell>
                 <TableCell>
-                  <SubstanceContributions substance={substance} mode={thresholdMode} />
+                  <Contributions substance={substance} mode={thresholdMode} />
                 </TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => onDelete(substance.id)} aria-label={`Verwijder ${substance.productName}`}>
