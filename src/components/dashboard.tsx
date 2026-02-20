@@ -18,7 +18,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ inventory, thresholdMode, setThresholdMode }: DashboardProps) {
-  const { summationGroups, arieSummation, overallStatus, criticalGroup } = useSevesoCalculator(inventory, thresholdMode);
+  const { summationGroups, arieSummationGroups, overallStatus, criticalGroup, arieTotal, arieExceeded } = useSevesoCalculator(inventory, thresholdMode);
   const [selectedGroup, setSelectedGroup] = useState<SummationGroupType | null>(null);
 
   const getStatusIcon = () => {
@@ -40,7 +40,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
     }
   }
   
-  const ariePercentage = Math.round(arieSummation.totalRatio * 100);
+  const ariePercentage = Math.round(arieTotal * 100);
 
   return (
     <div className="space-y-6">
@@ -101,16 +101,39 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
       <Card>
         <CardHeader>
           <CardTitle>ARIE Sommatie</CardTitle>
-          <CardDescription>Totale ratio voor de ARIE-regeling.</CardDescription>
+          <CardDescription>Uitsplitsing van de ARIE-ratio per gevarengroep.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-lg">
+        <CardContent className="space-y-1">
+          {arieSummationGroups.map((group) => {
+            if (group.totalRatio === 0) return null;
+            // For ARIE, the percentage is relative to the total Arie percentage, but capped at 100 for the progress bar
+            const groupPercentageOfTotal = arieTotal > 0 ? (group.totalRatio / arieTotal) * 100 : 0;
+            return (
+              <div key={group.group} className="p-2 -m-2 rounded-lg">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <group.icon className="w-4 h-4 text-muted-foreground" />
+                    <span>{group.name}</span>
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">
+                    {Math.round(group.totalRatio * 100)}%
+                  </span>
+                </div>
+                <Progress 
+                  value={groupPercentageOfTotal} 
+                  className="h-2" 
+                  indicatorClassName='bg-arie-foreground'
+                />
+              </div>
+            );
+          })}
+          <div className="!mt-4 pt-4 border-t">
              <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2 text-sm font-medium">
                     <Briefcase className="w-4 h-4 text-muted-foreground" />
                     <span>ARIE Totaal</span>
                 </div>
-                <span className={cn("text-sm font-semibold", arieSummation.isExceeded && "text-destructive")}>
+                <span className={cn("text-sm font-semibold", arieExceeded && "text-destructive")}>
                     {ariePercentage}%
                 </span>
              </div>
@@ -118,7 +141,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
                 value={Math.min(ariePercentage, 100)} 
                 className="h-2" 
                 indicatorClassName={cn(
-                  arieSummation.isExceeded ? 'bg-destructive' : 'bg-arie-foreground'
+                  arieExceeded ? 'bg-destructive' : 'bg-arie-foreground'
                 )} 
               />
           </div>
@@ -149,15 +172,15 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
           <CardTitle>ARIE Conclusie</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center text-center">
-            {arieSummation.isExceeded ? (
+            {arieExceeded ? (
                 <ShieldAlert className="w-10 h-10 text-arie-foreground" />
             ) : (
                 <CheckCircle2 className="w-10 h-10 text-green-500" />
             )}
-            <p className={cn("mt-2 text-2xl font-bold", arieSummation.isExceeded ? 'text-arie-foreground' : 'text-green-600 dark:text-green-400')}>
-                {arieSummation.isExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig'}
+            <p className={cn("mt-2 text-2xl font-bold", arieExceeded ? 'text-arie-foreground' : 'text-green-600 dark:text-green-400')}>
+                {arieExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig'}
             </p>
-             {arieSummation.isExceeded ? (
+             {arieExceeded ? (
                  <p className="text-muted-foreground mt-1">
                     De sommatiewaarde van {ariePercentage}% overschrijdt de drempel.
                 </p>

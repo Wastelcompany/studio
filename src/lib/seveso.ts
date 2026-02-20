@@ -111,8 +111,8 @@ export const H_PHRASE_MAPPING: Record<string, string[]> = {
   'H205': ['P1a'], // Gevaar voor massa-explosie bij brand -> P1a ipv P1b
   
   // Physical - Flammable Gases / Aerosols
-  'H220': ['P2', 'ARIE-Gas-1'],
-  'H221': ['P2', 'ARIE-Gas-2'],
+  'H220': ['ARIE-Gas-1'],
+  'H221': ['ARIE-Gas-2'],
   'H222': ['P3b'], 'H223': ['P3a'],
   
   // Physical - Flammable Liquids
@@ -247,75 +247,75 @@ export const SUMMATION_GROUPS_CONFIG = [
 
 
 export const calculateSummations = (inventory: Substance[], mode: ThresholdMode): { 
-  summationGroups: SummationGroup[], 
-  arieSummation: { totalRatio: number, isExceeded: boolean },
+  summationGroups: SummationGroup[],
+  arieSummationGroups: SummationGroup[],
   overallStatus: 'Geen' | 'Lagedrempel' | 'Hogedrempel', 
-  criticalGroup: string | null 
+  criticalGroup: string | null,
+  arieTotal: number,
+  arieExceeded: boolean,
 } => {
-  const groupTotals: Record<string, number> = {
-    health: 0,
-    physical: 0,
-    environment: 0,
-    other: 0,
-    named: 0,
-  };
-
-  let arieTotalRatio = 0;
+  const sevesoGroupTotals: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0, named: 0 };
+  const arieGroupTotals: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0, named: 0 };
+  let totalArieRatio = 0;
 
   inventory.forEach(substance => {
     if (substance.quantity > 0) {
       // --- Seveso summation ---
-      const substanceSevesoContributions: Record<string, number> = {};
+      // For a single substance, find its highest contribution (max ratio) per group and add that to the group total.
+      const perGroupMaxRatio: Record<string, number> = {};
       substance.sevesoCategoryIds.forEach(catId => {
         const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-        const thresholdInfo = SEVESO_THRESHOLDS[catId] || (category as NamedSubstance)?.threshold;
-        
+        const thresholdInfo = SEVESO_THRESHOLDS[catId] || (category as any)?.threshold;
         if (category && thresholdInfo) {
-          const threshold = thresholdInfo[mode];
-          if (threshold > 0) {
-            const ratio = substance.quantity / threshold;
-            // Apply "whichever is the lower qualifying quantity" rule within a group for a single substance
-            if (!substanceSevesoContributions[category.group] || ratio > substanceSevesoContributions[category.group]) {
-               substanceSevesoContributions[category.group] = ratio;
+            const threshold = thresholdInfo[mode];
+            if (threshold > 0) {
+                const ratio = substance.quantity / threshold;
+                if (!perGroupMaxRatio[category.group] || ratio > perGroupMaxRatio[category.group]) {
+                    perGroupMaxRatio[category.group] = ratio;
+                }
             }
-          }
         }
       });
-      for (const group in substanceSevesoContributions) {
-        groupTotals[group] += substanceSevesoContributions[group];
+      for (const group in perGroupMaxRatio) {
+          sevesoGroupTotals[group] += perGroupMaxRatio[group];
       }
-
-      // Handle named substances separately from groups
-      if(substance.isNamedSubstance && substance.namedSubstanceName){
-          const named = Object.values(NAMED_SUBSTANCES).find(ns => ns.name === substance.namedSubstanceName);
-          if(named) {
-            const threshold = named.threshold[mode];
-            if (threshold > 0) {
-              groupTotals.named += substance.quantity / threshold;
-            }
-          }
-      }
-
 
       // --- ARIE summation ---
+      // For a single substance, find the lowest threshold across all its ARIE categories, calculate the ratio, and add that to the total.
+      // Then attribute this single contribution to the group of the "winning" category.
       let maxArieRatioForSubstance = 0;
+      let winningCatId: string | null = null;
       substance.arieCategoryIds.forEach(catId => {
           const arieThreshold = ARIE_THRESHOLDS[catId];
           if (arieThreshold && arieThreshold > 0) {
               const ratio = substance.quantity / arieThreshold;
               if (ratio > maxArieRatioForSubstance) {
                   maxArieRatioForSubstance = ratio;
+                  winningCatId = catId;
               }
           }
       });
-      arieTotalRatio += maxArieRatioForSubstance;
+      
+      if(maxArieRatioForSubstance > 0 && winningCatId) {
+        totalArieRatio += maxArieRatioForSubstance;
+        const category = ALL_CATEGORIES[winningCatId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === winningCatId);
+        if(category) {
+            arieGroupTotals[category.group] += maxArieRatioForSubstance;
+        }
+      }
     }
   });
 
   const summationGroups: SummationGroup[] = SUMMATION_GROUPS_CONFIG.map(config => ({
     ...config,
-    totalRatio: groupTotals[config.group] || 0,
-    isExceeded: (groupTotals[config.group] || 0) >= 1,
+    totalRatio: sevesoGroupTotals[config.group] || 0,
+    isExceeded: (sevesoGroupTotals[config.group] || 0) >= 1,
+  }));
+  
+  const arieSummationGroups: SummationGroup[] = SUMMATION_GROUPS_CONFIG.map(config => ({
+    ...config,
+    totalRatio: arieGroupTotals[config.group] || 0,
+    isExceeded: false, // For ARIE, only the total matters, not individual group excess.
   }));
 
   const isHighThreshold = summationGroups.some(g => g.totalRatio >= 1 && mode === 'high');
@@ -332,16 +332,13 @@ export const calculateSummations = (inventory: Substance[], mode: ThresholdMode)
     .filter(g => g.totalRatio > 0)
     .sort((a, b) => b.totalRatio - a.totalRatio)[0];
   
-  const arieSummation = {
-      totalRatio: arieTotalRatio,
-      isExceeded: arieTotalRatio >= 1,
-  };
-
   return { 
     summationGroups,
-    arieSummation, 
+    arieSummationGroups,
     overallStatus, 
-    criticalGroup: mostCriticalGroup ? mostCriticalGroup.name : null 
+    criticalGroup: mostCriticalGroup ? mostCriticalGroup.name : null,
+    arieTotal: totalArieRatio,
+    arieExceeded: totalArieRatio >= 1,
   };
 };
 
