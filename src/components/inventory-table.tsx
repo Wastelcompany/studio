@@ -143,10 +143,11 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[25%]">Productnaam</TableHead>
-            <TableHead>Seveso & ARIE Categorieën</TableHead>
-            <TableHead className="text-right">Voorraad (ton)</TableHead>
-            <TableHead className="w-[25%]">Bijdrage per Categorie</TableHead>
+            <TableHead className="w-[20%]">Productnaam</TableHead>
+            <TableHead>Seveso Categorieën</TableHead>
+            <TableHead>ARIE Categorieën</TableHead>
+            <TableHead className="text-right w-24">Voorraad (ton)</TableHead>
+            <TableHead className="w-[20%]">Bijdrage per Categorie</TableHead>
             <TableHead className="text-right">Acties</TableHead>
           </TableRow>
         </TableHeader>
@@ -154,7 +155,6 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
           {inventory.map((substance) => {
             const allSevesoCategories = (substance.sevesoCategories || []).map(id => SEVESO_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id)).filter(Boolean);
             const allArieCategories = (substance.arieCategories || []).map(id => ARIE_CATEGORIES[id]).filter(Boolean);
-            const allCategories = [...allSevesoCategories, ...allArieCategories];
             
             return (
               <TableRow key={substance.id}>
@@ -164,7 +164,7 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    {allCategories.map((cat) => (
+                    {allSevesoCategories.map((cat) => (
                       <TooltipProvider key={cat.id}>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -184,7 +184,29 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                     ))}
                   </div>
                 </TableCell>
-                <TableCell className="text-right">
+                 <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {allArieCategories.map((cat) => (
+                      <TooltipProvider key={cat.id}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              onClick={() => onShowExplanation(substance.id, cat.id)}
+                              className={cn("border-transparent cursor-pointer", groupToColorMap[cat.group])}
+                            >
+                              {cat.id}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{cat.name}</p>
+                            <p className="text-xs text-muted-foreground">Klik voor onderbouwing</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
+                  </div>
+                </TableCell>
+                <TableCell>
                   <Input
                     type="number"
                     value={substance.quantity}

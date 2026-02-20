@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea } from './ui/scroll-area';
 import type { Substance } from '@/lib/types';
-import { H_PHRASE_DESCRIPTIONS, H_PHRASE_MAPPING, NAMED_SUBSTANCES, SEVESO_CATEGORIES } from '@/lib/seveso';
+import { H_PHRASE_DESCRIPTIONS, H_PHRASE_MAPPING, NAMED_SUBSTANCES, SEVESO_CATEGORIES, ARIE_CATEGORIES, ARIE_H_PHRASE_MAPPING } from '@/lib/seveso';
 
 interface CategoryExplanationDialogProps {
   isOpen: boolean;
@@ -38,19 +38,19 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
     return null;
   }
   
-  const category = SEVESO_CATEGORIES[categoryId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === categoryId);
+  const category = SEVESO_CATEGORIES[categoryId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === categoryId) || ARIE_CATEGORIES[categoryId];
 
   const explanations: Explanation[] = [];
 
   // Check H-phrases
   substance.hStatements.forEach(hStatement => {
     const code = hStatement.split(' ')[0].toUpperCase();
-    if (H_PHRASE_MAPPING[code] === categoryId) {
+    if (H_PHRASE_MAPPING[code] === categoryId || ARIE_H_PHRASE_MAPPING[code] === categoryId) {
         explanations.push({
             source: code,
             description: H_PHRASE_DESCRIPTIONS[code] || hStatement,
             category: categoryId,
-            categoryName: category?.name || 'Onbekend'
+            categoryName: category?.name || 'Onbekende categorie'
         });
     }
   });
