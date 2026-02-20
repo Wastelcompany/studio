@@ -26,6 +26,7 @@ interface InventoryTableProps {
   onDelete: (id: string) => void;
   thresholdMode: ThresholdMode;
   onUpload: () => void;
+  onShowExplanation: (substanceId: string, categoryId: string) => void;
 }
 
 const groupToColorMap: Record<string, string> = SUMMATION_GROUPS_CONFIG.reduce((acc, group) => {
@@ -85,7 +86,7 @@ function ContributionCard({ substance, mode }: { substance: Substance, mode: Thr
 }
 
 
-export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, thresholdMode, onUpload }: InventoryTableProps) {
+export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, thresholdMode, onUpload, onShowExplanation }: InventoryTableProps) {
   if (inventory.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-16 px-4 border-2 border-dashed rounded-lg">
@@ -126,13 +127,15 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Badge
-                              className={cn("border-transparent", groupToColorMap[cat.group])}
+                              onClick={() => onShowExplanation(substance.id, cat.id)}
+                              className={cn("border-transparent cursor-pointer", groupToColorMap[cat.group])}
                             >
                               {cat.id}
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{cat.name}</p>
+                            <p className="text-xs text-muted-foreground">Klik voor onderbouwing</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>

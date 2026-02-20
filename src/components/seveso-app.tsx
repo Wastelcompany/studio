@@ -9,6 +9,7 @@ import SdsUploadDialog from './sds-upload-dialog';
 import ReferenceGuideDialog from './reference-guide-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import CategoryExplanationDialog from './category-explanation-dialog';
 
 export default function SevesoApp() {
   const [inventory, setInventory] = useState<Substance[]>([]);
@@ -19,6 +20,8 @@ export default function SevesoApp() {
   const [isClearAlertOpen, setIsClearAlertOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  const [explanationData, setExplanationData] = useState<{ substance: Substance | null; categoryId: string | null }>({ substance: null, categoryId: null });
 
   const handleAddSubstance = (newSubstance: Omit<Substance, 'id' | 'quantity' | 'sevesoCategories'> & {sevesoCategories: string[]}) => {
     setInventory(prev => [...prev, {
@@ -112,6 +115,13 @@ export default function SevesoApp() {
     fileInputRef.current?.click();
   };
 
+  const handleShowExplanation = (substanceId: string, categoryId: string) => {
+    const substance = inventory.find(sub => sub.id === substanceId);
+    if (substance) {
+      setExplanationData({ substance, categoryId });
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 print-container">
       <SevesoHeader
@@ -138,6 +148,7 @@ export default function SevesoApp() {
             onDelete={handleDeleteSubstance}
             thresholdMode={thresholdMode}
             onUpload={() => setIsSdsUploadOpen(true)}
+            onShowExplanation={handleShowExplanation}
           />
         </div>
         <aside className="lg:w-1/3 lg:sticky lg:top-8 h-fit print-dashboard-container print:static">
@@ -176,6 +187,13 @@ export default function SevesoApp() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CategoryExplanationDialog
+        isOpen={!!explanationData.substance}
+        onOpenChange={(open) => !open && setExplanationData({ substance: null, categoryId: null })}
+        substance={explanationData.substance}
+        categoryId={explanationData.categoryId}
+      />
     </div>
   );
 }
