@@ -107,7 +107,6 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
         </CardHeader>
         <CardContent className="space-y-1">
           {arieSummationGroups.map((group) => {
-            if (group.totalRatio === 0) return null;
             const percentage = Math.round(group.totalRatio * 100);
             return (
               <div key={group.group} className="p-2 -m-2 rounded-lg">
