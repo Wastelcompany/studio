@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSevesoCalculator } from "@/hooks/use-seveso-calculator";
-import type { Substance, SummationGroup as SummationGroupType } from "@/lib/types";
+import type { Substance, SummationGroup as SummationGroupType, ThresholdMode } from "@/lib/types";
 import { AlertCircle, CheckCircle2, ShieldAlert, Briefcase } from "lucide-react";
 import GroupDetailsDialog from "./group-details-dialog";
 import { cn } from "@/lib/utils";
@@ -101,13 +101,14 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
       <Card>
         <CardHeader>
           <CardTitle>ARIE Sommatie</CardTitle>
-          <CardDescription>Uitsplitsing van de ARIE-ratio per gevarengroep.</CardDescription>
+          <CardDescription>Uitsplitsing van de bijdrage aan de ARIE-somregel per gevarengroep.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-1">
           {arieSummationGroups.map((group) => {
-            if (group.totalRatio === 0) return null;
-            // For ARIE, the percentage is relative to the total Arie percentage, but capped at 100 for the progress bar
-            const groupPercentageOfTotal = arieTotal > 0 ? (group.totalRatio / arieTotal) * 100 : 0;
+            if (group.totalRatio === 0) {
+              return null;
+            }
+            const percentage = Math.round(group.totalRatio * 100);
             return (
               <div key={group.group} className="p-2 -m-2 rounded-lg">
                 <div className="flex items-center justify-between mb-1">
@@ -116,12 +117,12 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
                     <span>{group.name}</span>
                   </div>
                   <span className="text-sm font-semibold text-foreground">
-                    {Math.round(group.totalRatio * 100)}%
+                    {percentage}%
                   </span>
                 </div>
-                <Progress 
-                  value={groupPercentageOfTotal} 
-                  className="h-2" 
+                <Progress
+                  value={Math.min(percentage, 100)}
+                  className="h-2"
                   indicatorClassName='bg-arie-foreground'
                 />
               </div>
@@ -167,7 +168,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
         </CardContent>
       </Card>
 
-      <Card className="bg-arie">
+      <Card className="bg-arie-bg">
         <CardHeader className="items-center">
           <CardTitle>ARIE Conclusie</CardTitle>
         </CardHeader>
