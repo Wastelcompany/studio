@@ -44,11 +44,6 @@ export default function SevesoApp() {
     setIsClearAlertOpen(false);
   };
   
-  const handlePrint = () => {
-    console.log("🔥 Print functie is aangeroepen!");
-    window.print();
-  };
-
   const handleExport = () => {
     if (inventory.length === 0) {
       toast({
@@ -129,7 +124,6 @@ export default function SevesoApp() {
         onUpload={() => setIsSdsUploadOpen(true)}
         onClearAll={() => setIsClearAlertOpen(true)}
         onShowReference={() => setIsReferenceGuideOpen(true)}
-        onPrint={handlePrint}
         onImport={handleImportClick}
         onExport={handleExport}
       />

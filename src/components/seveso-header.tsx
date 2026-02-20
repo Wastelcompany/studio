@@ -7,7 +7,6 @@ interface SevesoHeaderProps {
   onUpload: () => void;
   onClearAll: () => void;
   onShowReference: () => void;
-  onPrint: () => void;
   onImport: () => void;
   onExport: () => void;
 }
@@ -16,10 +15,14 @@ export default function SevesoHeader({
   onUpload,
   onClearAll,
   onShowReference,
-  onPrint,
   onImport,
   onExport,
 }: SevesoHeaderProps) {
+
+  const handlePrintClick = () => {
+    console.log("🔥 Print button clicked directly in header!");
+    window.print();
+  };
 
   return (
     <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -31,7 +34,7 @@ export default function SevesoHeader({
         <Button onClick={onUpload} type="button"><Upload />Upload SDS</Button>
         <Button variant="outline" onClick={onImport} type="button"><FileUp />Import</Button>
         <Button variant="outline" onClick={onExport} type="button"><FileText />Export</Button>
-        <Button variant="outline" onClick={onPrint} type="button"><Printer />Afdrukken</Button>
+        <Button variant="outline" onClick={handlePrintClick} type="button"><Printer />Afdrukken</Button>
         <Button variant="outline" size="icon" onClick={onShowReference} aria-label="Referentiegids" type="button">
           <Info />
         </Button>
