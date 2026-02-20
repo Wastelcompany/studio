@@ -1,23 +1,17 @@
 export type ThresholdMode = 'low' | 'high';
 
-export interface SevesoCategory {
+export interface HazardCategory {
   id: string;
   name: string;
   group: 'health' | 'physical' | 'environment' | 'other' | 'named';
+}
+
+export interface NamedSubstance extends HazardCategory {
+  cas: string;
   threshold: {
     low: number;
     high: number;
   };
-}
-
-export interface ArieCategory {
-    id: string;
-    name: string;
-    threshold: number; // in tons
-}
-
-export interface NamedSubstance extends SevesoCategory {
-  cas: string;
 }
 
 export interface Substance {

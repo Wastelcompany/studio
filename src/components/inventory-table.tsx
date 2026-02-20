@@ -14,8 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Trash2, FileSpreadsheet, Upload } from "lucide-react";
-import type { Substance, ThresholdMode, SevesoCategory, NamedSubstance } from "@/lib/types";
-import { SEVESO_CATEGORIES, NAMED_SUBSTANCES, SUMMATION_GROUPS_CONFIG, ARIE_CATEGORIES } from "@/lib/seveso";
+import type { Substance, ThresholdMode, HazardCategory } from "@/lib/types";
+import { ALL_CATEGORIES, NAMED_SUBSTANCES, SUMMATION_GROUPS_CONFIG, SEVESO_THRESHOLDS, ARIE_THRESHOLDS } from "@/lib/seveso";
 import { Progress } from './ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -51,57 +51,66 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
         type: 'Seveso' | 'ARIE';
     }[] = [];
 
+    const addedContributions = new Set<string>();
+
     // Seveso contributions
-    const uniqueSevesoCategories = [...new Set(substance.sevesoCategoryIds)];
-    uniqueSevesoCategories.forEach(catId => {
-        const category = SEVESO_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-        if (category) {
-            const threshold = category.threshold[mode];
-            if (threshold > 0) {
-                const percentage = Math.round((substance.quantity / threshold) * 100);
-                results.push({
-                    key: `${substance.id}-${catId}-seveso`,
-                    percentage,
-                    progressValue: Math.min(percentage, 100),
-                    categoryName: category.name,
-                    categoryId: catId,
-                    isExceeded: percentage >= 100,
-                    type: 'Seveso',
-                });
-            }
-        }
+    substance.sevesoCategoryIds.forEach(catId => {
+      const key = `${catId}-Seveso`;
+      if(addedContributions.has(key)) return;
+
+      const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+      const thresholdInfo = SEVESO_THRESHOLDS[catId] || (category as any)?.threshold;
+      if (category && thresholdInfo) {
+          const threshold = thresholdInfo[mode];
+          if (threshold > 0) {
+              const percentage = Math.round((substance.quantity / threshold) * 100);
+              results.push({
+                  key: `${substance.id}-${catId}-seveso`,
+                  percentage,
+                  progressValue: Math.min(percentage, 100),
+                  categoryName: category.name,
+                  categoryId: catId,
+                  isExceeded: percentage >= 100,
+                  type: 'Seveso',
+              });
+              addedContributions.add(key);
+          }
+      }
     });
 
     // ARIE contributions
-    const uniqueArieCategories = [...new Set(substance.arieCategoryIds)];
-    uniqueArieCategories.forEach(catId => {
-        const category = ARIE_CATEGORIES[catId];
-        if (category) {
-            const threshold = category.threshold;
-            if (threshold > 0) {
-                const percentage = Math.round((substance.quantity / threshold) * 100);
-                results.push({
-                    key: `${substance.id}-${catId}-arie`,
-                    percentage,
-                    progressValue: Math.min(percentage, 100),
-                    categoryName: category.name,
-                    categoryId: catId,
-                    isExceeded: percentage >= 100,
-                    type: 'ARIE',
-                });
-            }
-        }
+    substance.arieCategoryIds.forEach(catId => {
+      const key = `${catId}-ARIE`;
+      if(addedContributions.has(key)) return;
+
+      const category = ALL_CATEGORIES[catId];
+      const threshold = ARIE_THRESHOLDS[catId];
+      if (category && threshold) {
+          if (threshold > 0) {
+              const percentage = Math.round((substance.quantity / threshold) * 100);
+              results.push({
+                  key: `${substance.id}-${catId}-arie`,
+                  percentage,
+                  progressValue: Math.min(percentage, 100),
+                  categoryName: category.name,
+                  categoryId: catId,
+                  isExceeded: percentage >= 100,
+                  type: 'ARIE',
+              });
+              addedContributions.add(key);
+          }
+      }
     });
 
-    return results.filter(item => item.percentage > 0).sort((a, b) => {
-        if (a.categoryId !== b.categoryId) {
-            return a.categoryId.localeCompare(b.categoryId);
-        }
-        if (a.type === 'ARIE') return 1; // ARIE comes after Seveso for the same category
-        return -1;
+    return results.sort((a, b) => {
+      if (a.categoryId.startsWith('ARIE') && !b.categoryId.startsWith('ARIE')) return 1;
+      if (!a.categoryId.startsWith('ARIE') && b.categoryId.startsWith('ARIE')) return -1;
+      const catComp = a.categoryId.localeCompare(b.categoryId);
+      if (catComp !== 0) return catComp;
+      return a.type.localeCompare(b.type);
     });
 
-  }, [substance.quantity, substance.sevesoCategoryIds, substance.arieCategoryIds, mode, substance.id]);
+  }, [substance, mode]);
 
   if (contributions.length === 0) {
     return <div className="text-xs text-muted-foreground">-</div>;
@@ -165,8 +174,8 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
         </TableHeader>
         <TableBody>
           {inventory.map((substance) => {
-            const allSevesoCategories = (substance.sevesoCategoryIds || []).map(id => SEVESO_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id)).filter(Boolean);
-            const allArieCategories = (substance.arieCategoryIds || []).map(id => ARIE_CATEGORIES[id]).filter(Boolean);
+            const allSevesoCategories = [...new Set(substance.sevesoCategoryIds)].map(id => ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id)).filter(Boolean);
+            const allArieCategories = [...new Set(substance.arieCategoryIds)].map(id => ALL_CATEGORIES[id]).filter(Boolean);
             
             return (
               <TableRow key={substance.id}>

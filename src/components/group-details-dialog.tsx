@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { Substance, SummationGroup, ThresholdMode } from '@/lib/types';
-import { SEVESO_CATEGORIES, NAMED_SUBSTANCES } from '@/lib/seveso';
+import { ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS } from '@/lib/seveso';
 import { ScrollArea } from './ui/scroll-area';
 
 interface GroupDetailsDialogProps {
@@ -36,12 +36,15 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
       .map(substance => {
         let contribution = 0;
         
-        substance.sevesoCategories.forEach(catId => {
-          const category = SEVESO_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+        substance.sevesoCategoryIds.forEach(catId => {
+          const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
           if (category && category.group === group.group) {
-            const threshold = category.threshold[mode];
-            if (threshold > 0 && substance.quantity > 0) {
-              contribution += substance.quantity / threshold;
+            const thresholdInfo = SEVESO_THRESHOLDS[catId] || (category as any)?.threshold;
+            if (thresholdInfo) {
+              const threshold = thresholdInfo[mode];
+              if (threshold > 0 && substance.quantity > 0) {
+                contribution += substance.quantity / threshold;
+              }
             }
           }
         });

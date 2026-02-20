@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea } from './ui/scroll-area';
 import type { Substance } from '@/lib/types';
-import { H_PHRASE_DESCRIPTIONS, SEVESO_H_PHRASE_MAPPING, ARIE_H_PHRASE_MAPPING, SEVESO_CATEGORIES, ARIE_CATEGORIES, NAMED_SUBSTANCES } from '@/lib/seveso';
+import { H_PHRASE_DESCRIPTIONS, H_PHRASE_MAPPING, ALL_CATEGORIES, NAMED_SUBSTANCES } from '@/lib/seveso';
 
 interface CategoryExplanationDialogProps {
   isOpen: boolean;
@@ -39,23 +39,16 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
     return null;
   }
   
-  const isSeveso = categoryType === 'seveso';
-  const category = isSeveso 
-    ? SEVESO_CATEGORIES[categoryId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === categoryId)
-    : ARIE_CATEGORIES[categoryId];
-
-  const mapping = isSeveso ? SEVESO_H_PHRASE_MAPPING : ARIE_H_PHRASE_MAPPING;
+  const category = ALL_CATEGORIES[categoryId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === categoryId);
 
   const explanations: Explanation[] = [];
 
   // Check H-phrases for mapping
   substance.hStatements.forEach(hStatement => {
     const code = hStatement.split(' ')[0].toUpperCase();
-    const isMatch = isSeveso
-      ? (mapping as Record<string, string>)[code] === categoryId
-      : (mapping as Record<string, string[]>)[code]?.includes(categoryId);
+    const mappedCategories = H_PHRASE_MAPPING[code] || [];
 
-    if (isMatch) {
+    if (mappedCategories.includes(categoryId)) {
         explanations.push({
             source: code,
             description: H_PHRASE_DESCRIPTIONS[code] || hStatement,
@@ -66,7 +59,7 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
   });
 
   // Check for named substance match (only for Seveso)
-  if (isSeveso && substance.casNumber && NAMED_SUBSTANCES[substance.casNumber]?.id === categoryId) {
+  if (categoryType === 'seveso' && substance.casNumber && NAMED_SUBSTANCES[substance.casNumber]?.id === categoryId) {
     const namedSubstance = NAMED_SUBSTANCES[substance.casNumber];
     explanations.push({
         source: `CAS: ${substance.casNumber}`,
