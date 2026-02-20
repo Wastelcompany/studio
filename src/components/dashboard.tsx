@@ -98,57 +98,6 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
         </CardContent>
       </Card>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>ARIE Sommatie</CardTitle>
-          <CardDescription>Uitsplitsing van de bijdrage aan de ARIE-somregel per gevarengroep.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-1">
-          {arieSummationGroups.map((group) => {
-            if (group.totalRatio === 0) {
-              return null;
-            }
-            const percentage = Math.round(group.totalRatio * 100);
-            return (
-              <div key={group.group} className="p-2 -m-2 rounded-lg">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <group.icon className="w-4 h-4 text-muted-foreground" />
-                    <span>{group.name}</span>
-                  </div>
-                  <span className="text-sm font-semibold text-foreground">
-                    {percentage}%
-                  </span>
-                </div>
-                <Progress
-                  value={Math.min(percentage, 100)}
-                  className="h-2"
-                  indicatorClassName='bg-arie-fg'
-                />
-              </div>
-            );
-          })}
-          <div className="!mt-4 pt-4 border-t">
-             <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                    <Briefcase className="w-4 h-4 text-muted-foreground" />
-                    <span>ARIE Totaal</span>
-                </div>
-                <span className={cn("text-sm font-semibold", arieExceeded && "text-destructive")}>
-                    {ariePercentage}%
-                </span>
-             </div>
-             <Progress 
-                value={Math.min(ariePercentage, 100)} 
-                className="h-2" 
-                indicatorClassName={cn(
-                  arieExceeded ? 'bg-destructive' : 'bg-arie-fg'
-                )} 
-              />
-          </div>
-        </CardContent>
-      </Card>
-
       <Card className="bg-primary/5">
         <CardHeader className="items-center">
           <CardTitle>Seveso Conclusie</CardTitle>
