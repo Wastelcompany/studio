@@ -40,7 +40,7 @@ export async function aiMsdsDataExtraction(input: AiMsdsDataExtractionInput): Pr
 
 const prompt = ai.definePrompt({
   name: 'aiMsdsDataExtractionPrompt',
-  model: 'gemini-pro',
+  model: 'googleai/gemini-2.5-flash',
   input: { schema: AiMsdsDataExtractionInputSchema },
   output: { schema: AiMsdsDataExtractionOutputSchema },
   prompt: `You are an expert in chemical safety and Seveso III Directive (2012/18/EU), specifically Annex I, Part 2 for 'Named Substances'.
