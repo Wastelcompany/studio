@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, Printer, Trash2, Info, FileUp } from 'lucide-react';
+import { Upload, FileText, FileDown, Trash2, Info, FileUp, Loader2 } from 'lucide-react';
 
 interface SevesoHeaderProps {
   onUpload: () => void;
@@ -9,6 +9,8 @@ interface SevesoHeaderProps {
   onShowReference: () => void;
   onImport: () => void;
   onExport: () => void;
+  onSaveAsPdf: () => void;
+  isSavingPdf: boolean;
 }
 
 export default function SevesoHeader({
@@ -17,12 +19,9 @@ export default function SevesoHeader({
   onShowReference,
   onImport,
   onExport,
+  onSaveAsPdf,
+  isSavingPdf,
 }: SevesoHeaderProps) {
-
-  const handlePrintClick = () => {
-    console.log("🔥 Print button clicked directly in header!");
-    window.print();
-  };
 
   return (
     <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -34,7 +33,10 @@ export default function SevesoHeader({
         <Button onClick={onUpload} type="button"><Upload />Upload SDS</Button>
         <Button variant="outline" onClick={onImport} type="button"><FileUp />Import</Button>
         <Button variant="outline" onClick={onExport} type="button"><FileText />Export</Button>
-        <Button variant="outline" onClick={handlePrintClick} type="button"><Printer />Afdrukken</Button>
+        <Button variant="outline" onClick={onSaveAsPdf} type="button" disabled={isSavingPdf}>
+          {isSavingPdf ? <Loader2 className="animate-spin" /> : <FileDown />}
+          {isSavingPdf ? 'Bezig...' : 'Opslaan als PDF'}
+        </Button>
         <Button variant="outline" size="icon" onClick={onShowReference} aria-label="Referentiegids" type="button">
           <Info />
         </Button>

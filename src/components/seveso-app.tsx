@@ -10,6 +10,8 @@ import ReferenceGuideDialog from './reference-guide-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function SevesoApp() {
   const [inventory, setInventory] = useState<Substance[]>([]);
@@ -22,6 +24,94 @@ export default function SevesoApp() {
   const { toast } = useToast();
 
   const [explanationData, setExplanationData] = useState<{ substance: Substance | null; categoryId: string | null }>({ substance: null, categoryId: null });
+  
+  const [isSavingPdf, setIsSavingPdf] = useState(false);
+  const dashboardRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  const handleSaveAsPdf = async () => {
+    const dashboardEl = dashboardRef.current;
+    const tableEl = tableRef.current;
+
+    if (!dashboardEl || !tableEl) {
+        toast({
+            variant: "destructive",
+            title: "Fout bij PDF genereren",
+            description: "De benodigde componenten konden niet gevonden worden.",
+        });
+        return;
+    }
+
+    setIsSavingPdf(true);
+    const { id: toastId } = toast({
+        title: "PDF genereren...",
+        description: "Rapport wordt samengesteld. Een ogenblik geduld.",
+    });
+
+    try {
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 10;
+        const contentWidth = pdfWidth - margin * 2;
+        let finalY = margin;
+
+        // Add title
+        pdf.setFontSize(18);
+        pdf.text("Seveso Drempelwaarde Rapport", margin, finalY + 5);
+        finalY += 15;
+
+        // 1. Process Dashboard
+        const dashboardCanvas = await html2canvas(dashboardEl, { scale: 2, backgroundColor: '#ffffff' });
+        const dashboardImgData = dashboardCanvas.toDataURL('image/png');
+        const dashboardImgProps = pdf.getImageProperties(dashboardImgData);
+        const dashboardPdfHeight = (dashboardImgProps.height * contentWidth) / dashboardImgProps.width;
+        
+        pdf.setFontSize(14);
+        pdf.text("Sommatie Overzicht", margin, finalY);
+        finalY += 8;
+        pdf.addImage(dashboardImgData, 'PNG', margin, finalY, contentWidth, dashboardPdfHeight);
+        finalY += dashboardPdfHeight;
+
+        // 2. Process Table
+        const tableCanvas = await html2canvas(tableEl, { scale: 2, backgroundColor: '#ffffff' });
+        const tableImgData = tableCanvas.toDataURL('image/png');
+        const tableImgProps = pdf.getImageProperties(tableImgData);
+        const tablePdfHeight = (tableImgProps.height * contentWidth) / tableImgProps.width;
+
+        finalY += 15; // Space between sections
+
+        // Check if table fits on current page
+        if (finalY + tablePdfHeight + 20 > pdfHeight) {
+            pdf.addPage();
+            finalY = margin; // Reset Y for new page
+        }
+        
+        pdf.setFontSize(14);
+        pdf.text('Inventaris Details', margin, finalY);
+        finalY += 8;
+        pdf.addImage(tableImgData, 'PNG', margin, finalY, contentWidth, tablePdfHeight);
+
+        pdf.save('seveso-rapport.pdf');
+
+        toast({
+            title: "PDF opgeslagen",
+            description: "Het rapport is succesvol gedownload."
+        });
+
+    } catch (error) {
+        console.error("PDF Generation Error:", error);
+        toast({
+            variant: "destructive",
+            title: "PDF Generatie Mislukt",
+            description: "Er is een onverwachte fout opgetreden.",
+        });
+    } finally {
+        setIsSavingPdf(false);
+        toast().dismiss(toastId);
+    }
+  };
+
 
   const handleAddSubstance = (newSubstance: Omit<Substance, 'id' | 'quantity' | 'sevesoCategories'> & {sevesoCategories: string[]}) => {
     setInventory(prev => [...prev, {
@@ -126,6 +216,8 @@ export default function SevesoApp() {
         onShowReference={() => setIsReferenceGuideOpen(true)}
         onImport={handleImportClick}
         onExport={handleExport}
+        onSaveAsPdf={handleSaveAsPdf}
+        isSavingPdf={isSavingPdf}
       />
        <input
         type="file"
@@ -136,7 +228,7 @@ export default function SevesoApp() {
       />
       
       <div className="mt-6 flex flex-col lg:flex-row gap-8">
-        <div className="flex-grow lg:w-2/3">
+        <div className="flex-grow lg:w-2/3" ref={tableRef}>
           <InventoryTable
             inventory={inventory}
             onUpdateQuantity={handleUpdateSubstanceQuantity}
@@ -146,7 +238,7 @@ export default function SevesoApp() {
             onShowExplanation={handleShowExplanation}
           />
         </div>
-        <aside className="lg:w-1/3 lg:sticky lg:top-8 h-fit">
+        <aside className="lg:w-1/3 lg:sticky lg:top-8 h-fit" ref={dashboardRef}>
           <Dashboard
             inventory={inventory}
             thresholdMode={thresholdMode}
