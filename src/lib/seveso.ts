@@ -40,12 +40,26 @@ export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
 };
 
 export const ARIE_CATEGORIES: Record<string, ArieCategory> = {
-    'ARIE-Tox': { id: 'ARIE-Tox', name: 'Acuut toxisch Cat. 1, 2 of 3', group: 'arie', threshold: 0.5 }, // 500 kg
-    'ARIE-STOT': { id: 'ARIE-STOT', name: 'STOT (specifieke doelorgaantoxiciteit) Cat. 1', group: 'arie', threshold: 0.5 }, // 500 kg
-    'ARIE-CMR': { id: 'ARIE-CMR', name: 'CMR (kankerverwekkend, mutageen, reprotoxisch) Cat. 1A of 1B', group: 'arie', threshold: 0.5 }, // 500 kg
-    'ARIE-Exp': { id: 'ARIE-Exp', name: 'Ontplofbaar', group: 'arie', threshold: 0.05 }, // 50 kg
-    'ARIE-Flam-1': { id: 'ARIE-Flam-1', name: 'Ontvlambare vloeistoffen Cat. 1', group: 'arie', threshold: 1 }, // 1000 kg
-    'ARIE-Flam-2': { id: 'ARIE-Flam-2', name: 'Ontvlambare vloeistoffen Cat. 2', group: 'arie', threshold: 10 }, // 10000 kg
+    // 1. Vergiftiging
+    'ARIE-Tox1': { id: 'ARIE-Tox1', name: 'Acuut toxisch cat. 1', group: 'arie', threshold: 0.05 }, // 50 kg
+    'ARIE-Tox2': { id: 'ARIE-Tox2', name: 'Acuut toxisch cat. 2', group: 'arie', threshold: 0.2 }, // 200 kg
+    'ARIE-Tox3d': { id: 'ARIE-Tox3d', name: 'Acuut toxisch cat. 3 (huid)', group: 'arie', threshold: 0.5 }, // 500 kg
+    'ARIE-Tox3i': { id: 'ARIE-Tox3i', name: 'Acuut toxisch cat. 3 (inademing)', group: 'arie', threshold: 0.5 }, // 500 kg
+    'ARIE-STOT-SE1': { id: 'ARIE-STOT-SE1', name: 'STOT eenmalig cat. 1', group: 'arie', threshold: 0.5 }, // 500 kg
+    'ARIE-STOT-RE1': { id: 'ARIE-STOT-RE1', name: 'STOT herhaald cat. 1', group: 'arie', threshold: 0.5 }, // 500 kg
+    
+    // 2. Fysische gevaren
+    'ARIE-Exp': { id: 'ARIE-Exp', name: 'Ontplofbaar (subkl. 1.1-1.6)', group: 'arie', threshold: 0.05 }, // 50 kg
+    'ARIE-SelfReact': { id: 'ARIE-SelfReact', name: 'Zelfontledend type A/B', group: 'arie', threshold: 0.05 }, // 50 kg
+    'ARIE-OrgPerox': { id: 'ARIE-OrgPerox', name: 'Organische peroxiden type A/B', group: 'arie', threshold: 0.05 }, // 50 kg
+    'ARIE-Flam1': { id: 'ARIE-Flam1', name: 'Ontvlambare vloeistoffen cat. 1', group: 'arie', threshold: 1 }, // 1000 kg
+    'ARIE-Flam2': { id: 'ARIE-Flam2', name: 'Ontvlambare vloeistoffen cat. 2', group: 'arie', threshold: 10 }, // 10000 kg
+    'ARIE-Pyro': { id: 'ARIE-Pyro', name: 'Pyrofore stoffen cat. 1', group: 'arie', threshold: 0.05 }, // 50 kg
+
+    // 3. CMR
+    'ARIE-Carc1': { id: 'ARIE-Carc1', name: 'Kankerverwekkend cat. 1A/1B', group: 'arie', threshold: 0.5 }, // 500 kg
+    'ARIE-Muta1': { id: 'ARIE-Muta1', name: 'Mutageen cat. 1A/1B', group: 'arie', threshold: 0.5 }, // 500 kg
+    'ARIE-Repr1': { id: 'ARIE-Repr1', name: 'Reprotoxisch cat. 1A/1B', group: 'arie', threshold: 0.5 }, // 500 kg
 };
 
 export const H_PHRASE_MAPPING: Record<string, string> = {
@@ -78,51 +92,74 @@ export const H_PHRASE_MAPPING: Record<string, string> = {
   'H350': 'O3', 'H340': 'O3', 'H360': 'O3',
 };
 
-export const ARIE_H_PHRASE_MAPPING: Record<string, string> = {
-    'H300': 'ARIE-Tox', 'H310': 'ARIE-Tox', 'H330': 'ARIE-Tox',
-    'H301': 'ARIE-Tox', 'H311': 'ARIE-Tox', 'H331': 'ARIE-Tox',
-    'H370': 'ARIE-STOT', 'H372': 'ARIE-STOT',
-    'H340': 'ARIE-CMR', 'H350': 'ARIE-CMR', 'H360': 'ARIE-CMR',
-    'H200': 'ARIE-Exp', 'H201': 'ARIE-Exp', 'H202': 'ARIE-Exp', 'H203': 'ARIE-Exp', 'H204': 'ARIE-Exp',
-    'H224': 'ARIE-Flam-1',
-    'H225': 'ARIE-Flam-2',
+export const ARIE_H_PHRASE_MAPPING: Record<string, string[]> = {
+    // Vergiftiging
+    'H300': ['ARIE-Tox1'], 'H310': ['ARIE-Tox1'], 'H330': ['ARIE-Tox1'],
+    'H301': ['ARIE-Tox2'],
+    'H311': ['ARIE-Tox2', 'ARIE-Tox3d'], // Overlaps
+    'H331': ['ARIE-Tox2', 'ARIE-Tox3i'], // Overlaps
+    'H370': ['ARIE-STOT-SE1'],
+    'H372': ['ARIE-STOT-RE1'],
+
+    // Fysisch
+    'H200': ['ARIE-Exp'], 'H201': ['ARIE-Exp'], 'H202': ['ARIE-Exp'], 'H203': ['ARIE-Exp'], 'H204': ['ARIE-Exp'], 'H205': ['ARIE-Exp'],
+    'H240': ['ARIE-SelfReact', 'ARIE-OrgPerox'],
+    'H241': ['ARIE-SelfReact', 'ARIE-OrgPerox'],
+    'H224': ['ARIE-Flam1'],
+    'H225': ['ARIE-Flam2'],
+    'H250': ['ARIE-Pyro'],
+
+    // CMR
+    'H350': ['ARIE-Carc1'], 'H350i': ['ARIE-Carc1'],
+    'H340': ['ARIE-Muta1'],
+    'H360': ['ARIE-Repr1'], 'H360F': ['ARIE-Repr1'], 'H360D': ['ARIE-Repr1'], 'H360FD': ['ARIE-Repr1'], 'H360Fd': ['ARIE-Repr1'], 'H360Df': ['ARIE-Repr1'],
 };
 
 export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
-    'H300': 'Dodelijk bij inslikken',
-    'H310': 'Dodelijk bij contact met de huid',
-    'H330': 'Dodelijk bij inademing',
-    'H301': 'Giftig bij inslikken',
-    'H311': 'Giftig bij contact met de huid',
-    'H331': 'Giftig bij inademing',
-    'H332': 'Schadelijk bij inademing',
-    'H370': 'Veroorzaakt schade aan organen',
-    'EUH001': 'In droge toestand ontplofbaar',
     'H200': 'Ontplofbaar, gevaar voor massa-explosie',
     'H201': 'Ontplofbaar, gevaar voor scherfwerking, maar geen gevaar voor massa-explosie',
     'H202': 'Ontplofbaar, ernstig gevaar voor scherfwerking',
     'H203': 'Ontplofbaar, gevaar voor brand, scherfwerking of drukgolf',
+    'H204': 'Gevaar voor brand of scherfwerking',
+    'H205': 'Gevaar voor massa-explosie bij brand',
     'H220': 'Zeer licht ontvlambaar gas',
     'H221': 'Ontvlambaar gas',
     'H222': 'Zeer licht ontvlambare aerosol',
     'H223': 'Ontvlambare aerosol',
-    'H270': 'Kan brand veroorzaken of bevorderen; oxiderend',
     'H224': 'Zeer licht ontvlambare vloeistof en damp',
     'H225': 'Licht ontvlambare vloeistof en damp',
     'H226': 'Ontvlambare vloeistof en damp',
+    'H240': 'Kan een explosie veroorzaken bij verhitting',
     'H241': 'Kan brand of een explosie veroorzaken bij verhitting',
     'H242': 'Brandgevaar bij verhitting',
     'H250': 'Vatbaar voor zelfontbranding in lucht',
+    'H260': 'Vormt in contact met water ontvlambare gassen die spontaan kunnen ontbranden',
+    'H261': 'Vormt in contact met water ontvlambare gassen',
+    'H270': 'Kan brand veroorzaken of bevorderen; oxiderend',
     'H271': 'Kan brand of een explosie veroorzaken; sterk oxiderend',
     'H272': 'Kan brand bevorderen; oxiderend',
+    'H300': 'Dodelijk bij inslikken',
+    'H301': 'Giftig bij inslikken',
+    'H310': 'Dodelijk bij contact met de huid',
+    'H311': 'Giftig bij contact met de huid',
+    'H330': 'Dodelijk bij inademing',
+    'H331': 'Giftig bij inademing',
+    'H332': 'Schadelijk bij inademing',
+    'H340': 'Kan genetische afwijkingen veroorzaken',
+    'H350': 'Kan kanker veroorzaken',
+    'H350i': 'Kan kanker veroorzaken bij inademing',
+    'H360': 'Kan de vruchtbaarheid of het ongeboren kind schaden',
+    'H360F': 'Kan de vruchtbaarheid schaden',
+    'H360D': 'Kan het ongeboren kind schaden',
+    'H360FD': 'Kan de vruchtbaarheid schaden. Kan het ongeboren kind schaden.',
+    'H360Fd': 'Kan de vruchtbaarheid schaden. Wordt ervan verdacht het ongeboren kind te schaden.',
+    'H360Df': 'Kan het ongeboren kind schaden. Wordt ervan verdacht de vruchtbaarheid te schaden.',
+    'H370': 'Veroorzaakt schade aan organen',
+    'H372': 'Veroorzaakt schade aan organen bij langdurige of herhaalde blootstelling',
     'H400': 'Zeer giftig voor in het water levende organismen',
     'H410': 'Zeer giftig voor in het water levende organismen, met langdurige gevolgen',
     'H411': 'Giftig voor in het water levende organismen, met langdurige gevolgen',
-    'H260': 'Vormt in contact met water ontvlambare gassen die spontaan kunnen ontbranden',
-    'H261': 'Vormt in contact met water ontvlambare gassen',
-    'H350': 'Kan kanker veroorzaken',
-    'H340': 'Kan genetische afwijkingen veroorzaken',
-    'H360': 'Kan de vruchtbaarheid of het ongeboren kind schaden',
+    'EUH001': 'In droge toestand ontplofbaar',
 };
 
 
@@ -136,7 +173,7 @@ export const classifySubstance = (hStatements: string[], casNumber: string | nul
       sevesoCategories.add(H_PHRASE_MAPPING[code]);
     }
     if (ARIE_H_PHRASE_MAPPING[code]) {
-      arieCategories.add(ARIE_H_PHRASE_MAPPING[code]);
+      ARIE_H_PHRASE_MAPPING[code].forEach(catId => arieCategories.add(catId));
     }
   });
 
