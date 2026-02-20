@@ -106,7 +106,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
         
         // Add a delay between API calls to avoid rate limiting, but not after the last file.
         if (fileIndex < totalFiles) {
-            await sleep(5000); // 5 seconds delay to stay within common API limits (e.g., 15/min -> 12/min)
+            await sleep(5000); // 5 seconds delay
         }
       }
 
@@ -115,7 +115,6 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
           description: `${successCount} van de ${totalFiles} bestand(en) succesvol geanalyseerd.`,
       });
       
-      // Close dialog after a short delay
       setTimeout(() => {
         onOpenChange(false);
       }, 1000);
@@ -141,15 +140,23 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
         <div className="grid gap-4 py-4">
           <div className="grid w-full max-w-sm items-center gap-1.5">
             <Label htmlFor="sds-file">SDS Document(en)</Label>
-            <div className="relative">
-                <Input id="sds-file" type="file" onChange={handleFileChange} accept=".pdf,image/*" className="border-dashed h-24 p-4 flex items-center justify-center text-center cursor-pointer" multiple disabled={isPending} />
+            <div className="relative border-dashed border-2 rounded-md h-32 flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors">
+                <Input
+                    id="sds-file"
+                    type="file"
+                    onChange={handleFileChange}
+                    accept=".pdf,image/*"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    multiple
+                    disabled={isPending}
+                />
                 {!files || files.length === 0 ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center pointer-events-none text-muted-foreground">
                         <UploadCloud className="w-8 h-8" />
                         <p className="text-sm mt-2">Sleep bestanden hier of klik</p>
                     </div>
                 ) : (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-sm font-medium text-foreground">
+                    <div className="pointer-events-none text-sm font-medium text-foreground">
                         {files.length} bestand(en) geselecteerd
                     </div>
                 )}

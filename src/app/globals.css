@@ -10,25 +10,36 @@
     --card-foreground: 231 20% 27%;
     --popover: 0 0% 100%;
     --popover-foreground: 231 20% 27%;
-    --primary: 231 48% 48%;
+    --primary: 258 65% 60%;
     --primary-foreground: 0 0% 98%;
     --secondary: 233 30% 88%;
-    --secondary-foreground: 231 48% 48%;
+    --secondary-foreground: 258 65% 60%;
     --muted: 233 30% 88%;
     --muted-foreground: 231 20% 45%;
-    --accent: 233 45% 56%;
+    --accent: 258 65% 65%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 233 20% 80%;
     --input: 0 0% 100%;
-    --ring: 231 48% 48%;
+    --ring: 258 65% 60%;
     --radius: 0.5rem;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+
+    --seveso-health-bg: 0 100% 92%;
+    --seveso-health-fg: 0 80% 40%;
+    --seveso-physical-bg: 30 100% 92%;
+    --seveso-physical-fg: 30 80% 40%;
+    --seveso-environment-bg: 120 100% 92%;
+    --seveso-environment-fg: 120 60% 30%;
+    --seveso-other-bg: 55 100% 92%;
+    --seveso-other-fg: 55 70% 30%;
+    --seveso-named-bg: 210 100% 92%;
+    --seveso-named-fg: 210 80% 40%;
   }
 
   .dark {
@@ -38,24 +49,35 @@
     --card-foreground: 0 0% 98%;
     --popover: 232 22% 11%;
     --popover-foreground: 0 0% 98%;
-    --primary: 233 45% 56%;
+    --primary: 258 65% 70%;
     --primary-foreground: 0 0% 98%;
     --secondary: 232 22% 24%;
     --secondary-foreground: 0 0% 98%;
     --muted: 232 22% 24%;
     --muted-foreground: 230 10% 65%;
-    --accent: 231 48% 48%;
+    --accent: 258 65% 60%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 98%;
     --border: 232 22% 24%;
     --input: 232 22% 24%;
-    --ring: 233 45% 56%;
+    --ring: 258 65% 70%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    --seveso-health-bg: 0 30% 20%;
+    --seveso-health-fg: 0 80% 80%;
+    --seveso-physical-bg: 30 30% 20%;
+    --seveso-physical-fg: 30 80% 80%;
+    --seveso-environment-bg: 120 30% 20%;
+    --seveso-environment-fg: 120 80% 80%;
+    --seveso-other-bg: 55 30% 20%;
+    --seveso-other-fg: 55 80% 80%;
+    --seveso-named-bg: 210 30% 20%;
+    --seveso-named-fg: 210 80% 80%;
   }
 }
 

@@ -55,6 +55,26 @@ export default {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
+        'seveso-health': {
+          DEFAULT: 'hsl(var(--seveso-health-bg))',
+          foreground: 'hsl(var(--seveso-health-fg))',
+        },
+        'seveso-physical': {
+            DEFAULT: 'hsl(var(--seveso-physical-bg))',
+            foreground: 'hsl(var(--seveso-physical-fg))',
+        },
+        'seveso-environment': {
+            DEFAULT: 'hsl(var(--seveso-environment-bg))',
+            foreground: 'hsl(var(--seveso-environment-fg))',
+        },
+        'seveso-other': {
+            DEFAULT: 'hsl(var(--seveso-other-bg))',
+            foreground: 'hsl(var(--seveso-other-fg))',
+        },
+        'seveso-named': {
+            DEFAULT: 'hsl(var(--seveso-named-bg))',
+            foreground: 'hsl(var(--seveso-named-fg))',
+        },
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',
           foreground: 'hsl(var(--sidebar-foreground))',

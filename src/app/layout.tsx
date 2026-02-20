@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Seveso Expert Threshold Checker',
+  title: 'Seveso en ARIE',
   description: 'An advanced tool to determine the Seveso status of a facility.',
 };
 

@@ -13,23 +13,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Trash2, FileSpreadsheet } from "lucide-react";
+import { Trash2, FileSpreadsheet, Upload } from "lucide-react";
 import type { Substance, ThresholdMode } from "@/lib/types";
-import { SEVESO_CATEGORIES, NAMED_SUBSTANCES } from "@/lib/seveso";
+import { SEVESO_CATEGORIES, NAMED_SUBSTANCES, SUMMATION_GROUPS_CONFIG } from "@/lib/seveso";
 import { Progress } from './ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import AuditTrailDialog from './audit-trail-dialog';
+import { cn } from '@/lib/utils';
 
 interface InventoryTableProps {
   inventory: Substance[];
   onUpdateQuantity: (id: string, quantity: number) => void;
   onDelete: (id: string) => void;
   thresholdMode: ThresholdMode;
+  onUpload: () => void;
 }
+
+const groupToColorMap: Record<string, string> = SUMMATION_GROUPS_CONFIG.reduce((acc, group) => {
+  acc[group.group] = `bg-${group.colorClass} text-${group.colorClass}-foreground`;
+  return acc;
+}, {} as Record<string, string>);
+
+const groupToIndicatorColorMap: Record<string, string> = SUMMATION_GROUPS_CONFIG.reduce((acc, group) => {
+    acc[group.group] = `bg-${group.colorClass}`;
+    return acc;
+}, {} as Record<string, string>);
 
 function ContributionCard({ substance, mode }: { substance: Substance, mode: ThresholdMode }) {
   const maxContribution = useMemo(() => {
-    let max = { ratio: 0, categoryName: '' };
+    let max = { ratio: 0, categoryName: '', group: '' };
     if (substance.quantity > 0) {
       substance.sevesoCategories.forEach(catId => {
         const category = SEVESO_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
@@ -38,7 +50,7 @@ function ContributionCard({ substance, mode }: { substance: Substance, mode: Thr
           if (threshold > 0) {
             const ratio = (substance.quantity / threshold);
             if (ratio > max.ratio) {
-              max = { ratio, categoryName: category.name };
+              max = { ratio, categoryName: category.name, group: category.group };
             }
           }
         }
@@ -53,13 +65,14 @@ function ContributionCard({ substance, mode }: { substance: Substance, mode: Thr
   
   const percentage = Math.round(maxContribution.ratio * 100);
   const progressValue = Math.min(percentage, 100);
+  const indicatorColorClass = groupToIndicatorColorMap[maxContribution.group] || 'bg-primary';
 
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="w-full">
-            <Progress value={progressValue} className="h-2" />
+            <Progress value={progressValue} className="h-2" indicatorClassName={indicatorColorClass} />
             <div className="text-xs text-muted-foreground mt-1 text-right">{percentage}%</div>
           </div>
         </TooltipTrigger>
@@ -73,7 +86,7 @@ function ContributionCard({ substance, mode }: { substance: Substance, mode: Thr
 }
 
 
-export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, thresholdMode }: InventoryTableProps) {
+export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, thresholdMode, onUpload }: InventoryTableProps) {
   const [auditSubstance, setAuditSubstance] = useState<{ substance: Substance, categoryId: string } | null>(null);
 
   const handleBadgeClick = (substance: Substance, categoryId: string) => {
@@ -85,7 +98,8 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
       <div className="flex flex-col items-center justify-center text-center py-16 px-4 border-2 border-dashed rounded-lg">
         <FileSpreadsheet className="w-16 h-16 text-muted-foreground mb-4" />
         <h3 className="text-xl font-semibold">Inventaris is leeg</h3>
-        <p className="text-muted-foreground mt-2">Begin met het uploaden van een Veiligheidsinformatieblad (SDS) om stoffen toe te voegen.</p>
+        <p className="text-muted-foreground mt-2 mb-6">Begin met het uploaden van een Veiligheidsinformatieblad (SDS) om stoffen toe te voegen.</p>
+        <Button onClick={onUpload}><Upload className="mr-2 h-4 w-4" /> Upload SDS</Button>
       </div>
     );
   }
@@ -120,8 +134,7 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Badge 
-                                variant="secondary" 
-                                className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                                className={cn("cursor-pointer hover:opacity-80 border-transparent", groupToColorMap[cat.group])}
                                 onClick={() => handleBadgeClick(substance, cat.id)}
                               >
                                 {cat.id}

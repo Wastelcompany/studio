@@ -94,11 +94,11 @@ export const classifySubstance = (hStatements: string[], casNumber: string | nul
 
 
 export const SUMMATION_GROUPS_CONFIG = [
-  { name: 'Gezondheidsgevaren', icon: FlaskConical, group: 'health' },
-  { name: 'Fysische gevaren', icon: Flame, group: 'physical' },
-  { name: 'Milieugevaren', icon: Leaf, group: 'environment' },
-  { name: 'Overige gevaren', icon: AlertTriangle, group: 'other' },
-  { name: 'Benoemde Stoffen', icon: Atom, group: 'named' },
+  { name: 'Gezondheidsgevaren', icon: FlaskConical, group: 'health', colorClass: 'seveso-health' },
+  { name: 'Fysische gevaren', icon: Flame, group: 'physical', colorClass: 'seveso-physical' },
+  { name: 'Milieugevaren', icon: Leaf, group: 'environment', colorClass: 'seveso-environment' },
+  { name: 'Overige gevaren', icon: AlertTriangle, group: 'other', colorClass: 'seveso-other' },
+  { name: 'Benoemde Stoffen', icon: Atom, group: 'named', colorClass: 'seveso-named' },
 ] as const;
 
 
@@ -113,18 +113,26 @@ export const calculateSummations = (inventory: Substance[], mode: ThresholdMode)
 
   inventory.forEach(substance => {
     if (substance.quantity > 0) {
+      const substanceGroupContributions: Record<string, number> = {};
+
       substance.sevesoCategories.forEach(catId => {
         const category = SEVESO_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
         if (category) {
           const threshold = category.threshold[mode];
-          // For named substances, the calculation is direct, not summative with others in the same group.
-          // However, the Seveso rule is complex. For this app, we will apply the simple summation rule across all groups for demonstration.
-          // A real-world app would need more nuanced logic here, especially for named substances vs. generic categories.
           if (threshold > 0) {
-            groupTotals[category.group] += substance.quantity / threshold;
+            const ratio = substance.quantity / threshold;
+            
+            if (!substanceGroupContributions[category.group] || ratio > substanceGroupContributions[category.group]) {
+               substanceGroupContributions[category.group] = ratio;
+            }
           }
         }
       });
+      
+      // Add the maximum contribution for each group to the total
+      for (const group in substanceGroupContributions) {
+        groupTotals[group] += substanceGroupContributions[group];
+      }
     }
   });
 

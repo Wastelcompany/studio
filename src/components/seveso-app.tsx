@@ -137,6 +137,7 @@ export default function SevesoApp() {
             onUpdateQuantity={handleUpdateSubstanceQuantity}
             onDelete={handleDeleteSubstance}
             thresholdMode={thresholdMode}
+            onUpload={() => setIsSdsUploadOpen(true)}
           />
         </div>
         <aside className="lg:w-1/3 lg:sticky lg:top-8 h-fit print-dashboard-container print:static">

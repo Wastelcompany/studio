@@ -9,12 +9,18 @@ import { useSevesoCalculator } from "@/hooks/use-seveso-calculator";
 import type { Substance, ThresholdMode, SummationGroup as SummationGroupType } from "@/lib/types";
 import { AlertCircle, CheckCircle2, ShieldAlert } from "lucide-react";
 import GroupDetailsDialog from "./group-details-dialog";
+import { SUMMATION_GROUPS_CONFIG } from "@/lib/seveso";
 
 interface DashboardProps {
   inventory: Substance[];
   thresholdMode: ThresholdMode;
   setThresholdMode: (mode: ThresholdMode) => void;
 }
+
+const indicatorColorMap: Record<string, string> = SUMMATION_GROUPS_CONFIG.reduce((acc, group) => {
+  acc[group.group] = `bg-${group.colorClass}`;
+  return acc;
+}, {} as Record<string, string>);
 
 export default function Dashboard({ inventory, thresholdMode, setThresholdMode }: DashboardProps) {
   const { summationGroups, overallStatus, criticalGroup } = useSevesoCalculator(inventory, thresholdMode);
@@ -88,7 +94,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
                     {percentage}%
                   </span>
                 </div>
-                <Progress value={Math.min(percentage, 100)} className="h-2" />
+                <Progress value={Math.min(percentage, 100)} className="h-2" indicatorClassName={indicatorColorMap[group.group]} />
               </div>
             );
           })}
@@ -96,10 +102,10 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
       </Card>
       
       <Card className="bg-primary/5">
-        <CardHeader>
+        <CardHeader className="items-center">
           <CardTitle>Seveso Conclusie</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col items-center text-center">
+        <CardContent className="flex flex-col items-center justify-center text-center">
             {getStatusIcon()}
             <p className={`mt-2 text-2xl font-bold ${getStatusColor()}`}>{overallStatus}-inrichting</p>
             {overallStatus !== 'Geen' ? (
