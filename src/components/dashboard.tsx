@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSevesoCalculator } from "@/hooks/use-seveso-calculator";
 import type { Substance, SummationGroup as SummationGroupType, ThresholdMode } from "@/lib/types";
-import { AlertCircle, CheckCircle2, ShieldAlert, Briefcase } from "lucide-react";
+import { AlertCircle, CheckCircle2, ShieldAlert } from "lucide-react";
 import GroupDetailsDialog from "./group-details-dialog";
 import { cn } from "@/lib/utils";
 
@@ -24,11 +24,11 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
   const getStatusIcon = () => {
     switch (overallStatus) {
       case 'Hogedrempel':
-        return <ShieldAlert className="w-10 h-10 text-destructive" />;
+        return <ShieldAlert className="w-8 h-8 text-destructive" />;
       case 'Lagedrempel':
-        return <AlertCircle className="w-10 h-10 text-yellow-500" />;
+        return <AlertCircle className="w-8 h-8 text-yellow-500" />;
       default:
-        return <CheckCircle2 className="w-10 h-10 text-green-500" />;
+        return <CheckCircle2 className="w-8 h-8 text-green-500" />;
     }
   };
 
@@ -44,11 +44,17 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
 
   return (
     <div className="space-y-6">
+      
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium">Drempelwaarde Modus</CardTitle>
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="threshold-mode" className={thresholdMode === 'low' ? 'text-primary font-semibold' : 'text-muted-foreground'}>
+        <CardHeader className="flex flex-row items-start justify-between pb-4">
+          <div>
+            <CardTitle>Seveso Sommatie</CardTitle>
+            <CardDescription className="mt-1 text-xs">
+              Ratio per groep. Klik voor details.
+            </CardDescription>
+          </div>
+          <div className="flex items-center space-x-2 shrink-0 ml-4">
+            <Label htmlFor="threshold-mode" className={cn("text-sm", thresholdMode === 'low' ? 'text-primary font-semibold' : 'text-muted-foreground')}>
               Lage
             </Label>
             <Switch
@@ -56,22 +62,10 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
               checked={thresholdMode === 'high'}
               onCheckedChange={(checked) => setThresholdMode(checked ? 'high' : 'low')}
             />
-            <Label htmlFor="threshold-mode" className={thresholdMode === 'high' ? 'text-primary font-semibold' : 'text-muted-foreground'}>
+            <Label htmlFor="threshold-mode" className={cn("text-sm", thresholdMode === 'high' ? 'text-primary font-semibold' : 'text-muted-foreground')}>
               Hoge
             </Label>
           </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-muted-foreground">Schakel tussen lage en hoge Seveso drempels.</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Seveso Sommatie</CardTitle>
-          <CardDescription>
-            Ratio per Seveso gevarengroep. Klik op een groep voor details.
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-1">
           {summationGroups.map((group) => {
@@ -97,8 +91,27 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
           })}
         </CardContent>
       </Card>
+      
+      <Card className="bg-primary/5">
+        <CardHeader className="items-center p-4">
+          <CardTitle className="text-base font-semibold">Seveso Conclusie</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center text-center p-4 pt-0">
+            {getStatusIcon()}
+            <p className={`mt-2 text-xl font-bold ${getStatusColor()}`}>{overallStatus}-inrichting</p>
+            {overallStatus !== 'Geen' ? (
+                <p className="text-xs text-muted-foreground mt-1">
+                    Meest kritieke Seveso groep: <span className="font-semibold text-foreground">{criticalGroup}</span>
+                </p>
+            ) : (
+                <p className="text-xs text-muted-foreground mt-1">
+                    Geen Seveso drempelwaarden overschreden.
+                </p>
+            )}
+        </CardContent>
+      </Card>
 
-       <Card>
+      <Card>
         <CardHeader>
           <CardTitle>ARIE Sommatie</CardTitle>
           <CardDescription>
@@ -108,6 +121,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
         <CardContent className="space-y-1">
           {arieSummationGroups.map((group) => {
             const percentage = Math.round(group.totalRatio * 100);
+            if (percentage === 0) return null;
             return (
               <div key={group.group} className="p-2 -m-2 rounded-lg">
                 <div className="flex items-center justify-between mb-1">
@@ -125,45 +139,26 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
           })}
         </CardContent>
       </Card>
-      
-      <Card className="bg-primary/5">
-        <CardHeader className="items-center">
-          <CardTitle>Seveso Conclusie</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center text-center">
-            {getStatusIcon()}
-            <p className={`mt-2 text-2xl font-bold ${getStatusColor()}`}>{overallStatus}-inrichting</p>
-            {overallStatus !== 'Geen' ? (
-                <p className="text-muted-foreground mt-1">
-                    Meest kritieke Seveso groep: <span className="font-semibold text-foreground">{criticalGroup}</span>
-                </p>
-            ) : (
-                <p className="text-muted-foreground mt-1">
-                    Geen Seveso drempelwaarden overschreden.
-                </p>
-            )}
-        </CardContent>
-      </Card>
 
       <Card className="bg-arie-bg">
-        <CardHeader className="items-center">
-          <CardTitle>ARIE Conclusie</CardTitle>
+        <CardHeader className="items-center p-4">
+          <CardTitle className="text-base font-semibold">ARIE Conclusie</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center text-center">
+        <CardContent className="flex flex-col items-center justify-center text-center p-4 pt-0">
             {arieExceeded ? (
-                <ShieldAlert className="w-10 h-10 text-arie-fg" />
+                <ShieldAlert className="w-8 h-8 text-arie-fg" />
             ) : (
-                <CheckCircle2 className="w-10 h-10 text-green-500" />
+                <CheckCircle2 className="w-8 h-8 text-green-500" />
             )}
-            <p className={cn("mt-2 text-2xl font-bold", arieExceeded ? 'text-arie-fg' : 'text-green-600 dark:text-green-400')}>
+            <p className={cn("mt-2 text-xl font-bold", arieExceeded ? 'text-arie-fg' : 'text-green-600 dark:text-green-400')}>
                 {arieExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig'}
             </p>
              {arieExceeded ? (
-                 <p className="text-muted-foreground mt-1">
+                 <p className="text-xs text-muted-foreground mt-1">
                     De sommatiewaarde van {ariePercentage}% overschrijdt de drempel.
                 </p>
             ) : (
-                 <p className="text-muted-foreground mt-1">
+                 <p className="text-xs text-muted-foreground mt-1">
                     De sommatiewaarde van {ariePercentage}% is onder de drempel.
                 </p>
             )}
