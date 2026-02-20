@@ -1,3 +1,5 @@
+"use client";
+
 import type { Substance, HazardCategory, NamedSubstance, ThresholdMode, SummationGroup } from '@/lib/types';
 import { FlaskConical, Flame, Leaf, AlertTriangle, Atom, Briefcase } from 'lucide-react';
 
@@ -96,34 +98,51 @@ ALL_CATEGORIES['ARIE-Ox-Vast-1'] = { id: 'ARIE-Ox-Vast-1', name: 'Oxiderende vas
 
 
 export const H_PHRASE_MAPPING: Record<string, string[]> = {
-  // Seveso & ARIE shared (mostly)
+  // Health
   'H300': ['H1'], 'H310': ['H1'], 'H330': ['H1'],
   'H301': ['H2'], 'H311': ['H2'], 'H331': ['H2'],
   'H332': ['H3'], // Only Seveso uses H332 for H3
   'H370': ['H3'], // Seveso & ARIE (STOT)
   'H314': ['H4'], // ARIE-only
+
+  // Physical - Explosives
   'EUH001': ['P1a'], 'H200': ['P1a'], 'H201': ['P1a'], 'H202': ['P1a'], 'H203': ['P1a'],
   'H204': ['P1b'],
   'H205': ['P1a'], // Gevaar voor massa-explosie bij brand -> P1a ipv P1b
-  'H222': ['P3b'], 'H223': ['P3a'],
-  'H240': ['P6a'], 'H241': ['P6a'],
-  'H242': ['P6b'],
-  'H250': ['P7'],
-  'H270': ['P4', 'ARIE-Ox-Gas-1'],
-  'H271': ['P8', 'ARIE-Ox-Vloeistof-1', 'ARIE-Ox-Vast-1'],
-  'H272': ['P8', 'ARIE-Ox-Vloeistof-1', 'ARIE-Ox-Vast-1'],
-  'H400': ['E1'], 'H410': ['E1'],
-  'H411': ['E2'],
-  'EUH014': ['O1'], 'EUH029': ['O1'], 'EUH032': ['O1'],
-  'H260': ['O2'], 'H261': ['O2'], // Note: H260 is also ARIE P7/O2, H261 is not.
-  'H340': ['O3'], 'H350': ['O3'], 'H350i': ['O3'], 'H360': ['O3'], 'H360F': ['O3'], 'H360D': ['O3'], 'H360FD': ['O3'], 'H360Fd': ['O3'], 'H360Df': ['O3'],
-
-  // Seveso P2/P5 are broad, ARIE is specific by H-phrase
+  
+  // Physical - Flammable Gases / Aerosols
   'H220': ['P2', 'ARIE-Gas-1'],
   'H221': ['P2', 'ARIE-Gas-2'],
+  'H222': ['P3b'], 'H223': ['P3a'],
+  
+  // Physical - Flammable Liquids
   'H224': ['P5a', 'ARIE-Vloeistof-1'],
   'H225': ['P5c', 'ARIE-Vloeistof-2'],
   'H226': ['P5c', 'ARIE-Vloeistof-3'],
+
+  // Physical - Self-reactive & Peroxides
+  'H240': ['P6a'], 'H241': ['P6a'],
+  'H242': ['P6b'],
+
+  // Physical - Pyrophoric
+  'H250': ['P7'],
+
+  // Physical - Oxidizing
+  'H270': ['P4', 'ARIE-Ox-Gas-1'],
+  'H271': ['P8', 'ARIE-Ox-Vloeistof-1', 'ARIE-Ox-Vast-1'],
+  'H272': ['P8', 'ARIE-Ox-Vloeistof-1', 'ARIE-Ox-Vast-1'],
+
+  // Environment
+  'H400': ['E1'], 'H410': ['E1'],
+  'H411': ['E2'],
+
+  // Other - Water reactive
+  'EUH014': ['O1'], 'EUH029': ['O1'], 'EUH032': ['O1'],
+  'H260': ['O2', 'P7'], // Note: H260 is also ARIE P7/O2
+  'H261': ['O2'], 
+  
+  // Other - CMR
+  'H340': ['O3'], 'H350': ['O3'], 'H350i': ['O3'], 'H360': ['O3'], 'H360F': ['O3'], 'H360D': ['O3'], 'H360FD': ['O3'], 'H360Fd': ['O3'], 'H360Df': ['O3'],
 };
 
 export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
