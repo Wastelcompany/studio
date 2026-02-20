@@ -96,7 +96,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
         <CardContent className="flex items-center justify-center text-center p-3 gap-4">
             {getStatusIcon()}
             <div>
-                <p className={`text-lg font-bold ${getStatusColor()}`}>{overallStatus}-inrichting</p>
+                <p className={`text-lg font-bold ${getStatusColor()}`}>{overallStatus === 'Geen' ? 'Geen Seveso-inrichting' : `${overallStatus}-inrichting`}</p>
                 {overallStatus !== 'Geen' ? (
                     <p className="text-xs text-muted-foreground">
                         Meest kritieke Seveso groep: <span className="font-semibold text-foreground">{criticalGroup}</span>
