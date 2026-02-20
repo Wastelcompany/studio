@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -19,6 +19,7 @@ import { SEVESO_CATEGORIES, NAMED_SUBSTANCES, SUMMATION_GROUPS_CONFIG } from "@/
 import { Progress } from './ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { cn } from '@/lib/utils';
+import CategoryJustificationDialog from './category-justification-dialog';
 
 interface InventoryTableProps {
   inventory: Substance[];
@@ -86,7 +87,9 @@ function ContributionCard({ substance, mode }: { substance: Substance, mode: Thr
 
 
 export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, thresholdMode, onUpload }: InventoryTableProps) {
-  
+  const [isJustificationOpen, setIsJustificationOpen] = useState(false);
+  const [selectedDataForJustification, setSelectedDataForJustification] = useState<{substance: Substance, category: {id: string, name: string, group: string}} | null>(null);
+
   if (inventory.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-16 px-4 border-2 border-dashed rounded-lg">
@@ -128,7 +131,11 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Badge 
-                                className={cn("border-transparent", groupToColorMap[cat.group])}
+                                className={cn("border-transparent cursor-pointer", groupToColorMap[cat.group])}
+                                onClick={() => {
+                                  setSelectedDataForJustification({substance, category: cat});
+                                  setIsJustificationOpen(true);
+                                }}
                               >
                                 {cat.id}
                               </Badge>
@@ -164,6 +171,12 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
           </TableBody>
         </Table>
       </Card>
+      <CategoryJustificationDialog
+        isOpen={isJustificationOpen}
+        onOpenChange={setIsJustificationOpen}
+        substance={selectedDataForJustification?.substance || null}
+        category={selectedDataForJustification?.category || null}
+      />
     </>
   );
 }
