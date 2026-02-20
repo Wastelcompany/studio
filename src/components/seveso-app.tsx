@@ -200,7 +200,9 @@ export default function SevesoApp() {
         // Ensure new properties exist, providing defaults if they don't
         const importedInventory = (data.inventory || data).map((sub: any) => ({
           ...sub,
-          arieCategories: sub.arieCategories || [],
+          sevesoCategories: sub.sevesoCategories || [],
+          // Legacy support: remove arieCategories if it exists from old format
+          arieCategories: undefined,
         }));
         const importedDetails = data.companyDetails || { name: '', address: '' };
 

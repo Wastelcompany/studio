@@ -14,8 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Trash2, FileSpreadsheet, Upload } from "lucide-react";
-import type { Substance, ThresholdMode, SevesoCategory, NamedSubstance, ArieCategory } from "@/lib/types";
-import { SEVESO_CATEGORIES, NAMED_SUBSTANCES, SUMMATION_GROUPS_CONFIG, ARIE_CATEGORIES } from "@/lib/seveso";
+import type { Substance, ThresholdMode, SevesoCategory, NamedSubstance } from "@/lib/types";
+import { SEVESO_CATEGORIES, NAMED_SUBSTANCES, SUMMATION_GROUPS_CONFIG, ARIE_THRESHOLDS } from "@/lib/seveso";
 import { Progress } from './ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -34,7 +34,6 @@ const groupToColorMap: Record<string, string> = {
     acc[group.group] = `bg-${group.colorClass} text-${group.colorClass}-foreground`;
     return acc;
   }, {} as Record<string, string>),
-  'arie': 'bg-arie text-arie-foreground'
 };
 
 
@@ -42,54 +41,62 @@ function SubstanceContributions({ substance, mode }: { substance: Substance, mod
   const contributions = useMemo(() => {
     if (substance.quantity <= 0) return [];
     
-    const categoryContributions: Record<string, {
-        ratio: number;
-        category: SevesoCategory | NamedSubstance | ArieCategory;
-    }> = {};
+    const results: {
+        key: string;
+        percentage: number;
+        progressValue: number;
+        categoryName: string;
+        categoryId: string;
+        isExceeded: boolean;
+        type: 'Seveso' | 'ARIE';
+    }[] = [];
 
-    // Process Seveso categories
-    substance.sevesoCategories.forEach(catId => {
+    const uniqueCategories = [...new Set(substance.sevesoCategories)];
+
+    uniqueCategories.forEach(catId => {
         const category = SEVESO_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-        if (category) {
-            const threshold = category.threshold[mode];
-            if (threshold > 0) {
-                const ratio = substance.quantity / threshold;
-                if (!categoryContributions[category.id] || ratio > categoryContributions[category.id].ratio) {
-                    categoryContributions[category.id] = { ratio, category };
-                }
-            }
+        if (!category) return;
+
+        // Seveso contribution
+        const sevesoThreshold = category.threshold[mode];
+        if (sevesoThreshold > 0) {
+            const percentage = Math.round((substance.quantity / sevesoThreshold) * 100);
+            results.push({
+                key: `${substance.id}-${catId}-seveso`,
+                percentage,
+                progressValue: Math.min(percentage, 100),
+                categoryName: category.name,
+                categoryId: catId,
+                isExceeded: percentage >= 100,
+                type: 'Seveso',
+            });
         }
-    });
-    
-    // Process ARIE categories
-    substance.arieCategories.forEach(catId => {
-        const category = ARIE_CATEGORIES[catId];
-        if (category) {
-            const threshold = category.threshold;
-            if (threshold > 0) {
-                const ratio = substance.quantity / threshold;
-                if (!categoryContributions[category.id] || ratio > categoryContributions[category.id].ratio) {
-                    categoryContributions[category.id] = { ratio, category };
-                }
-            }
+
+        // ARIE contribution
+        const arieThreshold = ARIE_THRESHOLDS[catId];
+        if (arieThreshold && arieThreshold > 0) {
+            const percentage = Math.round((substance.quantity / arieThreshold) * 100);
+            results.push({
+                key: `${substance.id}-${catId}-arie`,
+                percentage,
+                progressValue: Math.min(percentage, 100),
+                categoryName: category.name, // Same name
+                categoryId: catId,
+                isExceeded: percentage >= 100,
+                type: 'ARIE',
+            });
         }
     });
 
-    return Object.values(categoryContributions).map(({ ratio, category }) => {
-        const percentage = Math.round(ratio * 100);
-        const isArie = category.group === 'arie';
-        return {
-            key: `${substance.id}-${category.id}`,
-            percentage,
-            progressValue: Math.min(percentage, 100),
-            categoryName: category.name,
-            categoryId: category.id,
-            isExceeded: percentage >= 100,
-            isArie,
-        };
-    }).filter(item => item.percentage > 0).sort((a,b) => b.percentage - a.percentage);
+    return results.filter(item => item.percentage > 0).sort((a, b) => {
+        if (a.categoryId !== b.categoryId) {
+            return a.categoryId.localeCompare(b.categoryId);
+        }
+        if (a.type === 'ARIE') return 1; // ARIE comes after Seveso for the same category
+        return -1;
+    });
 
-  }, [substance.quantity, substance.sevesoCategories, substance.arieCategories, mode, substance.id]);
+  }, [substance.quantity, substance.sevesoCategories, mode, substance.id]);
 
   if (contributions.length === 0) {
     return <div className="text-xs text-muted-foreground">-</div>;
@@ -103,14 +110,14 @@ function SubstanceContributions({ substance, mode }: { substance: Substance, mod
             <TooltipTrigger className="w-full text-left">
               <div className="w-full">
                  <div className="flex justify-between items-center mb-0.5">
-                    <span className="text-xs font-medium text-muted-foreground">{contrib.categoryId}</span>
+                    <span className="text-xs font-medium text-muted-foreground">{contrib.categoryId} ({contrib.type})</span>
                     <span className={`text-xs font-semibold ${contrib.isExceeded ? 'text-destructive' : 'text-foreground'}`}>{contrib.percentage}%</span>
                  </div>
                 <Progress 
                   value={contrib.progressValue} 
                   className="h-2" 
                   indicatorClassName={cn(
-                    contrib.isExceeded ? 'bg-destructive' : (contrib.isArie ? 'bg-[hsl(var(--arie-fg))]' : 'bg-green-600')
+                    contrib.isExceeded ? 'bg-destructive' : (contrib.type === 'ARIE' ? 'bg-[hsl(var(--arie-fg))]' : 'bg-green-600')
                   )} 
                 />
               </div>
@@ -143,18 +150,16 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[20%]">Productnaam</TableHead>
-            <TableHead>Seveso Categorieën</TableHead>
-            <TableHead>ARIE Categorieën</TableHead>
+            <TableHead className="w-[25%]">Productnaam</TableHead>
+            <TableHead>Categorieën</TableHead>
             <TableHead className="text-right w-24">Voorraad (ton)</TableHead>
-            <TableHead className="w-[20%]">Bijdrage per Categorie</TableHead>
+            <TableHead className="w-[25%]">Bijdrage per Categorie</TableHead>
             <TableHead className="text-right">Acties</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {inventory.map((substance) => {
             const allSevesoCategories = (substance.sevesoCategories || []).map(id => SEVESO_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id)).filter(Boolean);
-            const allArieCategories = (substance.arieCategories || []).map(id => ARIE_CATEGORIES[id]).filter(Boolean);
             
             return (
               <TableRow key={substance.id}>
@@ -177,28 +182,7 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{cat.name}</p>
-                            <p className="text-xs text-muted-foreground">Klik voor onderbouwing</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ))}
-                  </div>
-                </TableCell>
-                 <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {allArieCategories.map((cat) => (
-                      <TooltipProvider key={cat.id}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Badge
-                              onClick={() => onShowExplanation(substance.id, cat.id)}
-                              className={cn("border-transparent cursor-pointer", groupToColorMap[cat.group])}
-                            >
-                              {cat.id}
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{cat.name}</p>
+                            {ARIE_THRESHOLDS[cat.id] && <p className="text-xs text-[hsl(var(--arie-fg))]">Ook ARIE-relevant</p>}
                             <p className="text-xs text-muted-foreground">Klik voor onderbouwing</p>
                           </TooltipContent>
                         </Tooltip>
