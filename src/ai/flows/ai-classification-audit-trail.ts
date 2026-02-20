@@ -31,7 +31,6 @@ export async function getAiClassificationAuditTrail(input: AiClassificationAudit
 
 const prompt = ai.definePrompt({
   name: 'aiClassificationAuditTrailPrompt',
-  model: 'gemini-pro',
   input: { schema: AiClassificationAuditTrailInputSchema },
   output: { schema: AiClassificationAuditTrailOutputSchema },
   prompt: `You are an expert in Seveso III Directive (2012/18/EU) classification. Your task is to provide a clear and concise explanation for why a given chemical substance was classified into a specific Seveso category, based on its H-phrases.
