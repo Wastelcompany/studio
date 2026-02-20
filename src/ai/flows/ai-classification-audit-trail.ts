@@ -20,7 +20,7 @@ const AiClassificationAuditTrailInputSchema = z.object({
 export type AiClassificationAuditTrailInput = z.infer<typeof AiClassificationAuditTrailInputSchema>;
 
 const AiClassificationAuditTrailOutputSchema = z.object({
-  explanation: z.string().describe('A detailed explanation of why the substance was classified into the given Seveso category, referencing specific H-phrases.'),
+  explanation: z.string().describe("A detailed explanation of why the substance was classified into the given Seveso category, referencing specific H-phrases."),
   triggeringHPhrases: z.array(z.string()).describe('The specific H-phrases from the input that directly led to the Seveso classification.'),
 });
 export type AiClassificationAuditTrailOutput = z.infer<typeof AiClassificationAuditTrailOutputSchema>;
@@ -31,7 +31,7 @@ export async function getAiClassificationAuditTrail(input: AiClassificationAudit
 
 const prompt = ai.definePrompt({
   name: 'aiClassificationAuditTrailPrompt',
-  model: 'gemini-1.5-flash-latest',
+  model: 'gemini-1.5-flash',
   input: { schema: AiClassificationAuditTrailInputSchema },
   output: { schema: AiClassificationAuditTrailOutputSchema },
   prompt: `You are an expert in Seveso III Directive (2012/18/EU) classification. Your task is to provide a clear and concise explanation for why a given chemical substance was classified into a specific Seveso category, based on its H-phrases.
