@@ -75,6 +75,10 @@ export default {
             DEFAULT: 'hsl(var(--seveso-named-bg))',
             foreground: 'hsl(var(--seveso-named-fg))',
         },
+        'arie': {
+            DEFAULT: 'hsl(var(--arie-bg))',
+            foreground: 'hsl(var(--arie-fg))',
+        },
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',
           foreground: 'hsl(var(--sidebar-foreground))',

@@ -75,13 +75,14 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
               throw new Error(`Kon productnaam niet extraheren uit ${file.name}.`);
           }
 
-          const { categories, isNamed, namedSubstanceName } = classifySubstance(result.hStatements || [], result.casNumber || null);
+          const { sevesoCategories, arieCategories, isNamed, namedSubstanceName } = classifySubstance(result.hStatements || [], result.casNumber || null);
 
           onAddSubstance({
               productName: result.productName,
               casNumber: result.casNumber,
               hStatements: result.hStatements || [],
-              sevesoCategories: categories,
+              sevesoCategories,
+              arieCategories,
               isNamedSubstance: isNamed,
               namedSubstanceName: namedSubstanceName,
           });

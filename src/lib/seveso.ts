@@ -1,4 +1,4 @@
-import type { Substance, SevesoCategory, NamedSubstance, ThresholdMode, SummationGroup } from '@/lib/types';
+import type { Substance, SevesoCategory, ArieCategory, NamedSubstance, ThresholdMode, SummationGroup } from '@/lib/types';
 import { FlaskConical, Flame, Leaf, AlertTriangle, Atom } from 'lucide-react';
 
 export const SEVESO_CATEGORIES: Record<string, SevesoCategory> = {
@@ -39,6 +39,14 @@ export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
   '67-56-1': { id: 'Methanol', cas: '67-56-1', name: 'Methanol', group: 'named', threshold: { low: 500, high: 5000 } },
 };
 
+export const ARIE_CATEGORIES: Record<string, ArieCategory> = {
+    'ARIE-Tox': { id: 'ARIE-Tox', name: 'Acuut toxisch Cat. 1, 2 of 3', group: 'arie', threshold: 0.5 }, // 500 kg
+    'ARIE-STOT': { id: 'ARIE-STOT', name: 'STOT (specifieke doelorgaantoxiciteit) Cat. 1', group: 'arie', threshold: 0.5 }, // 500 kg
+    'ARIE-CMR': { id: 'ARIE-CMR', name: 'CMR (kankerverwekkend, mutageen, reprotoxisch) Cat. 1A of 1B', group: 'arie', threshold: 0.5 }, // 500 kg
+    'ARIE-Exp': { id: 'ARIE-Exp', name: 'Ontplofbaar', group: 'arie', threshold: 0.05 }, // 50 kg
+    'ARIE-Flam-1': { id: 'ARIE-Flam-1', name: 'Ontvlambare vloeistoffen Cat. 1', group: 'arie', threshold: 1 }, // 1000 kg
+    'ARIE-Flam-2': { id: 'ARIE-Flam-2', name: 'Ontvlambare vloeistoffen Cat. 2', group: 'arie', threshold: 10 }, // 10000 kg
+};
 
 export const H_PHRASE_MAPPING: Record<string, string> = {
   // Health
@@ -68,6 +76,16 @@ export const H_PHRASE_MAPPING: Record<string, string> = {
   // Other
   'H260': 'O1', 'H261': 'O1',
   'H350': 'O3', 'H340': 'O3', 'H360': 'O3',
+};
+
+export const ARIE_H_PHRASE_MAPPING: Record<string, string> = {
+    'H300': 'ARIE-Tox', 'H310': 'ARIE-Tox', 'H330': 'ARIE-Tox',
+    'H301': 'ARIE-Tox', 'H311': 'ARIE-Tox', 'H331': 'ARIE-Tox',
+    'H370': 'ARIE-STOT', 'H372': 'ARIE-STOT',
+    'H340': 'ARIE-CMR', 'H350': 'ARIE-CMR', 'H360': 'ARIE-CMR',
+    'H200': 'ARIE-Exp', 'H201': 'ARIE-Exp', 'H202': 'ARIE-Exp', 'H203': 'ARIE-Exp', 'H204': 'ARIE-Exp',
+    'H224': 'ARIE-Flam-1',
+    'H225': 'ARIE-Flam-2',
 };
 
 export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
@@ -108,13 +126,17 @@ export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
 };
 
 
-export const classifySubstance = (hStatements: string[], casNumber: string | null): { categories: string[], isNamed: boolean, namedSubstanceName: string | null } => {
-  const categories = new Set<string>();
+export const classifySubstance = (hStatements: string[], casNumber: string | null): { sevesoCategories: string[], arieCategories: string[], isNamed: boolean, namedSubstanceName: string | null } => {
+  const sevesoCategories = new Set<string>();
+  const arieCategories = new Set<string>();
   
   hStatements.forEach(hStatement => {
     const code = hStatement.split(' ')[0].toUpperCase();
     if (H_PHRASE_MAPPING[code]) {
-      categories.add(H_PHRASE_MAPPING[code]);
+      sevesoCategories.add(H_PHRASE_MAPPING[code]);
+    }
+    if (ARIE_H_PHRASE_MAPPING[code]) {
+      arieCategories.add(ARIE_H_PHRASE_MAPPING[code]);
     }
   });
 
@@ -122,12 +144,12 @@ export const classifySubstance = (hStatements: string[], casNumber: string | nul
   let namedSubstanceName = null;
   if(casNumber && NAMED_SUBSTANCES[casNumber]) {
     const named = NAMED_SUBSTANCES[casNumber];
-    categories.add(named.id);
+    sevesoCategories.add(named.id);
     isNamed = true;
     namedSubstanceName = named.name;
   }
   
-  return { categories: Array.from(categories), isNamed, namedSubstanceName };
+  return { sevesoCategories: Array.from(sevesoCategories), arieCategories: Array.from(arieCategories), isNamed, namedSubstanceName };
 };
 
 

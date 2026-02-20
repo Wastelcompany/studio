@@ -40,6 +40,8 @@
     --seveso-other-fg: 55 70% 30%;
     --seveso-named-bg: 210 100% 92%;
     --seveso-named-fg: 210 80% 40%;
+    --arie-bg: 270 90% 95%;
+    --arie-fg: 270 70% 45%;
   }
 
   .dark {
@@ -78,6 +80,8 @@
     --seveso-other-fg: 55 80% 80%;
     --seveso-named-bg: 210 30% 20%;
     --seveso-named-fg: 210 80% 80%;
+    --arie-bg: 270 30% 20%;
+    --arie-fg: 270 80% 80%;
   }
 }
 

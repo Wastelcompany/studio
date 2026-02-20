@@ -14,8 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Trash2, FileSpreadsheet, Upload } from "lucide-react";
-import type { Substance, ThresholdMode, SevesoCategory, NamedSubstance } from "@/lib/types";
-import { SEVESO_CATEGORIES, NAMED_SUBSTANCES, SUMMATION_GROUPS_CONFIG } from "@/lib/seveso";
+import type { Substance, ThresholdMode, SevesoCategory, NamedSubstance, ArieCategory } from "@/lib/types";
+import { SEVESO_CATEGORIES, NAMED_SUBSTANCES, SUMMATION_GROUPS_CONFIG, ARIE_CATEGORIES } from "@/lib/seveso";
 import { Progress } from './ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -29,10 +29,14 @@ interface InventoryTableProps {
   onShowExplanation: (substanceId: string, categoryId: string) => void;
 }
 
-const groupToColorMap: Record<string, string> = SUMMATION_GROUPS_CONFIG.reduce((acc, group) => {
-  acc[group.group] = `bg-${group.colorClass} text-${group.colorClass}-foreground`;
-  return acc;
-}, {} as Record<string, string>);
+const groupToColorMap: Record<string, string> = {
+  ...SUMMATION_GROUPS_CONFIG.reduce((acc, group) => {
+    acc[group.group] = `bg-${group.colorClass} text-${group.colorClass}-foreground`;
+    return acc;
+  }, {} as Record<string, string>),
+  'arie': 'bg-arie text-arie-foreground'
+};
+
 
 function SubstanceContributions({ substance, mode }: { substance: Substance, mode: ThresholdMode }) {
   const contributions = useMemo(() => {
@@ -40,9 +44,10 @@ function SubstanceContributions({ substance, mode }: { substance: Substance, mod
     
     const categoryContributions: Record<string, {
         ratio: number;
-        category: SevesoCategory | NamedSubstance;
+        category: SevesoCategory | NamedSubstance | ArieCategory;
     }> = {};
 
+    // Process Seveso categories
     substance.sevesoCategories.forEach(catId => {
         const category = SEVESO_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
         if (category) {
@@ -55,9 +60,24 @@ function SubstanceContributions({ substance, mode }: { substance: Substance, mod
             }
         }
     });
+    
+    // Process ARIE categories
+    substance.arieCategories.forEach(catId => {
+        const category = ARIE_CATEGORIES[catId];
+        if (category) {
+            const threshold = category.threshold;
+            if (threshold > 0) {
+                const ratio = substance.quantity / threshold;
+                if (!categoryContributions[category.id] || ratio > categoryContributions[category.id].ratio) {
+                    categoryContributions[category.id] = { ratio, category };
+                }
+            }
+        }
+    });
 
     return Object.values(categoryContributions).map(({ ratio, category }) => {
         const percentage = Math.round(ratio * 100);
+        const isArie = category.group === 'arie';
         return {
             key: `${substance.id}-${category.id}`,
             percentage,
@@ -65,10 +85,11 @@ function SubstanceContributions({ substance, mode }: { substance: Substance, mod
             categoryName: category.name,
             categoryId: category.id,
             isExceeded: percentage >= 100,
+            isArie,
         };
     }).filter(item => item.percentage > 0).sort((a,b) => b.percentage - a.percentage);
 
-  }, [substance.quantity, substance.sevesoCategories, mode, substance.id]);
+  }, [substance.quantity, substance.sevesoCategories, substance.arieCategories, mode, substance.id]);
 
   if (contributions.length === 0) {
     return <div className="text-xs text-muted-foreground">-</div>;
@@ -88,7 +109,9 @@ function SubstanceContributions({ substance, mode }: { substance: Substance, mod
                 <Progress 
                   value={contrib.progressValue} 
                   className="h-2" 
-                  indicatorClassName={contrib.isExceeded ? 'bg-destructive' : 'bg-green-600'} 
+                  indicatorClassName={cn(
+                    contrib.isExceeded ? 'bg-destructive' : (contrib.isArie ? 'bg-[hsl(var(--arie-fg))]' : 'bg-green-600')
+                  )} 
                 />
               </div>
             </TooltipTrigger>
@@ -121,7 +144,7 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
         <TableHeader>
           <TableRow>
             <TableHead className="w-[25%]">Productnaam</TableHead>
-            <TableHead>Seveso Categorieën</TableHead>
+            <TableHead>Seveso & ARIE Categorieën</TableHead>
             <TableHead className="text-right">Voorraad (ton)</TableHead>
             <TableHead className="w-[25%]">Bijdrage per Categorie</TableHead>
             <TableHead className="text-right">Acties</TableHead>
@@ -129,7 +152,9 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
         </TableHeader>
         <TableBody>
           {inventory.map((substance) => {
-            const allCategories = substance.sevesoCategories.map(id => SEVESO_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id)).filter(Boolean);
+            const allSevesoCategories = (substance.sevesoCategories || []).map(id => SEVESO_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id)).filter(Boolean);
+            const allArieCategories = (substance.arieCategories || []).map(id => ARIE_CATEGORIES[id]).filter(Boolean);
+            const allCategories = [...allSevesoCategories, ...allArieCategories];
             
             return (
               <TableRow key={substance.id}>

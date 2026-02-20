@@ -133,7 +133,7 @@ export default function SevesoApp() {
   };
 
 
-  const handleAddSubstance = (newSubstance: Omit<Substance, 'id' | 'quantity' | 'sevesoCategories'> & {sevesoCategories: string[]}) => {
+  const handleAddSubstance = (newSubstance: Omit<Substance, 'id' | 'quantity'>) => {
     setInventory(prev => [...prev, {
         ...newSubstance,
         id: `sub-${Date.now()}-${Math.random()}`,
@@ -197,33 +197,24 @@ export default function SevesoApp() {
         }
         const data = JSON.parse(text);
         
-        if (data && (data.inventory || data.companyDetails)) {
-          const loadedInventory = data.inventory || [];
-          const loadedDetails = data.companyDetails || { name: '', address: ''};
+        // Ensure new properties exist, providing defaults if they don't
+        const importedInventory = (data.inventory || data).map((sub: any) => ({
+          ...sub,
+          arieCategories: sub.arieCategories || [],
+        }));
+        const importedDetails = data.companyDetails || { name: '', address: '' };
 
-          if (Array.isArray(loadedInventory) && (loadedInventory.length === 0 || (loadedInventory[0].id && loadedInventory[0].productName && 'quantity' in loadedInventory[0]))) {
-              setInventory(loadedInventory);
-              setCompanyDetails(loadedDetails);
-              toast({
-                title: 'Inventaris succesvol geïmporteerd',
-                description: `${loadedInventory.length} stoffen geladen.`,
-              });
-          } else {
-              throw new Error('Ongeldig inventarisformaat.');
-          }
-        } else {
-          // Legacy support
-          if (Array.isArray(data) && (data.length === 0 || (data[0].id && data[0].productName && 'quantity' in data[0]))) {
-            setInventory(data);
-            setCompanyDetails({ name: '', address: ''});
+        if (Array.isArray(importedInventory)) {
+            setInventory(importedInventory);
+            setCompanyDetails(importedDetails);
             toast({
               title: 'Inventaris succesvol geïmporteerd',
-              description: `${data.length} stoffen geladen.`,
+              description: `${importedInventory.length} stoffen geladen.`,
             });
-          } else {
-            throw new Error('Ongeldig bestandsformaat.');
-          }
+        } else {
+          throw new Error('Ongeldig bestandsformaat.');
         }
+
       } catch (error) {
         console.error("Import Error:", error);
         toast({

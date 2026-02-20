@@ -10,6 +10,13 @@ export interface SevesoCategory {
   };
 }
 
+export interface ArieCategory {
+  id: string;
+  name: string;
+  group: 'arie';
+  threshold: number;
+}
+
 export interface NamedSubstance extends SevesoCategory {
   cas: string;
 }
@@ -20,6 +27,7 @@ export interface Substance {
   casNumber: string | null;
   hStatements: string[];
   sevesoCategories: string[]; // Array of category IDs
+  arieCategories: string[]; // Array of ARIE category IDs
   isNamedSubstance: boolean;
   namedSubstanceName: string | null;
   quantity: number; // in tons
