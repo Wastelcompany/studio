@@ -6,6 +6,7 @@ export const SEVESO_CATEGORIES: Record<string, SevesoCategory> = {
   H1: { id: 'H1', name: 'Acuut toxisch, categorie 1 (alle blootstellingsroutes)', group: 'health', threshold: { low: 5, high: 20 } },
   H2: { id: 'H2', name: 'Acuut toxisch, categorie 2 (alle blootstellingsroutes)', group: 'health', threshold: { low: 50, high: 200 } },
   H3: { id: 'H3', name: 'Acuut toxisch, categorie 3 (inademing)', group: 'health', threshold: { low: 200, high: 500 } },
+  H4: { id: 'H4', name: 'Huidcorrosief, categorie 1', group: 'health', threshold: { low: 25, high: 50 } },
 
   // Physical Hazards
   P1a: { id: 'P1a', name: 'Explosief, instabiel', group: 'physical', threshold: { low: 10, high: 50 } },
@@ -16,8 +17,8 @@ export const SEVESO_CATEGORIES: Record<string, SevesoCategory> = {
   P5a: { id: 'P5a', name: 'Ontvlambare vloeistoffen (cat. 1)', group: 'physical', threshold: { low: 10, high: 50 } },
   P5b: { id: 'P5b', name: 'Ontvlambare vloeistoffen (cat. 2/3, T>kookpunt)', group: 'physical', threshold: { low: 50, high: 200 } },
   P5c: { id: 'P5c', name: 'Ontvlambare vloeistoffen (cat. 2/3)', group: 'physical', threshold: { low: 5000, high: 50000 } },
-  P6a: { id: 'P6a', name: 'Zelfontledende stoffen (Type A/B)', group: 'physical', threshold: { low: 10, high: 50 } },
-  P6b: { id: 'P6b', name: 'Organische peroxiden (Type A/B)', group: 'physical', threshold: { low: 10, high: 50 } },
+  P6a: { id: 'P6a', name: 'Zelfontledende stoffen & Organische peroxiden (Type A/B)', group: 'physical', threshold: { low: 10, high: 50 } },
+  P6b: { id: 'P6b', name: 'Zelfontledende stoffen & Organische peroxiden (Type C,D,E,F)', group: 'physical', threshold: { low: 50, high: 200 } },
   P7: { id: 'P7', name: 'Pyrofore vloeistoffen en vaste stoffen', group: 'physical', threshold: { low: 50, high: 200 } },
   P8: { id: 'P8', name: 'Oxiderende vloeistoffen en vaste stoffen', group: 'physical', threshold: { low: 50, high: 200 } },
   
@@ -26,8 +27,8 @@ export const SEVESO_CATEGORIES: Record<string, SevesoCategory> = {
   E2: { id: 'E2', name: 'Gevaarlijk voor het aquatisch milieu, categorie 2', group: 'environment', threshold: { low: 200, high: 500 } },
 
   // Other Hazards
-  O1: { id: 'O1', name: 'Stoffen die in contact met water ontvlambare gassen ontwikkelen', group: 'other', threshold: { low: 50, high: 200 } },
-  O2: { id: 'O2', name: 'STOT SE categorie 1', group: 'health', threshold: { low: 50, high: 200 } }, // As per guideline, often grouped with Health.
+  O1: { id: 'O1', name: 'Stoffen die reageren met water onder vorming van toxische gassen', group: 'other', threshold: { low: 100, high: 500 } },
+  O2: { id: 'O2', name: 'Stoffen die in contact met water ontvlambare gassen ontwikkelen', group: 'other', threshold: { low: 50, high: 200 } },
   O3: { id: 'O3', name: 'Kankerverwekkend, mutageen, reprotoxisch (CMR)', group: 'other', threshold: { low: 10, high: 50 } },
 };
 
@@ -73,30 +74,32 @@ export const H_PHRASE_MAPPING: Record<string, string> = {
   // Health
   'H300': 'H1', 'H310': 'H1', 'H330': 'H1',
   'H301': 'H2', 'H311': 'H2', 'H331': 'H2',
-  'H332': 'H3',
-  'H370': 'O2',
+  'H370': 'H3', // Note: H3 is more complex, H370 is STOT SE 1. This is a simplification.
+  'H314': 'H4', // Huidcorrosief Cat 1
+  'H332': 'H3', // Simplified to H3
 
   // Physical
-  'EUH001': 'P1a',
-  'H200': 'P1a', 'H201': 'P1a', 'H202': 'P1a', 'H203': 'P1a',
+  'EUH001': 'P1a', // Explosief in droge toestand
+  'H200': 'P1a', 'H201': 'P1a', 'H202': 'P1a', 'H203': 'P1a', 'H205': 'P1a',
   'H220': 'P2', 'H221': 'P2',
-  'H222': 'P3b', 'H223': 'P3a', // H222 is more severe than H223 for aerosols
-  'H270': 'P4',
+  'H222': 'P3b', 'H223': 'P3a',
   'H224': 'P5a',
-  'H225': 'P5c', // Assuming Cat 2
-  'H226': 'P5c', // Assuming Cat 3
-  'H241': 'P6b', 'H242': 'P6b',
+  'H225': 'P5c',
+  'H226': 'P5c',
+  'H240': 'P6a', 'H241': 'P6a',
+  'H242': 'P6b',
   'H250': 'P7',
+  'H270': 'P4',
   'H271': 'P8', 'H272': 'P8',
-
+  
   // Environmental
-  'H400': 'E1',
-  'H410': 'E1',
+  'H400': 'E1', 'H410': 'E1',
   'H411': 'E2',
 
   // Other
-  'H260': 'O1', 'H261': 'O1',
-  'H350': 'O3', 'H340': 'O3', 'H360': 'O3',
+  'EUH014': 'O1',
+  'H260': 'O2', 'H261': 'O2',
+  'H340': 'O3', 'H350': 'O3', 'H360': 'O3',
 };
 
 export const ARIE_H_PHRASE_MAPPING: Record<string, string[]> = {
@@ -157,6 +160,7 @@ export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
     'H301': 'Giftig bij inslikken',
     'H310': 'Dodelijk bij contact met de huid',
     'H311': 'Giftig bij contact met de huid',
+    'H314': 'Veroorzaakt ernstige brandwonden en oogletsel',
     'H330': 'Dodelijk bij inademing',
     'H331': 'Giftig bij inademing',
     'H332': 'Schadelijk bij inademing',
@@ -175,6 +179,8 @@ export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
     'H410': 'Zeer giftig voor in het water levende organismen, met langdurige gevolgen',
     'H411': 'Giftig voor in het water levende organismen, met langdurige gevolgen',
     'EUH001': 'In droge toestand ontplofbaar',
+    'EUH014': 'Reageert heftig met water',
+    'EUH029': 'Vormt giftig gas in contact met water',
 };
 
 
