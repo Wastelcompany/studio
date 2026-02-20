@@ -1,5 +1,5 @@
 import type { Substance, SevesoCategory, ArieCategory, NamedSubstance, ThresholdMode, SummationGroup } from '@/lib/types';
-import { FlaskConical, Flame, Leaf, AlertTriangle, Atom } from 'lucide-react';
+import { FlaskConical, Flame, Leaf, AlertTriangle, Atom, Briefcase } from 'lucide-react';
 
 export const SEVESO_CATEGORIES: Record<string, SevesoCategory> = {
   // Health Hazards
@@ -41,25 +41,32 @@ export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
 
 export const ARIE_CATEGORIES: Record<string, ArieCategory> = {
     // 1. Vergiftiging
-    'ARIE-Tox1': { id: 'ARIE-Tox1', name: 'Acuut toxisch cat. 1', group: 'arie', threshold: 0.05 }, // 50 kg
-    'ARIE-Tox2': { id: 'ARIE-Tox2', name: 'Acuut toxisch cat. 2', group: 'arie', threshold: 0.2 }, // 200 kg
-    'ARIE-Tox3d': { id: 'ARIE-Tox3d', name: 'Acuut toxisch cat. 3 (huid)', group: 'arie', threshold: 0.5 }, // 500 kg
-    'ARIE-Tox3i': { id: 'ARIE-Tox3i', name: 'Acuut toxisch cat. 3 (inademing)', group: 'arie', threshold: 0.5 }, // 500 kg
-    'ARIE-STOT-SE1': { id: 'ARIE-STOT-SE1', name: 'STOT eenmalig cat. 1', group: 'arie', threshold: 0.5 }, // 500 kg
-    'ARIE-STOT-RE1': { id: 'ARIE-STOT-RE1', name: 'STOT herhaald cat. 1', group: 'arie', threshold: 0.5 }, // 500 kg
+    'ARIE-Tox1': { id: 'ARIE-Tox1', name: 'Acuut toxisch cat. 1 (alle routes)', group: 'arie', threshold: 0.05 },
+    'ARIE-Tox2': { id: 'ARIE-Tox2', name: 'Acuut toxisch cat. 2 (alle routes)', group: 'arie', threshold: 0.2 },
+    'ARIE-Tox3o': { id: 'ARIE-Tox3o', name: 'Acuut toxisch cat. 3 (oraal)', group: 'arie', threshold: 0.5 },
+    'ARIE-Tox3d': { id: 'ARIE-Tox3d', name: 'Acuut toxisch cat. 3 (dermaal)', group: 'arie', threshold: 1.5 },
+    'ARIE-Tox3i-gas': { id: 'ARIE-Tox3i-gas', name: 'Acuut toxisch cat. 3 (inhalatie, gas)', group: 'arie', threshold: 2.5 },
+    'ARIE-Tox3i-damp': { id: 'ARIE-Tox3i-damp', name: 'Acuut toxisch cat. 3 (inhalatie, damp)', group: 'arie', threshold: 0.5 },
+    'ARIE-Tox3i-stof': { id: 'ARIE-Tox3i-stof', name: 'Acuut toxisch cat. 3 (inhalatie, stof)', group: 'arie', threshold: 0.5 },
+    'ARIE-STOT-SE1': { id: 'ARIE-STOT-SE1', name: 'STOT eenmalig cat. 1', group: 'arie', threshold: 0.5 },
+    'ARIE-STOT-RE1': { id: 'ARIE-STOT-RE1', name: 'STOT herhaald cat. 1', group: 'arie', threshold: 0.5 },
     
     // 2. Fysische gevaren
-    'ARIE-Exp': { id: 'ARIE-Exp', name: 'Ontplofbaar (subkl. 1.1-1.6)', group: 'arie', threshold: 0.05 }, // 50 kg
-    'ARIE-SelfReact': { id: 'ARIE-SelfReact', name: 'Zelfontledend type A/B', group: 'arie', threshold: 0.05 }, // 50 kg
-    'ARIE-OrgPerox': { id: 'ARIE-OrgPerox', name: 'Organische peroxiden type A/B', group: 'arie', threshold: 0.05 }, // 50 kg
-    'ARIE-Flam1': { id: 'ARIE-Flam1', name: 'Ontvlambare vloeistoffen cat. 1', group: 'arie', threshold: 1 }, // 1000 kg
-    'ARIE-Flam2': { id: 'ARIE-Flam2', name: 'Ontvlambare vloeistoffen cat. 2', group: 'arie', threshold: 10 }, // 10000 kg
-    'ARIE-Pyro': { id: 'ARIE-Pyro', name: 'Pyrofore stoffen cat. 1', group: 'arie', threshold: 0.05 }, // 50 kg
+    'ARIE-Exp': { id: 'ARIE-Exp', name: 'Ontplofbaar (instabiel, 1.1-1.4)', group: 'arie', threshold: 0.05 },
+    'ARIE-FlamGas': { id: 'ARIE-FlamGas', name: 'Ontvlambare gassen cat. 1/2', group: 'arie', threshold: 5 },
+    'ARIE-FlamLiq1': { id: 'ARIE-FlamLiq1', name: 'Ontvlambare vloeistoffen cat. 1', group: 'arie', threshold: 1 },
+    'ARIE-FlamLiq23': { id: 'ARIE-FlamLiq23', name: 'Ontvlambare vloeistoffen cat. 2/3 (onder condities)', group: 'arie', threshold: 5 },
+    'ARIE-SelfReact-AB': { id: 'ARIE-SelfReact-AB', name: 'Zelfontledend type A/B', group: 'arie', threshold: 0.05 },
+    'ARIE-Pyro-1': { id: 'ARIE-Pyro-1', name: 'Pyrofore vloeistoffen/vaste stoffen cat. 1', group: 'arie', threshold: 0.05 },
+    'ARIE-WaterReact-1': { id: 'ARIE-WaterReact-1', name: 'Stoffen die met water ontvlambare gassen vormen cat. 1', group: 'arie', threshold: 0.05 },
+    'ARIE-OrgPerox-AB': { id: 'ARIE-OrgPerox-AB', name: 'Organische peroxiden type A/B', group: 'arie', threshold: 0.05 },
+    'ARIE-OxiGas-1': { id: 'ARIE-OxiGas-1', name: 'Oxiderende gassen cat. 1', group: 'arie', threshold: 5 },
+    'ARIE-OxiLiqSol-123': { id: 'ARIE-OxiLiqSol-123', name: 'Oxiderende vloeistoffen/vaste stoffen cat. 1/2/3', group: 'arie', threshold: 5 },
 
     // 3. CMR
-    'ARIE-Carc1': { id: 'ARIE-Carc1', name: 'Kankerverwekkend cat. 1A/1B', group: 'arie', threshold: 0.5 }, // 500 kg
-    'ARIE-Muta1': { id: 'ARIE-Muta1', name: 'Mutageen cat. 1A/1B', group: 'arie', threshold: 0.5 }, // 500 kg
-    'ARIE-Repr1': { id: 'ARIE-Repr1', name: 'Reprotoxisch cat. 1A/1B', group: 'arie', threshold: 0.5 }, // 500 kg
+    'ARIE-Carc1AB': { id: 'ARIE-Carc1AB', name: 'Kankerverwekkend cat. 1A/1B', group: 'arie', threshold: 0.5 },
+    'ARIE-Muta1AB': { id: 'ARIE-Muta1AB', name: 'Mutageen cat. 1A/1B', group: 'arie', threshold: 0.5 },
+    'ARIE-Repr1AB': { id: 'ARIE-Repr1AB', name: 'Reprotoxisch cat. 1A/1B', group: 'arie', threshold: 0.5 },
 };
 
 export const H_PHRASE_MAPPING: Record<string, string> = {
@@ -94,25 +101,33 @@ export const H_PHRASE_MAPPING: Record<string, string> = {
 
 export const ARIE_H_PHRASE_MAPPING: Record<string, string[]> = {
     // Vergiftiging
-    'H300': ['ARIE-Tox1'], 'H310': ['ARIE-Tox1'], 'H330': ['ARIE-Tox1'],
-    'H301': ['ARIE-Tox2'],
-    'H311': ['ARIE-Tox2', 'ARIE-Tox3d'], // Overlaps
-    'H331': ['ARIE-Tox2', 'ARIE-Tox3i'], // Overlaps
+    'H300': ['ARIE-Tox1'],
+    'H310': ['ARIE-Tox1'],
+    'H330': ['ARIE-Tox1'],
+    'H301': ['ARIE-Tox2', 'ARIE-Tox3o'],
+    'H311': ['ARIE-Tox2', 'ARIE-Tox3d'],
+    'H331': ['ARIE-Tox2', 'ARIE-Tox3i-gas', 'ARIE-Tox3i-damp'],
     'H370': ['ARIE-STOT-SE1'],
     'H372': ['ARIE-STOT-RE1'],
 
     // Fysisch
-    'H200': ['ARIE-Exp'], 'H201': ['ARIE-Exp'], 'H202': ['ARIE-Exp'], 'H203': ['ARIE-Exp'], 'H204': ['ARIE-Exp'], 'H205': ['ARIE-Exp'],
-    'H240': ['ARIE-SelfReact', 'ARIE-OrgPerox'],
-    'H241': ['ARIE-SelfReact', 'ARIE-OrgPerox'],
-    'H224': ['ARIE-Flam1'],
-    'H225': ['ARIE-Flam2'],
-    'H250': ['ARIE-Pyro'],
+    'H200': ['ARIE-Exp'], 'H201': ['ARIE-Exp'], 'H202': ['ARIE-Exp'], 'H203': ['ARIE-Exp'], 'H204': ['ARIE-Exp'],
+    'H220': ['ARIE-FlamGas'], 'H221': ['ARIE-FlamGas'],
+    'H224': ['ARIE-FlamLiq1'],
+    'H225': ['ARIE-FlamLiq23'], // Cat 2
+    'H226': ['ARIE-FlamLiq23'], // Cat 3
+    'H240': ['ARIE-SelfReact-AB', 'ARIE-OrgPerox-AB'],
+    'H241': ['ARIE-SelfReact-AB', 'ARIE-OrgPerox-AB'],
+    'H250': ['ARIE-Pyro-1'],
+    'H260': ['ARIE-WaterReact-1'],
+    'H270': ['ARIE-OxiGas-1'],
+    'H271': ['ARIE-OxiLiqSol-123'],
+    'H272': ['ARIE-OxiLiqSol-123'],
 
     // CMR
-    'H350': ['ARIE-Carc1'], 'H350i': ['ARIE-Carc1'],
-    'H340': ['ARIE-Muta1'],
-    'H360': ['ARIE-Repr1'], 'H360F': ['ARIE-Repr1'], 'H360D': ['ARIE-Repr1'], 'H360FD': ['ARIE-Repr1'], 'H360Fd': ['ARIE-Repr1'], 'H360Df': ['ARIE-Repr1'],
+    'H350': ['ARIE-Carc1AB'], 'H350i': ['ARIE-Carc1AB'],
+    'H340': ['ARIE-Muta1AB'],
+    'H360': ['ARIE-Repr1AB'], 'H360F': ['ARIE-Repr1AB'], 'H360D': ['ARIE-Repr1AB'], 'H360FD': ['ARIE-Repr1AB'], 'H360Fd': ['ARIE-Repr1AB'], 'H360Df': ['ARIE-Repr1AB'],
 };
 
 export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
@@ -199,7 +214,12 @@ export const SUMMATION_GROUPS_CONFIG = [
 ] as const;
 
 
-export const calculateSummations = (inventory: Substance[], mode: ThresholdMode): { summationGroups: SummationGroup[], overallStatus: 'Geen' | 'Lagedrempel' | 'Hogedrempel', criticalGroup: string | null } => {
+export const calculateSummations = (inventory: Substance[], mode: ThresholdMode): { 
+  summationGroups: SummationGroup[], 
+  arieSummation: { totalRatio: number, isExceeded: boolean },
+  overallStatus: 'Geen' | 'Lagedrempel' | 'Hogedrempel', 
+  criticalGroup: string | null 
+} => {
   const groupTotals: Record<string, number> = {
     health: 0,
     physical: 0,
@@ -208,28 +228,43 @@ export const calculateSummations = (inventory: Substance[], mode: ThresholdMode)
     named: 0,
   };
 
+  let arieTotalRatio = 0;
+
   inventory.forEach(substance => {
     if (substance.quantity > 0) {
+      // Seveso calculation
       const substanceGroupContributions: Record<string, number> = {};
-
       substance.sevesoCategories.forEach(catId => {
         const category = SEVESO_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
         if (category) {
           const threshold = category.threshold[mode];
           if (threshold > 0) {
             const ratio = substance.quantity / threshold;
-            
             if (!substanceGroupContributions[category.group] || ratio > substanceGroupContributions[category.group]) {
                substanceGroupContributions[category.group] = ratio;
             }
           }
         }
       });
-      
-      // Add the maximum contribution for each group to the total
       for (const group in substanceGroupContributions) {
         groupTotals[group] += substanceGroupContributions[group];
       }
+
+      // ARIE calculation
+      let maxArieRatio = 0;
+      substance.arieCategories.forEach(catId => {
+          const category = ARIE_CATEGORIES[catId];
+          if (category) {
+              const threshold = category.threshold;
+              if (threshold > 0) {
+                  const ratio = substance.quantity / threshold;
+                  if (ratio > maxArieRatio) {
+                      maxArieRatio = ratio;
+                  }
+              }
+          }
+      });
+      arieTotalRatio += maxArieRatio;
     }
   });
 
@@ -252,9 +287,15 @@ export const calculateSummations = (inventory: Substance[], mode: ThresholdMode)
   const mostCriticalGroup = summationGroups
     .filter(g => g.totalRatio > 0)
     .sort((a, b) => b.totalRatio - a.totalRatio)[0];
+  
+  const arieSummation = {
+      totalRatio: arieTotalRatio,
+      isExceeded: arieTotalRatio >= 1,
+  };
 
   return { 
-    summationGroups, 
+    summationGroups,
+    arieSummation, 
     overallStatus, 
     criticalGroup: mostCriticalGroup ? mostCriticalGroup.name : null 
   };

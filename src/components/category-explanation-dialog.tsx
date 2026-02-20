@@ -45,7 +45,10 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
   // Check H-phrases
   substance.hStatements.forEach(hStatement => {
     const code = hStatement.split(' ')[0].toUpperCase();
-    if (H_PHRASE_MAPPING[code] === categoryId || ARIE_H_PHRASE_MAPPING[code] === categoryId) {
+    const isSevesoMatch = H_PHRASE_MAPPING[code] === categoryId;
+    const isArieMatch = ARIE_H_PHRASE_MAPPING[code]?.includes(categoryId);
+
+    if (isSevesoMatch || isArieMatch) {
         explanations.push({
             source: code,
             description: H_PHRASE_DESCRIPTIONS[code] || hStatement,

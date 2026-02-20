@@ -7,8 +7,10 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSevesoCalculator } from "@/hooks/use-seveso-calculator";
 import type { Substance, ThresholdMode, SummationGroup as SummationGroupType } from "@/lib/types";
-import { AlertCircle, CheckCircle2, ShieldAlert } from "lucide-react";
+import { AlertCircle, CheckCircle2, ShieldAlert, Briefcase } from "lucide-react";
 import GroupDetailsDialog from "./group-details-dialog";
+import { Separator } from "./ui/separator";
+import { cn } from "@/lib/utils";
 
 interface DashboardProps {
   inventory: Substance[];
@@ -17,7 +19,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ inventory, thresholdMode, setThresholdMode }: DashboardProps) {
-  const { summationGroups, overallStatus, criticalGroup } = useSevesoCalculator(inventory, thresholdMode);
+  const { summationGroups, arieSummation, overallStatus, criticalGroup } = useSevesoCalculator(inventory, thresholdMode);
   const [selectedGroup, setSelectedGroup] = useState<SummationGroupType | null>(null);
 
   const getStatusIcon = () => {
@@ -38,6 +40,8 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
       default: return 'text-green-600 dark:text-green-400';
     }
   }
+  
+  const ariePercentage = Math.round(arieSummation.totalRatio * 100);
 
   return (
     <div className="space-y-6">
@@ -59,7 +63,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-xs text-muted-foreground">Schakel tussen lage en hoge drempels voor de berekening.</p>
+          <p className="text-xs text-muted-foreground">Schakel tussen lage en hoge Seveso drempels.</p>
         </CardContent>
       </Card>
 
@@ -67,7 +71,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
         <CardHeader>
           <CardTitle>Sommatie Overzicht</CardTitle>
           <CardDescription>
-            Ratio per gevarengroep. Klik op een groep voor details.
+            Ratio per Seveso gevarengroep en ARIE. Klik op een groep voor details.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-1">
@@ -92,6 +96,28 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
               </div>
             );
           })}
+
+          <Separator className="my-3" />
+
+          <div className="p-2 -m-2 rounded-lg">
+             <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                    <Briefcase className="w-4 h-4 text-muted-foreground" />
+                    <span>ARIE Sommatie</span>
+                </div>
+                <span className={cn("text-sm font-semibold", arieSummation.isExceeded && "text-destructive")}>
+                    {ariePercentage}%
+                </span>
+             </div>
+             <Progress 
+                value={Math.min(ariePercentage, 100)} 
+                className="h-2" 
+                indicatorClassName={cn(
+                  arieSummation.isExceeded ? 'bg-destructive' : 'bg-[hsl(var(--arie-fg))]'
+                )} 
+              />
+          </div>
+
         </CardContent>
       </Card>
       
@@ -104,11 +130,11 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
             <p className={`mt-2 text-2xl font-bold ${getStatusColor()}`}>{overallStatus}-inrichting</p>
             {overallStatus !== 'Geen' ? (
                 <p className="text-muted-foreground mt-1">
-                    Meest kritieke groep: <span className="font-semibold text-foreground">{criticalGroup}</span>
+                    Meest kritieke Seveso groep: <span className="font-semibold text-foreground">{criticalGroup}</span>
                 </p>
             ) : (
                 <p className="text-muted-foreground mt-1">
-                    Geen drempelwaarden overschreden.
+                    Geen Seveso drempelwaarden overschreden.
                 </p>
             )}
         </CardContent>
