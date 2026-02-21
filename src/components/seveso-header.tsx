@@ -1,14 +1,20 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, FileDown, Trash2, Info, FileUp, Loader2 } from 'lucide-react';
+import { Upload, FileDown, Trash2, Info, FileUp, Loader2, ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface SevesoHeaderProps {
   onUpload: () => void;
   onClearAll: () => void;
   onShowReference: () => void;
-  onImport: () => void;
-  onExport: () => void;
+  onImport: (type: 'json' | 'excel') => void;
+  onExport: (type: 'json' | 'excel') => void;
   onSaveAsPdf: () => void;
   isSavingPdf: boolean;
 }
@@ -34,8 +40,27 @@ export default function SevesoHeader({
       </div>
       <div className="relative z-10 flex flex-wrap items-center gap-2">
         <Button onClick={onUpload} type="button"><Upload />Upload SDS</Button>
-        <Button variant="outline" onClick={onImport} type="button"><FileUp />Import</Button>
-        <Button variant="outline" onClick={onExport} type="button"><FileText />Export</Button>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline"><FileUp /> Import <ChevronDown className="ml-1 h-4 w-4 opacity-50" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onImport('json')}>Importeer JSON (.json)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onImport('excel')}>Importeer Excel (.xlsx)</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline"><FileDown /> Export <ChevronDown className="ml-1 h-4 w-4 opacity-50" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onExport('json')}>Exporteer JSON (.json)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onExport('excel')}>Exporteer Excel (.xlsx)</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <Button variant="outline" onClick={onSaveAsPdf} type="button" disabled={isSavingPdf}>
           {isSavingPdf ? <Loader2 className="animate-spin" /> : <FileDown />}
           {isSavingPdf ? 'Bezig...' : 'Opslaan als PDF'}

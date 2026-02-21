@@ -11,8 +11,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import autoTable from 'jspdf-autotable';
 import CompanyDetails from './company-details';
+import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES, classifySubstance } from '@/lib/seveso';
+import * as XLSX from 'xlsx';
 
 export default function SevesoApp() {
   const [inventory, setInventory] = useState<Substance[]>([]);
@@ -22,7 +24,8 @@ export default function SevesoApp() {
   const [isSdsUploadOpen, setIsSdsUploadOpen] = useState(false);
   const [isReferenceGuideOpen, setIsReferenceGuideOpen] = useState(false);
   const [isClearAlertOpen, setIsClearAlertOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const jsonFileInputRef = useRef<HTMLInputElement>(null);
+  const excelFileInputRef = useRef<HTMLInputElement>(null);
   const { toast, dismiss } = useToast();
 
   const [explanationData, setExplanationData] = useState<{ substance: Substance | null; categoryId: string | null; type: 'seveso' | 'arie' | null }>({ substance: null, categoryId: null, type: null });
@@ -31,102 +34,160 @@ export default function SevesoApp() {
   const dashboardRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
 
+  const generateFileName = (extension: string) => {
+    const date = new Date();
+    const YYYYMMDD = date.getFullYear() + String(date.getMonth() + 1).padStart(2, '0') + String(date.getDate()).padStart(2, '0');
+    const sanitizedName = (companyDetails.name || 'Naamloos').replace(/[^a-z0-9]/gi, '_');
+    const sanitizedAddress = (companyDetails.address || 'Adresloos').replace(/[^a-z0-9]/gi, '_');
+    return `${sanitizedName}.${sanitizedAddress}.${YYYYMMDD}.${extension}`;
+  };
+
   const handleSaveAsPdf = async () => {
-    const dashboardEl = dashboardRef.current;
-    const tableEl = tableRef.current;
-
-    if (!dashboardEl || !tableEl) {
-        toast({
-            variant: "destructive",
-            title: "Fout bij PDF genereren",
-            description: "De benodigde componenten konden niet gevonden worden.",
-        });
-        return;
-    }
-
     setIsSavingPdf(true);
     const { id: toastId } = toast({
         title: "PDF genereren...",
-        description: "Rapport wordt samengesteld. Een ogenblik geduld.",
+        description: "Rapport wordt samengesteld.",
     });
 
     try {
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const margin = 10;
-        const contentWidth = pdfWidth - margin * 2;
-        let finalY = margin;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 15;
+        let finalY = 18;
 
-        // Add title
-        pdf.setFontSize(18);
-        pdf.text("Seveso Drempelwaarde Rapport", margin, finalY + 5);
-        finalY += 10;
+        const colors = {
+            primary: [22, 80, 91], foreground: [58, 66, 78], destructive: [239, 68, 68], muted: [100, 116, 139], bgLight: [248, 250, 252], border: [226, 232, 240]
+        };
 
-        // Add company details
+        const addFooter = (pdfDoc: jsPDF) => {
+            const totalPages = (pdfDoc as any).internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                pdfDoc.setPage(i);
+                pdfDoc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
+                pdfDoc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+                pdfDoc.setFontSize(8);
+                pdfDoc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
+                pdfDoc.text(`Pagina ${i} van ${totalPages}`, margin, pageHeight - 12);
+                pdfDoc.setFont('helvetica', 'bold');
+                pdfDoc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+                pdfDoc.text("ChemStats", pageWidth - margin, pageHeight - 12, { align: 'right' });
+                pdfDoc.setFont('helvetica', 'normal');
+                pdfDoc.setFontSize(7);
+                pdfDoc.text("Gevaarlijke Stoffen Analyse - Seveso en ARIE drempelwaarde check", pageWidth - margin, pageHeight - 8, { align: 'right' });
+            }
+        };
+
+        doc.setFontSize(22);
+        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Seveso en ARIE Rapportage", margin, finalY);
+        finalY += 7;
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
+        doc.text("Gevaarlijke Stoffen Analyse - Seveso en ARIE drempelwaarde check", margin, finalY);
+        finalY += 6;
+        doc.setFontSize(9);
+        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
+        doc.text(`Gegenereerd op ${new Date().toLocaleDateString('nl-NL')}`, margin, finalY);
+        finalY += 8;
+
         if (companyDetails.name || companyDetails.address) {
-            pdf.setFontSize(12);
-            pdf.setTextColor(100);
-            if(companyDetails.name) {
-                pdf.text(`Bedrijf: ${companyDetails.name}`, margin, finalY);
-                finalY += 6;
-            }
-            if(companyDetails.address) {
-                pdf.text(`Adres: ${companyDetails.address}`, margin, finalY);
-                finalY += 6;
-            }
-            pdf.setTextColor(0);
+            doc.setFillColor(colors.bgLight[0], colors.bgLight[1], colors.bgLight[2]);
+            doc.rect(margin, finalY, pageWidth - (margin * 2), 20, 'F');
+            let detailsY = finalY + 6;
+            doc.setFontSize(10);
+            doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
+            doc.setFont('helvetica', 'bold');
+            doc.text("Bedrijfsgegevens", margin + 5, detailsY);
+            doc.setFont('helvetica', 'normal');
+            detailsY += 5;
+            if (companyDetails.name) { doc.text(companyDetails.name, margin + 5, detailsY); detailsY += 4.5; }
+            if (companyDetails.address) { doc.text(companyDetails.address, margin + 5, detailsY); }
+            finalY += 30;
         }
-        finalY += 10;
 
+        const stats = calculateSummations(inventory, thresholdMode);
 
-        // 1. Process Dashboard
-        const dashboardCanvas = await html2canvas(dashboardEl, { scale: 2, backgroundColor: '#ffffff' });
-        const dashboardImgData = dashboardCanvas.toDataURL('image/png');
-        const dashboardImgProps = pdf.getImageProperties(dashboardImgData);
-        const dashboardPdfHeight = (dashboardImgProps.height * contentWidth) / dashboardImgProps.width;
-        
-        pdf.setFontSize(14);
-        pdf.text("Sommatie Overzicht", margin, finalY);
-        finalY += 8;
-        pdf.addImage(dashboardImgData, 'PNG', margin, finalY, contentWidth, dashboardPdfHeight);
-        finalY += dashboardPdfHeight;
+        doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("1. Inleiding", margin, finalY); finalY += 5;
+        doc.setFontSize(9.5); doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]); doc.setFont('helvetica', 'normal');
+        const introText = "Deze rapportage biedt een gedetailleerde analyse van de gevaarlijke stoffen aanwezig binnen de inrichting. Het doel is om vast te stellen of de opslag en het gebruik van deze stoffen de drempelwaarden overschrijden zoals vastgelegd in de Seveso-III richtlijn (2012/18/EU) en de regeling Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE).";
+        const splitIntro = doc.splitTextToSize(introText, pageWidth - (margin * 2)); doc.text(splitIntro, margin, finalY); finalY += (splitIntro.length * 5) + 6;
 
-        // 2. Process Table
-        const tableCanvas = await html2canvas(tableEl, { scale: 2, backgroundColor: '#ffffff' });
-        const tableImgData = tableCanvas.toDataURL('image/png');
-        const tableImgProps = pdf.getImageProperties(tableImgData);
-        const tablePdfHeight = (tableImgProps.height * contentWidth) / tableImgProps.width;
+        doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("2. Methode", margin, finalY); finalY += 5;
+        const methodeText = "De beoordeling is uitgevoerd door de gevarenaanduidingen (H-zinnen) uit de veiligheidsinformatiebladen (SDS) te vertalen naar specifieke gevarencategorieën. Hoewel de basis voor de sommatieregels vergelijkbaar is, hanteert de ARIE-regeling eigen drempelwaarden en specifieke categorieën (zoals bijv. voor H314) die afwijken van de Seveso-systematiek. Voor beide kaders wordt per gevarengroep de meest kritieke categorie per stof bepaald, waarna de bijdragen binnen de betreffende wettelijke kaders worden gesommeerd.";
+        const splitMethode = doc.splitTextToSize(methodeText, pageWidth - (margin * 2)); doc.text(splitMethode, margin, finalY); finalY += (splitMethode.length * 5) + 8;
 
-        finalY += 15; // Space between sections
+        doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("3. Resultaten", margin, finalY); finalY += 6;
+        const isSevesoExceeded = stats.overallStatus !== 'Geen';
+        const boxWidth = (pageWidth - (margin * 2) - 8) / 2;
+        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]); doc.setFillColor(255, 255, 255); doc.roundedRect(margin, finalY, boxWidth, 20, 1.5, 1.5, 'FD');
+        doc.setFontSize(9); doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]); doc.text("Seveso Status", margin + 5, finalY + 7);
+        doc.setFontSize(11); doc.setTextColor(isSevesoExceeded ? colors.destructive[0] : colors.primary[0], isSevesoExceeded ? colors.destructive[1] : colors.primary[1], isSevesoExceeded ? colors.destructive[2] : colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text(stats.overallStatus === 'Geen' ? 'Geen Seveso-inrichting' : `${stats.overallStatus}-inrichting`, margin + 5, finalY + 14);
+        doc.setFillColor(255, 255, 255); doc.roundedRect(margin + boxWidth + 8, finalY, boxWidth, 20, 1.5, 1.5, 'FD');
+        doc.setFontSize(9); doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]); doc.text("ARIE Status", margin + boxWidth + 13, finalY + 7);
+        doc.setFontSize(11); doc.setTextColor(stats.arieExceeded ? colors.destructive[0] : colors.foreground[0], stats.arieExceeded ? colors.destructive[1] : colors.foreground[1], stats.arieExceeded ? colors.destructive[2] : colors.foreground[2]); doc.setFont('helvetica', 'bold'); doc.text(stats.arieExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig', margin + boxWidth + 13, finalY + 14);
+        finalY += 28;
 
-        // Check if table fits on current page
-        if (finalY + tablePdfHeight + 20 > pdfHeight) {
-            pdf.addPage();
-            finalY = margin; // Reset Y for new page
-        }
-        
-        pdf.setFontSize(14);
-        pdf.text('Inventaris Details', margin, finalY);
-        finalY += 8;
-        pdf.addImage(tableImgData, 'PNG', margin, finalY, contentWidth, tablePdfHeight);
+        const drawDashboardColumn = (title: string, groups: any[], isArie: boolean, x: number, y: number, width: number) => {
+            let currentY = y; doc.setFontSize(12); doc.setTextColor(isArie ? colors.foreground[0] : colors.primary[0], isArie ? colors.foreground[1] : colors.primary[1], isArie ? colors.foreground[2] : colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text(title, x, currentY); currentY += 6;
+            groups.forEach(group => {
+                const ratio = group.totalRatio; const percentage = Math.round(ratio * 100); const isExceeded = ratio >= 1;
+                doc.setFontSize(8.5); doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]); doc.setFont('helvetica', 'normal'); doc.text(group.name, x, currentY);
+                doc.setFont('helvetica', 'bold'); doc.setTextColor(isExceeded ? colors.destructive[0] : colors.foreground[0], isExceeded ? colors.destructive[1] : colors.foreground[1], isExceeded ? colors.destructive[2] : colors.foreground[2]); doc.text(`${percentage}%`, x + width, currentY, { align: 'right' });
+                currentY += 2.5; const barHeight = 2.2; doc.setFillColor(241, 245, 249); doc.roundedRect(x, currentY, width, barHeight, 0.5, 0.5, 'F');
+                if (ratio > 0) {
+                    const fillWidth = Math.min(ratio, 1) * width;
+                    if (isExceeded) doc.setFillColor(colors.destructive[0], colors.destructive[1], colors.destructive[2]);
+                    else if (isArie) doc.setFillColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
+                    else doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+                    doc.roundedRect(x, currentY, fillWidth, barHeight, 0.5, 0.5, 'F');
+                }
+                currentY += 8.5;
+            });
+            return currentY;
+        };
 
-        pdf.save('seveso-rapport.pdf');
+        const colWidth = (pageWidth - (margin * 2) - 15) / 2;
+        const startSommatieY = finalY;
+        const endSevesoY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, startSommatieY, colWidth);
+        const endArieY = drawDashboardColumn("ARIE Sommatie", stats.arieSummationGroups, true, margin + colWidth + 15, startSommatieY, colWidth);
+        finalY = Math.max(endSevesoY, endArieY) + 6;
 
-        dismiss(toastId);
-        toast({
-            title: "PDF opgeslagen",
-            description: "Het rapport is succesvol gedownload."
+        doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("4. Conclusie", margin, finalY); finalY += 5;
+        const conclusieText = `Op basis van de huidige inventarisatie is de inrichting ${isSevesoExceeded ? 'wel' : 'niet'} aan te merken als een Seveso-inrichting (${stats.overallStatus === 'Geen' ? 'geen drempels overschreden' : stats.overallStatus}). Tevens is de inrichting ${stats.arieExceeded ? 'wel' : 'niet'} ARIE-plichtig met een totale sommatiewaarde van ${Math.round(stats.arieTotal * 100)}%.`;
+        const splitConclusie = doc.splitTextToSize(conclusieText, pageWidth - (margin * 2)); doc.text(splitConclusie, margin, finalY);
+
+        doc.addPage();
+        let invY = 20; doc.setFontSize(16); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("Volledige Inventaris", margin, invY); invY += 8;
+        const tableData = inventory.map(sub => [
+            { content: sub.productName + (sub.casNumber ? `\n(${sub.casNumber})` : ''), styles: { fontStyle: 'bold' } },
+            sub.sevesoCategoryIds.map(id => (ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))?.displayId || id).join(", "),
+            sub.arieCategoryIds.map(id => ALL_CATEGORIES[id]?.displayId || id).join(", "),
+            { content: `${sub.quantity} ton`, styles: { halign: 'right' } }
+        ]);
+
+        autoTable(doc, {
+            startY: invY,
+            head: [['Product / CAS', 'Seveso', 'ARIE', 'Voorraad']],
+            body: tableData as any,
+            theme: 'striped',
+            headStyles: { fillColor: colors.primary, textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 9 },
+            columnStyles: { 0: { cellWidth: 50 }, 1: { cellWidth: 50 }, 2: { cellWidth: 50 }, 3: { cellWidth: 25 } },
+            margin: { left: margin, right: margin }
         });
+
+        addFooter(doc);
+        doc.save(generateFileName('pdf'));
+        dismiss(toastId);
+        toast({ title: "PDF opgeslagen", description: "Het rapport is succesvol gedownload." });
 
     } catch (error) {
         console.error("PDF Generation Error:", error);
         dismiss(toastId);
-        toast({
-            variant: "destructive",
-            title: "PDF Generatie Mislukt",
-            description: "Er is een onverwachte fout opgetreden.",
-        });
+        toast({ variant: "destructive", title: "PDF Generatie Mislukt", description: "Fout bij PDF maken." });
     } finally {
         setIsSavingPdf(false);
     }
@@ -155,95 +216,134 @@ export default function SevesoApp() {
     setIsClearAlertOpen(false);
   };
   
-  const handleExport = () => {
+  const handleExport = (type: 'json' | 'excel') => {
     if (inventory.length === 0 && !companyDetails.name && !companyDetails.address) {
-      toast({
-        variant: 'destructive',
-        title: 'Export Mislukt',
-        description: 'Er zijn geen gegevens om te exporteren.',
-      });
+      toast({ variant: 'destructive', title: 'Export Mislukt', description: 'Geen gegevens om te exporteren.' });
       return;
     }
-    const exportData = {
-        companyDetails,
-        inventory
-    };
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'seveso-inventaris.json';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast({
-      title: 'Export Succesvol',
-      description: 'Inventaris opgeslagen als seveso-inventaris.json.',
-    });
+
+    if (type === 'json') {
+        const exportData = { companyDetails, inventory };
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = generateFileName('json');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    } else {
+        // Excel Export
+        const wsData = [
+            ["Bedrijfsgegevens", ""],
+            ["Bedrijfsnaam", companyDetails.name || "-"],
+            ["Adres", companyDetails.address || "-"],
+            ["Datum", new Date().toLocaleDateString('nl-NL')],
+            [],
+            ["Inventarisatie Gevaarlijke Stoffen", "", "", "", ""],
+            ["Productnaam", "CAS Nummer", "Seveso Categorieën", "ARIE Categorieën", "Voorraad (ton)", "H-zinnen"]
+        ];
+
+        inventory.forEach(sub => {
+            const sevesoCats = sub.sevesoCategoryIds.map(id => (ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))?.displayId || id).join(", ");
+            const arieCats = sub.arieCategoryIds.map(id => ALL_CATEGORIES[id]?.displayId || id).join(", ");
+            wsData.push([
+                sub.productName,
+                sub.casNumber || "-",
+                sevesoCats,
+                arieCats,
+                sub.quantity.toString(),
+                sub.hStatements.join(", ")
+            ]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        
+        // Basic styling via XLSX (columns width)
+        ws['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 40 }];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Seveso Inventaris");
+        XLSX.writeFile(wb, generateFileName('xlsx'));
+    }
+
+    toast({ title: 'Export Succesvol', description: `Bestand opgeslagen als ${type.toUpperCase()}.` });
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, type: 'json' | 'excel') => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const text = e.target?.result;
-        if (typeof text !== 'string') {
-          throw new Error('Ongeldige bestandsinhoud');
-        }
-        const data = JSON.parse(text);
-        
-        // Ensure new properties exist, providing defaults if they don't
-        const importedInventory = (data.inventory || data).map((sub: any) => ({
-          ...sub,
-          sevesoCategoryIds: sub.sevesoCategoryIds || sub.sevesoCategories || [],
-          arieCategoryIds: sub.arieCategoryIds || [],
-          // Legacy support: remove old properties if they exist
-          sevesoCategories: undefined, 
-          arieCategories: undefined,
-        }));
-        const importedDetails = data.companyDetails || { name: '', address: '' };
+        if (type === 'json') {
+            const text = e.target?.result;
+            if (typeof text !== 'string') throw new Error('Ongeldige inhoud');
+            const data = JSON.parse(text);
+            const importedInventory = (data.inventory || data).map((sub: any) => ({
+              ...sub,
+              sevesoCategoryIds: sub.sevesoCategoryIds || sub.sevesoCategories || [],
+              arieCategoryIds: sub.arieCategoryIds || [],
+            }));
+            const importedDetails = data.companyDetails || { name: '', address: '' };
+            if (Array.isArray(importedInventory)) {
+                setInventory(importedInventory);
+                setCompanyDetails(importedDetails);
+            }
+        } else {
+            // Excel Import
+            const data = new Uint8Array(e.target?.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
+            
+            // Skip headers and find inventory start (assuming structure matches export)
+            const inventoryStartIdx = jsonData.findIndex(row => row[0] === "Productnaam") + 1;
+            if (inventoryStartIdx <= 0) throw new Error("Ongeldig Excel formaat. Gebruik een export bestand.");
 
-        if (Array.isArray(importedInventory)) {
+            const importedInventory: Substance[] = jsonData.slice(inventoryStartIdx)
+                .filter(row => row[0]) // Only rows with a product name
+                .map((row, idx) => {
+                    const hStatements = (row[5] || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+                    const { sevesoCategoryIds, arieCategoryIds, isNamed, namedSubstanceName } = classifySubstance(hStatements, row[1] || null);
+                    
+                    return {
+                        id: `sub-xlsx-${Date.now()}-${idx}`,
+                        productName: row[0],
+                        casNumber: row[1] || null,
+                        hStatements: hStatements,
+                        sevesoCategoryIds,
+                        arieCategoryIds,
+                        isNamedSubstance: isNamed,
+                        namedSubstanceName,
+                        quantity: parseFloat(row[4]) || 0
+                    };
+                });
+
+            // Try to get company details from top of sheet
+            const importedDetails = {
+                name: jsonData[1]?.[1] || '',
+                address: jsonData[2]?.[1] || ''
+            };
+
             setInventory(importedInventory);
             setCompanyDetails(importedDetails);
-            toast({
-              title: 'Inventaris succesvol geïmporteerd',
-              description: `${importedInventory.length} stoffen geladen.`,
-            });
-        } else {
-          throw new Error('Ongeldig bestandsformaat.');
         }
 
+        toast({ title: 'Import succesvol', description: `Gegevens geladen uit ${type.toUpperCase()}.` });
       } catch (error) {
         console.error("Import Error:", error);
-        toast({
-          variant: "destructive",
-          title: "Import Mislukt",
-          description: error instanceof Error ? error.message : "Kon het bestand niet lezen.",
-        });
+        toast({ variant: "destructive", title: "Import Mislukt", description: "Kon bestand niet verwerken." });
       } finally {
-        if (event.target) {
-            event.target.value = '';
-        }
+        if (event.target) event.target.value = '';
       }
     };
-    reader.readAsText(file);
-  };
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleShowExplanation = (substanceId: string, categoryId: string, type: 'seveso' | 'arie') => {
-    const substance = inventory.find(sub => sub.id === substanceId);
-    if (substance) {
-      setExplanationData({ substance, categoryId, type });
-    }
+    if (type === 'json') reader.readAsText(file);
+    else reader.readAsArrayBuffer(file);
   };
 
   return (
@@ -252,17 +352,24 @@ export default function SevesoApp() {
         onUpload={() => setIsSdsUploadOpen(true)}
         onClearAll={() => setIsClearAlertOpen(true)}
         onShowReference={() => setIsReferenceGuideOpen(true)}
-        onImport={handleImportClick}
+        onImport={(type) => (type === 'json' ? jsonFileInputRef : excelFileInputRef).current?.click()}
         onExport={handleExport}
         onSaveAsPdf={handleSaveAsPdf}
         isSavingPdf={isSavingPdf}
       />
        <input
         type="file"
-        ref={fileInputRef}
-        onChange={handleFileSelect}
+        ref={jsonFileInputRef}
+        onChange={(e) => handleFileSelect(e, 'json')}
         className="hidden"
         accept="application/json"
+      />
+      <input
+        type="file"
+        ref={excelFileInputRef}
+        onChange={(e) => handleFileSelect(e, 'excel')}
+        className="hidden"
+        accept=".xlsx, .xls"
       />
       
       <CompanyDetails details={companyDetails} onDetailsChange={setCompanyDetails} />

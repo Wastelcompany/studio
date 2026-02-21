@@ -48,8 +48,8 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   P1a: { low: 10, high: 50 },
   P1b: { low: 50, high: 200 },
   P2: { low: 10, high: 50 },
-  P3a: { low: 150, high: 500 }, // Based on aerosol directive, mapped to 'ontvlambaar'
-  P3b: { low: 5000, high: 50000 }, // Based on aerosol directive, mapped to 'zeer/extreem ontvlambaar'
+  P3a: { low: 150, high: 500 }, 
+  P3b: { low: 5000, high: 50000 }, 
   P4: { low: 50, high: 200 },
   P5a: { low: 10, high: 50 },
   P5b: { low: 50, high: 200 },
@@ -65,17 +65,20 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   O3: { low: 10, high: 50 },
 };
 
-// ARIE-specific thresholds, mapping a UNIQUE category ID to a single threshold
+// ARIE-specific thresholds (2023 Update)
 export const ARIE_THRESHOLDS: Record<string, number> = {
     H1: 0.05,
     H2: 0.2,
-    H3: 1, // Only from H370 (STOT) for ARIE in this cat
+    H3: 1, // STOT SE 1
     H4: 5,
     O3: 0.5, // CMR
     P1a: 0.05,
-    P6a: 0.05, // organische peroxiden en zelfontledende stoffen en mengsels, type A of B
+    P1b: 1, // Overige ontplofbare stoffen
+    P6a: 0.05, // Type A of B
+    P6b: 1, // Type C, D, E of F (H242) - TOEGEVOEGD
     P7: 0.05,
-    O2: 0.05, // H260
+    O1: 0.5, // Water reactief (toxisch gas) - TOEGEVOEGD
+    O2: 0.05, // Water reactief (ontvlambaar gas)
     'ARIE-Gas-1': 5,
     'ARIE-Gas-2': 50,
     'ARIE-Vloeistof-1': 1,
@@ -101,14 +104,14 @@ export const H_PHRASE_MAPPING: Record<string, string[]> = {
   // Health
   'H300': ['H1'], 'H310': ['H1'], 'H330': ['H1'],
   'H301': ['H2'], 'H311': ['H2'], 'H331': ['H2'],
-  'H332': ['H3'], // Only Seveso uses H332 for H3
-  'H370': ['H3'], // Seveso & ARIE (STOT)
-  'H314': ['H4'], // ARIE-only
+  'H332': ['H3'], 
+  'H370': ['H3'], 
+  'H314': ['H4'],
 
   // Physical - Explosives
   'EUH001': ['P1a'], 'H200': ['P1a'], 'H201': ['P1a'], 'H202': ['P1a'], 'H203': ['P1a'],
   'H204': ['P1b'],
-  'H205': ['P1a'], // Gevaar voor massa-explosie bij brand -> P1a ipv P1b
+  'H205': ['P1a'],
   
   // Physical - Flammable Gases / Aerosols
   'H220': ['ARIE-Gas-1'],
@@ -138,7 +141,7 @@ export const H_PHRASE_MAPPING: Record<string, string[]> = {
 
   // Other - Water reactive
   'EUH014': ['O1'], 'EUH029': ['O1'], 'EUH032': ['O1'],
-  'H260': ['O2', 'P7'], // Note: H260 is also ARIE P7/O2
+  'H260': ['O2', 'P7'], 
   'H261': ['O2'], 
   
   // Other - CMR
@@ -259,7 +262,7 @@ export const calculateSummations = (inventory: Substance[], mode: ThresholdMode)
   
   inventory.forEach(substance => {
     if (substance.quantity > 0) {
-      // --- Seveso summation: For a single substance, find its highest contribution (max ratio) per group and add that to the group total. ---
+      // --- Seveso summation ---
       const perGroupMaxRatio: Record<string, number> = {};
       substance.sevesoCategoryIds.forEach(catId => {
         const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
@@ -278,7 +281,7 @@ export const calculateSummations = (inventory: Substance[], mode: ThresholdMode)
           sevesoGroupTotals[group] += perGroupMaxRatio[group];
       }
 
-      // --- ARIE summation: For UI consistency, calculate contribution per group, similar to Seveso. ---
+      // --- ARIE summation ---
       const perGroupMaxArieRatio: Record<string, number> = {};
       substance.arieCategoryIds.forEach(catId => {
         const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
@@ -305,7 +308,7 @@ export const calculateSummations = (inventory: Substance[], mode: ThresholdMode)
   const arieSummationGroups: SummationGroup[] = SUMMATION_GROUPS_CONFIG.map(config => ({
     ...config,
     totalRatio: arieGroupTotals[config.group] || 0,
-    isExceeded: false, // Not applicable per group for ARIE
+    isExceeded: false, 
   }));
 
   const totalArieRatio = Object.values(arieGroupTotals).reduce((sum, current) => sum + current, 0);
@@ -337,7 +340,6 @@ export const calculateSummations = (inventory: Substance[], mode: ThresholdMode)
 export const REFERENCE_GUIDE_DATA = Object.entries(SEVESO_THRESHOLDS).map(([categoryId, thresholds]) => {
   const category = ALL_CATEGORIES[categoryId];
   if (!category) return null;
-  // find H-phrases that map to this category
   const hPhrases = Object.entries(H_PHRASE_MAPPING)
     .filter(([, catIds]) => catIds.includes(categoryId))
     .map(([hPhrase]) => hPhrase);
