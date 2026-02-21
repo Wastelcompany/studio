@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef } from 'react';
@@ -33,6 +34,13 @@ export default function SevesoApp() {
   const [isSavingPdf, setIsSavingPdf] = useState(false);
   const dashboardRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
+
+  const handleShowExplanation = (substanceId: string, categoryId: string, type: 'seveso' | 'arie') => {
+    const substance = inventory.find(sub => sub.id === substanceId);
+    if (substance) {
+      setExplanationData({ substance, categoryId, type });
+    }
+  };
 
   const generateFileName = (extension: string) => {
     const date = new Date();
@@ -432,3 +440,5 @@ export default function SevesoApp() {
     </div>
   );
 }
+
+    
