@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ interface SevesoHeaderProps {
   onShowReference: () => void;
   onImport: (type: 'json' | 'excel') => void;
   onExport: (type: 'json' | 'excel') => void;
-  onSaveAsPdf: () => void;
+  onSaveAsPdf: (reportType: 'full' | 'seveso_only') => void;
   isSavingPdf: boolean;
 }
 
@@ -61,10 +62,24 @@ export default function SevesoHeader({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="outline" onClick={onSaveAsPdf} type="button" disabled={isSavingPdf}>
-          {isSavingPdf ? <Loader2 className="animate-spin" /> : <FileDown />}
-          {isSavingPdf ? 'Bezig...' : 'Opslaan als PDF'}
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" disabled={isSavingPdf}>
+              {isSavingPdf ? <Loader2 className="animate-spin" /> : <FileDown />}
+              Opslaan als PDF
+              <ChevronDown className="ml-1 h-4 w-4 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onSaveAsPdf('full')} disabled={isSavingPdf}>
+              Volledig Rapport (Seveso &amp; ARIE)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onSaveAsPdf('seveso_only')} disabled={isSavingPdf}>
+              Alleen Seveso Rapport
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <Button variant="outline" size="icon" onClick={onShowReference} aria-label="Referentiegids" type="button">
           <Info />
         </Button>
@@ -75,3 +90,5 @@ export default function SevesoHeader({
     </header>
   );
 }
+
+    

@@ -50,10 +50,12 @@ export default function SevesoApp() {
     return `${sanitizedName}.${sanitizedAddress}.${YYYYMMDD}.${extension}`;
   };
 
-  const handleSaveAsPdf = async () => {
+  const handleSaveAsPdf = async (reportType: 'full' | 'seveso_only') => {
+    const includeArie = reportType === 'full';
     setIsSavingPdf(true);
+    const toastTitle = includeArie ? "Volledig PDF rapport genereren..." : "Seveso PDF rapport genereren...";
     const { id: toastId } = toast({
-        title: "PDF genereren...",
+        title: toastTitle,
         description: "Rapport wordt samengesteld.",
     });
 
@@ -82,19 +84,25 @@ export default function SevesoApp() {
                 pdfDoc.text("ChemStats", pageWidth - margin, pageHeight - 12, { align: 'right' });
                 pdfDoc.setFont('helvetica', 'normal');
                 pdfDoc.setFontSize(7);
-                pdfDoc.text("Gevaarlijke Stoffen Analyse - Seveso en ARIE drempelwaarde check", pageWidth - margin, pageHeight - 8, { align: 'right' });
+                const footerText = includeArie
+                  ? "Gevaarlijke Stoffen Analyse - Seveso en ARIE drempelwaarde check"
+                  : "Gevaarlijke Stoffen Analyse - Seveso drempelwaarde check";
+                pdfDoc.text(footerText, pageWidth - margin, pageHeight - 8, { align: 'right' });
             }
         };
 
         doc.setFontSize(22);
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.setFont('helvetica', 'bold');
-        doc.text("Seveso en ARIE Rapportage", margin, finalY);
+        doc.text(includeArie ? "Seveso en ARIE Rapportage" : "Seveso Rapportage", margin, finalY);
         finalY += 7;
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
-        doc.text("Gevaarlijke Stoffen Analyse - Seveso en ARIE drempelwaarde check", margin, finalY);
+        const subTitle = includeArie
+          ? "Gevaarlijke Stoffen Analyse - Seveso en ARIE drempelwaarde check"
+          : "Gevaarlijke Stoffen Analyse - Seveso drempelwaarde check";
+        doc.text(subTitle, margin, finalY);
         finalY += 6;
         doc.setFontSize(9);
         doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
@@ -120,22 +128,34 @@ export default function SevesoApp() {
 
         doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("1. Inleiding", margin, finalY); finalY += 5;
         doc.setFontSize(9.5); doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]); doc.setFont('helvetica', 'normal');
-        const introText = "Deze rapportage biedt een gedetailleerde analyse van de gevaarlijke stoffen aanwezig binnen de inrichting. Het doel is om vast te stellen of de opslag en het gebruik van deze stoffen de drempelwaarden overschrijden zoals vastgelegd in de Seveso-III richtlijn (2012/18/EU) en de regeling Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE).";
+        const introText = includeArie 
+            ? "Deze rapportage biedt een gedetailleerde analyse van de gevaarlijke stoffen aanwezig binnen de inrichting. Het doel is om vast te stellen of de opslag en het gebruik van deze stoffen de drempelwaarden overschrijden zoals vastgelegd in de Seveso-III richtlijn (2012/18/EU) en de regeling Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE)."
+            : "Deze rapportage biedt een gedetailleerde analyse van de gevaarlijke stoffen aanwezig binnen de inrichting. Het doel is om vast te stellen of de opslag en het gebruik van deze stoffen de drempelwaarden overschrijden zoals vastgelegd in de Seveso-III richtlijn (2012/18/EU).";
         const splitIntro = doc.splitTextToSize(introText, pageWidth - (margin * 2)); doc.text(splitIntro, margin, finalY); finalY += (splitIntro.length * 5) + 6;
 
         doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("2. Methode", margin, finalY); finalY += 5;
-        const methodeText = "De beoordeling is uitgevoerd door de gevarenaanduidingen (H-zinnen) uit de veiligheidsinformatiebladen (SDS) te vertalen naar specifieke gevarencategorieën. Hoewel de basis voor de sommatieregels vergelijkbaar is, hanteert de ARIE-regeling eigen drempelwaarden en specifieke categorieën (zoals bijv. voor H314) die afwijken van de Seveso-systematiek. Voor beide kaders wordt per gevarengroep de meest kritieke categorie per stof bepaald, waarna de bijdragen binnen de betreffende wettelijke kaders worden gesommeerd.";
+        const methodeText = includeArie
+            ? "De beoordeling is uitgevoerd door de gevarenaanduidingen (H-zinnen) uit de veiligheidsinformatiebladen (SDS) te vertalen naar specifieke gevarencategorieën. Hoewel de basis voor de sommatieregels vergelijkbaar is, hanteert de ARIE-regeling eigen drempelwaarden en specifieke categorieën (zoals bijv. voor H314) die afwijken van de Seveso-systematiek. Voor beide kaders wordt per gevarengroep de meest kritieke categorie per stof bepaald, waarna de bijdragen binnen de betreffende wettelijke kaders worden gesommeerd."
+            : "De beoordeling is uitgevoerd door de gevarenaanduidingen (H-zinnen) uit de veiligheidsinformatiebladen (SDS) te vertalen naar specifieke Seveso-gevarencategorieën. Per gevarengroep wordt de meest kritieke categorie per stof bepaald en worden de bijdragen gesommeerd om te toetsen aan de drempelwaarden.";
         const splitMethode = doc.splitTextToSize(methodeText, pageWidth - (margin * 2)); doc.text(splitMethode, margin, finalY); finalY += (splitMethode.length * 5) + 8;
 
         doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("3. Resultaten", margin, finalY); finalY += 6;
         const isSevesoExceeded = stats.overallStatus !== 'Geen';
-        const boxWidth = (pageWidth - (margin * 2) - 8) / 2;
-        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]); doc.setFillColor(255, 255, 255); doc.roundedRect(margin, finalY, boxWidth, 20, 1.5, 1.5, 'FD');
-        doc.setFontSize(9); doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]); doc.text("Seveso Status", margin + 5, finalY + 7);
-        doc.setFontSize(11); doc.setTextColor(isSevesoExceeded ? colors.destructive[0] : colors.primary[0], isSevesoExceeded ? colors.destructive[1] : colors.primary[1], isSevesoExceeded ? colors.destructive[2] : colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text(stats.overallStatus === 'Geen' ? 'Geen Seveso-inrichting' : `${stats.overallStatus}-inrichting`, margin + 5, finalY + 14);
-        doc.setFillColor(255, 255, 255); doc.roundedRect(margin + boxWidth + 8, finalY, boxWidth, 20, 1.5, 1.5, 'FD');
-        doc.setFontSize(9); doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]); doc.text("ARIE Status", margin + boxWidth + 13, finalY + 7);
-        doc.setFontSize(11); doc.setTextColor(stats.arieExceeded ? colors.destructive[0] : colors.foreground[0], stats.arieExceeded ? colors.destructive[1] : colors.foreground[1], stats.arieExceeded ? colors.destructive[2] : colors.foreground[2]); doc.setFont('helvetica', 'bold'); doc.text(stats.arieExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig', margin + boxWidth + 13, finalY + 14);
+        
+        if (includeArie) {
+            const boxWidth = (pageWidth - (margin * 2) - 8) / 2;
+            doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]); doc.setFillColor(255, 255, 255); doc.roundedRect(margin, finalY, boxWidth, 20, 1.5, 1.5, 'FD');
+            doc.setFontSize(9); doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]); doc.text("Seveso Status", margin + 5, finalY + 7);
+            doc.setFontSize(11); doc.setTextColor(isSevesoExceeded ? colors.destructive[0] : colors.primary[0], isSevesoExceeded ? colors.destructive[1] : colors.primary[1], isSevesoExceeded ? colors.destructive[2] : colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text(stats.overallStatus === 'Geen' ? 'Geen Seveso-inrichting' : `${stats.overallStatus}-inrichting`, margin + 5, finalY + 14);
+            doc.setFillColor(255, 255, 255); doc.roundedRect(margin + boxWidth + 8, finalY, boxWidth, 20, 1.5, 1.5, 'FD');
+            doc.setFontSize(9); doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]); doc.text("ARIE Status", margin + boxWidth + 13, finalY + 7);
+            doc.setFontSize(11); doc.setTextColor(stats.arieExceeded ? colors.destructive[0] : colors.foreground[0], stats.arieExceeded ? colors.destructive[1] : colors.foreground[1], stats.arieExceeded ? colors.destructive[2] : colors.foreground[2]); doc.setFont('helvetica', 'bold'); doc.text(stats.arieExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig', margin + boxWidth + 13, finalY + 14);
+        } else {
+            const boxWidth = (pageWidth - (margin * 2));
+            doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]); doc.setFillColor(255, 255, 255); doc.roundedRect(margin, finalY, boxWidth, 20, 1.5, 1.5, 'FD');
+            doc.setFontSize(9); doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]); doc.text("Seveso Status", margin + 5, finalY + 7);
+            doc.setFontSize(11); doc.setTextColor(isSevesoExceeded ? colors.destructive[0] : colors.primary[0], isSevesoExceeded ? colors.destructive[1] : colors.primary[1], isSevesoExceeded ? colors.destructive[2] : colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text(stats.overallStatus === 'Geen' ? 'Geen Seveso-inrichting' : `${stats.overallStatus}-inrichting`, margin + 5, finalY + 14);
+        }
         finalY += 28;
 
         const drawDashboardColumn = (title: string, groups: any[], isArie: boolean, x: number, y: number, width: number) => {
@@ -157,38 +177,60 @@ export default function SevesoApp() {
             return currentY;
         };
 
-        const colWidth = (pageWidth - (margin * 2) - 15) / 2;
-        const startSommatieY = finalY;
-        const endSevesoY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, startSommatieY, colWidth);
-        const endArieY = drawDashboardColumn("ARIE Sommatie", stats.arieSummationGroups, true, margin + colWidth + 15, startSommatieY, colWidth);
-        finalY = Math.max(endSevesoY, endArieY) + 6;
+        if (includeArie) {
+            const colWidth = (pageWidth - (margin * 2) - 15) / 2;
+            const startSommatieY = finalY;
+            const endSevesoY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, startSommatieY, colWidth);
+            const endArieY = drawDashboardColumn("ARIE Sommatie", stats.arieSummationGroups, true, margin + colWidth + 15, startSommatieY, colWidth);
+            finalY = Math.max(endSevesoY, endArieY) + 6;
+        } else {
+            const colWidth = (pageWidth - (margin * 2));
+            finalY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, finalY, colWidth) + 6;
+        }
 
         doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("4. Conclusie", margin, finalY); finalY += 5;
-        const conclusieText = `Op basis van de huidige inventarisatie is de inrichting ${isSevesoExceeded ? 'wel' : 'niet'} aan te merken als een Seveso-inrichting (${stats.overallStatus === 'Geen' ? 'geen drempels overschreden' : stats.overallStatus}). Tevens is de inrichting ${stats.arieExceeded ? 'wel' : 'niet'} ARIE-plichtig met een totale sommatiewaarde van ${Math.round(stats.arieTotal * 100)}%.`;
+        const conclusieText = includeArie
+            ? `Op basis van de huidige inventarisatie is de inrichting ${isSevesoExceeded ? 'wel' : 'niet'} aan te merken als een Seveso-inrichting (${stats.overallStatus === 'Geen' ? 'geen drempels overschreden' : stats.overallStatus}). Tevens is de inrichting ${stats.arieExceeded ? 'wel' : 'niet'} ARIE-plichtig met een totale sommatiewaarde van ${Math.round(stats.arieTotal * 100)}%.`
+            : `Op basis van de huidige inventarisatie is de inrichting ${isSevesoExceeded ? 'wel' : 'niet'} aan te merken als een Seveso-inrichting (${stats.overallStatus === 'Geen' ? 'geen drempels overschreden' : stats.overallStatus}).`;
         const splitConclusie = doc.splitTextToSize(conclusieText, pageWidth - (margin * 2)); doc.text(splitConclusie, margin, finalY);
 
         doc.addPage();
         let invY = 20; doc.setFontSize(16); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("Volledige Inventaris", margin, invY); invY += 8;
-        const tableData = inventory.map(sub => [
-            { content: sub.productName + (sub.casNumber ? `\n(${sub.casNumber})` : ''), styles: { fontStyle: 'bold' } },
-            sub.sevesoCategoryIds.map(id => (ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))?.displayId || id).join(", "),
-            sub.arieCategoryIds.map(id => ALL_CATEGORIES[id]?.displayId || id).join(", "),
-            { content: `${sub.quantity} ton`, styles: { halign: 'right' } }
-        ]);
+        
+        const tableHead = includeArie ? [['Product / CAS', 'Seveso', 'ARIE', 'Voorraad']] : [['Product / CAS', 'Seveso', 'Voorraad']];
+        const tableData = inventory.map(sub => {
+            const sevesoCats = sub.sevesoCategoryIds.map(id => (ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))?.displayId || id).join(", ");
+            let rowData: any[] = [
+                { content: sub.productName + (sub.casNumber ? `\n(${sub.casNumber})` : ''), styles: { fontStyle: 'bold' } },
+                sevesoCats
+            ];
+            if (includeArie) {
+                const arieCats = sub.arieCategoryIds.map(id => ALL_CATEGORIES[id]?.displayId || id).join(", ");
+                rowData.push(arieCats);
+            }
+            rowData.push({ content: `${sub.quantity} ton`, styles: { halign: 'right' } });
+            return rowData;
+        });
+
+        const columnStyles = includeArie 
+            ? { 0: { cellWidth: 50 }, 1: { cellWidth: 50 }, 2: { cellWidth: 50 }, 3: { cellWidth: 25 } }
+            : { 0: { cellWidth: 85 }, 1: { cellWidth: 85 }, 2: { cellWidth: 25 } };
 
         autoTable(doc, {
             startY: invY,
-            head: [['Product / CAS', 'Seveso', 'ARIE', 'Voorraad']],
+            head: tableHead,
             body: tableData as any,
             theme: 'striped',
             headStyles: { fillColor: colors.primary, textColor: 255, fontStyle: 'bold' },
             styles: { fontSize: 9 },
-            columnStyles: { 0: { cellWidth: 50 }, 1: { cellWidth: 50 }, 2: { cellWidth: 50 }, 3: { cellWidth: 25 } },
+            columnStyles: columnStyles,
             margin: { left: margin, right: margin }
         });
 
         addFooter(doc);
-        doc.save(generateFileName('pdf'));
+        const baseName = generateFileName('').slice(0, -1);
+        const finalFileName = reportType === 'full' ? `${baseName}.pdf` : `${baseName}.seveso-only.pdf`;
+        doc.save(finalFileName);
         dismiss(toastId);
         toast({ title: "PDF opgeslagen", description: "Het rapport is succesvol gedownload." });
 
@@ -440,5 +482,7 @@ export default function SevesoApp() {
     </div>
   );
 }
+
+    
 
     
