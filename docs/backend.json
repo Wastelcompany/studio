@@ -1,213 +1,99 @@
 {
   "entities": {
-    "User": {
+    "Company": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "User",
+      "title": "Company",
       "type": "object",
-      "description": "Represents an individual user of the Seveso Expert application. This entity stores basic user information for project ownership and data management, separate from external authentication systems.",
+      "description": "Represents a single company dossier for a facility. It contains high-level information about the company.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the User entity."
-        },
-        "email": {
-          "type": "string",
-          "description": "The user's email address, used for identification within the application (not for authentication).",
-          "format": "email"
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the user record was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp of the last update to the user record.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "email",
-        "createdAt"
-      ]
-    },
-    "SevesoProject": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "SevesoProject",
-      "type": "object",
-      "description": "Represents a single Seveso analysis project or dossier for a facility. It contains high-level information about the project and links to the substances being analyzed.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the SevesoProject entity."
+          "description": "Unique identifier for the Company entity."
         },
         "userId": {
           "type": "string",
-          "description": "Reference to the User who owns this project. (Relationship: User 1:N SevesoProject)"
+          "description": "Reference to the User who owns this company."
         },
         "name": {
           "type": "string",
-          "description": "A user-defined name for the Seveso project or facility analysis."
+          "description": "A user-defined name for the company or facility analysis."
         },
-        "description": {
+        "address": {
           "type": "string",
-          "description": "An optional detailed description of the project."
+          "description": "An optional address of the company."
         },
         "createdAt": {
           "type": "string",
-          "description": "Timestamp when the Seveso project was created.",
+          "description": "Timestamp when the company was created.",
           "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp of the last update to the Seveso project, including status changes or substance modifications.",
-          "format": "date-time"
-        },
-        "lastCalculatedAt": {
-          "type": "string",
-          "description": "Timestamp of the most recent Seveso threshold calculation for this project.",
-          "format": "date-time"
-        },
-        "sevesoStatusLowThreshold": {
-          "type": "string",
-          "description": "The determined Seveso status of the facility based on the low threshold calculation (e.g., 'Not Seveso', 'Lower Tier', 'Upper Tier')."
-        },
-        "sevesoStatusHighThreshold": {
-          "type": "string",
-          "description": "The determined Seveso status of the facility based on the high threshold calculation (e.g., 'Not Seveso', 'Lower Tier', 'Upper Tier')."
-        },
-        "criticalHazardGroupLowThreshold": {
-          "type": "string",
-          "description": "The hazard group (e.g., 'Health Hazards', 'Physical Hazards', 'Environmental Hazards') that is most critical or caused the threshold exceedance for the low threshold."
-        },
-        "criticalHazardGroupHighThreshold": {
-          "type": "string",
-          "description": "The hazard group that is most critical or caused the threshold exceedance for the high threshold."
         }
       },
       "required": [
         "id",
         "userId",
-        "name",
-        "createdAt",
-        "updatedAt",
-        "lastCalculatedAt",
-        "sevesoStatusLowThreshold",
-        "sevesoStatusHighThreshold",
-        "criticalHazardGroupLowThreshold",
-        "criticalHazardGroupHighThreshold"
+        "name"
       ]
     },
     "SubstanceInventoryItem": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "SubstanceInventoryItem",
       "type": "object",
-      "description": "Represents a single chemical substance present in a specific Seveso project, including its quantity and data extracted from its Safety Data Sheet (SDS).",
+      "description": "Represents a single chemical substance present in a specific company's inventory.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the SubstanceInventoryItem entity."
-        },
-        "sevesoProjectId": {
-          "type": "string",
-          "description": "Reference to the SevesoProject this substance belongs to. (Relationship: SevesoProject 1:N SubstanceInventoryItem)"
+          "description": "Unique identifier for the substance."
         },
         "productName": {
           "type": "string",
-          "description": "The name of the product or substance as extracted from the MSDS."
+          "description": "The name of the product or substance."
         },
         "casNumber": {
           "type": "string",
-          "description": "The Chemical Abstracts Service (CAS) number for the substance, used for definitive identification."
+          "description": "The Chemical Abstracts Service (CAS) number."
         },
-        "presentQuantityTons": {
+        "hStatements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of Hazard statements (H-statements)."
+        },
+        "sevesoCategoryIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of Seveso category IDs the substance falls into."
+        },
+        "arieCategoryIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of ARIE category IDs the substance falls into."
+        },
+        "isNamedSubstance": {
+          "type": "boolean",
+          "description": "Flag indicating if it is a named substance."
+        },
+        "namedSubstanceName": {
+          "type": "string",
+          "description": "The name of the substance if it's a named one."
+        },
+        "quantity": {
           "type": "number",
-          "description": "The quantity of the substance present in the facility, expressed in tons. This value can be manually adjusted by the user."
-        },
-        "sourceDocumentName": {
-          "type": "string",
-          "description": "The filename or identifier of the original MSDS/SDS document from which the data was extracted."
-        },
-        "extractedHStatements": {
-          "type": "array",
-          "description": "An array of Hazard statements (H-statements) extracted from Rubriek 2 of the MSDS document.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "rubriek3Ingredients": {
-          "type": "array",
-          "description": "An array of ingredients extracted from Rubriek 3 of the MSDS document.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "extractedAt": {
-          "type": "string",
-          "description": "Timestamp when the data for this substance was initially extracted from the MSDS.",
-          "format": "date-time"
-        },
-        "lastUpdatedAt": {
-          "type": "string",
-          "description": "Timestamp of the last modification to this substance's data, including manual quantity adjustments.",
-          "format": "date-time"
+          "description": "The quantity of the substance present, in tons."
         }
       },
       "required": [
         "id",
-        "sevesoProjectId",
         "productName",
-        "casNumber",
-        "presentQuantityTons",
-        "sourceDocumentName",
-        "extractedHStatements",
-        "extractedAt",
-        "lastUpdatedAt"
-      ]
-    },
-    "SubstanceHazardClassification": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "SubstanceHazardClassification",
-      "type": "object",
-      "description": "Represents a specific Seveso hazard classification derived for a substance, detailing the category and the H-statements that triggered it for audit purposes.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the SubstanceHazardClassification entity."
-        },
-        "substanceInventoryItemId": {
-          "type": "string",
-          "description": "Reference to the SubstanceInventoryItem that this classification applies to. (Relationship: SubstanceInventoryItem 1:N SubstanceHazardClassification)"
-        },
-        "sevesoCategoryCode": {
-          "type": "string",
-          "description": "The official Seveso hazard category code (e.g., 'H1', 'P5a', 'E1', 'N-Methanol') that the substance is classified under."
-        },
-        "categoryGroup": {
-          "type": "string",
-          "description": "The overarching group for the Seveso category (e.g., 'Health Hazards', 'Physical Hazards', 'Environmental Hazards', 'Other Hazards', 'Named Substances'), used for UI grouping."
-        },
-        "triggeringHStatements": {
-          "type": "array",
-          "description": "An array of specific H-statement phrases (e.g., 'H300', 'H225') that were identified as the reason for this substance being classified under the `sevesoCategoryCode`.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "classificationDate": {
-          "type": "string",
-          "description": "Timestamp when this specific classification was determined by the AI or system.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "substanceInventoryItemId",
-        "sevesoCategoryCode",
-        "categoryGroup",
-        "triggeringHStatements",
-        "classificationDate"
+        "hStatements",
+        "sevesoCategoryIds",
+        "arieCategoryIds",
+        "isNamedSubstance",
+        "quantity"
       ]
     }
   },
@@ -220,88 +106,36 @@
   "firestore": {
     "structure": [
       {
-        "path": "/users/{userId}",
+        "path": "/companies/{companyId}",
         "definition": {
-          "entityName": "User",
+          "entityName": "Company",
           "schema": {
-            "$ref": "#/backend/entities/User"
+            "$ref": "#/backend/entities/Company"
           },
-          "description": "Stores individual user profile information. Documents in this collection are owned by the authenticated user whose `uid` matches `{userId}` in the path."
+          "description": "Stores company profile information. Documents in this collection contain a `userId` field to indicate ownership. Access is restricted based on this field."
         }
       },
       {
-        "path": "/users/{userId}/sevesoProjects/{sevesoProjectId}",
-        "definition": {
-          "entityName": "SevesoProject",
-          "schema": {
-            "$ref": "#/backend/entities/SevesoProject"
-          },
-          "description": "Represents a specific Seveso analysis project owned by a user. The `userId` field is denormalized into each document for authorization independence. Access is restricted to the owner matching `{userId}` in the path and `resource.data.userId`.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user who owns this project."
-            },
-            {
-              "name": "sevesoProjectId",
-              "description": "The unique identifier for the Seveso project."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/sevesoProjects/{sevesoProjectId}/substanceInventoryItems/{substanceInventoryItemId}",
+        "path": "/companies/{companyId}/inventory/{substanceId}",
         "definition": {
           "entityName": "SubstanceInventoryItem",
           "schema": {
             "$ref": "#/backend/entities/SubstanceInventoryItem"
           },
-          "description": "Contains chemical substances belonging to a specific Seveso project. Includes denormalized `userId` and `sevesoProjectId` fields for authorization independence. Access is restricted to the owner of the parent Seveso project.",
+          "description": "Contains chemical substances belonging to a specific company. Access is restricted to the owner of the parent company.",
           "params": [
             {
-              "name": "userId",
-              "description": "The unique identifier of the user who owns the parent project."
+              "name": "companyId",
+              "description": "The unique identifier of the parent company."
             },
             {
-              "name": "sevesoProjectId",
-              "description": "The unique identifier of the parent Seveso project."
-            },
-            {
-              "name": "substanceInventoryItemId",
+              "name": "substanceId",
               "description": "The unique identifier for the substance inventory item."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/sevesoProjects/{sevesoProjectId}/substanceInventoryItems/{substanceInventoryItemId}/substanceHazardClassifications/{substanceHazardClassificationId}",
-        "definition": {
-          "entityName": "SubstanceHazardClassification",
-          "schema": {
-            "$ref": "#/backend/entities/SubstanceHazardClassification"
-          },
-          "description": "Stores specific Seveso hazard classifications for a substance inventory item. Includes denormalized `userId`, `sevesoProjectId`, and `substanceInventoryItemId` fields for authorization independence. Access is restricted to the owner of the root user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user who owns the root project."
-            },
-            {
-              "name": "sevesoProjectId",
-              "description": "The unique identifier of the parent Seveso project."
-            },
-            {
-              "name": "substanceInventoryItemId",
-              "description": "The unique identifier of the parent substance inventory item."
-            },
-            {
-              "name": "substanceHazardClassificationId",
-              "description": "The unique identifier for the substance hazard classification."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to be highly secure, scalable, and debuggable, strictly adhering to the core design principles and strategy mandates. The primary strategy employed is **Authorization Independence via Denormalization** and **Hierarchical Path-Based Ownership**.\n\n1.  **Authorization Independence (CRITICAL) & Denormalization:** To eliminate the need for `get()` calls in security rules, the `userId` of the project owner is denormalized down the entire hierarchy. Every document (SevesoProject, SubstanceInventoryItem, SubstanceHazardClassification) contains the `userId` of its ultimate owner. This allows security rules to check `request.auth.uid == resource.data.userId` directly on the document being accessed, ensuring atomic operations (transactions/batches) are robust and easily auditable. For instance, a `SubstanceHazardClassification` document will include `userId` and `sevesoProjectId` fields, inherited from its parent hierarchy, making its authorization context self-contained.\n\n2.  **Structural Segregation & Hierarchical Paths:** All user-specific data is rooted under `/users/{userId}`. This path-based ownership (`/users/{userId}/sevesoProjects/{sevesoProjectId}/...`) ensures that all documents within a given subcollection share the same security posture – they are owned by the `{userId}` in the path. This simplifies security rules immensely, as the path itself defines the primary access scope. For example, `SevesoProject` documents are stored under `/users/{userId}/sevesoProjects/{sevesoProjectId}`, making it explicit that `{userId}` is the owner.\n\n3.  **QAPs (Rules are not Filters):** By implementing path-based ownership and denormalizing the `userId` into every document, `list` operations are inherently secure and efficient. When a user queries `users/{uid}/sevesoProjects`, the security rules `match /users/{userId}/sevesoProjects/{sevesoProjectId}` can directly verify that `request.auth.uid == userId` (from the path wildcard) and `request.auth.uid == resource.data.userId` (from the denormalized field in the document). This design prevents unauthorized data leakage during list queries and ensures that any data returned strictly adheres to the user's permissions, fulfilling the QAP principle without relying on rules to filter results from an overly broad query.\n\n4.  **Clarity of Intent & Predictability:** Semantic naming for collections (`users`, `sevesoProjects`, `substanceInventoryItems`, `substanceHazardClassifications`) and wildcards (`{userId}`, `{sevesoProjectId}`) makes the data hierarchy and authorization intent immediately clear. The consistent application of these principles across all entities creates a predictable and easily debuggable security model.\n\nRegarding the reported error `FirebaseError: Firebase: Error (auth/admin-restricted-operation)`, this typically indicates that Anonymous Authentication is not enabled in your Firebase project settings (Authentication -> Sign-in method tab). This is a project configuration issue and not directly related to the Firestore data structure design. Enabling anonymous sign-in in the Firebase console should resolve that runtime error."
+    "reasoning": "The Firestore structure is designed around a top-level `companies` collection. This model was chosen to simplify querying for company data and to decouple companies from users, allowing for potential future features like sharing companies between users. Security is maintained by embedding a `userId` field in each company document, which is then used in Firestore Security Rules to enforce ownership. All subcollections, such as `inventory`, inherit access rights by checking the ownership of the parent company document, ensuring data remains secure and private to the owner."
   }
 }
