@@ -5,7 +5,7 @@
  * This ruleset enforces a strict user-ownership model. All data is considered private and is accessible only by the user who created it. There are no public collections or shared data access roles. The rules are designed to be highly secure from an authorization standpoint.
  *
  * ## Data Structure
- * All company data is stored in a top-level `/companies` collection. Each company document contains a `userId` field to signify ownership. This allows for flexible queries while maintaining strict ownership controls. A user's inventory is nested under their company at `/companies/{companyId}/inventory/{substanceId}`.
+ * All company data is stored in a top-level `companies` collection. Each company document contains a `userId` field to signify ownership. This allows for flexible queries while maintaining strict ownership controls. A user's inventory is nested under their company at `/companies/{companyId}/inventory/{substanceId}`.
  *
  * ## Key Security Decisions
  * - **No Public Access:** All read and write operations require the user to be authenticated. There are no publicly readable or writable collections.
@@ -31,9 +31,12 @@ service cloud.firestore {
     /**
      * Checks if the authenticated user's UID matches the document's `userId` field.
      * Used for read, update, and delete operations on existing documents.
+     * This rule is robust against documents that may be missing the 'userId' field.
      */
     function isOwner() {
-      return isSignedIn() && request.auth.uid == resource.data.userId;
+      return isSignedIn() 
+             && "userId" in resource.data 
+             && request.auth.uid == resource.data.userId;
     }
     
     /**
