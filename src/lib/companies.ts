@@ -1,123 +1,112 @@
-import { db, auth } from './firebase';
-import { collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, onSnapshot, writeBatch, deleteDoc } from 'firebase/firestore';
+import type { Firestore } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, onSnapshot, writeBatch, deleteDoc, Timestamp } from 'firebase/firestore';
 import type { Substance, Company } from './types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 // Debounce mechanism
 let debounceTimer: NodeJS.Timeout;
 
-export const getCompanies = (userId: string, setCompanies: (companies: Company[]) => void) => {
-  const q = query(collection(db, 'companies'), where('userId', '==', userId));
-  return onSnapshot(q, (querySnapshot) => {
-    const companies: Company[] = [];
-    querySnapshot.forEach((doc) => {
-      companies.push({ id: doc.id, ...doc.data() } as Company);
-    });
-    setCompanies(companies.sort((a, b) => a.name.localeCompare(b.name)));
-  });
-};
-
-export const getCompanyData = async (companyId: string): Promise<{ details: Company, inventory: Substance[] } | null> => {
-    const companyDocRef = doc(db, 'companies', companyId);
-    const companySnap = await getDoc(companyDocRef);
-
-    if (!companySnap.exists()) {
-        return null;
-    }
-
-    const inventoryColRef = collection(db, 'companies', companyId, 'inventory');
-    const inventorySnap = await getDocs(inventoryColRef);
-
-    const inventory = inventorySnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Substance));
-    
-    return {
-        details: { id: companySnap.id, ...companySnap.data() } as Company,
-        inventory
-    };
-};
-
-export const createNewCompany = async (userId: string): Promise<Company> => {
-    const newCompanyRef = await addDoc(collection(db, 'companies'), {
+export const createNewCompany = async (db: Firestore, userId: string): Promise<Company | null> => {
+    const companyData = {
         userId: userId,
         name: 'Nieuw Bedrijf',
         address: '',
-        createdAt: new Date(),
-    });
-    return {
-        id: newCompanyRef.id,
-        userId,
-        name: 'Nieuw Bedrijf',
-        address: '',
+        createdAt: Timestamp.now(),
     };
+    const companiesColRef = collection(db, 'companies');
+    try {
+        const newCompanyRef = await addDoc(companiesColRef, companyData);
+        return {
+            id: newCompanyRef.id,
+            userId,
+            name: 'Nieuw Bedrijf',
+            address: '',
+        };
+    } catch(e) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: companiesColRef.path,
+            operation: 'create',
+            requestResourceData: companyData
+        }));
+        return null;
+    }
 };
 
-export const updateCompanyDetails = (companyId: string, details: Partial<Company>) => {
+export const updateCompanyDetails = (db: Firestore, companyId: string, details: Partial<Company>) => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
         const companyDocRef = doc(db, 'companies', companyId);
-        setDoc(companyDocRef, details, { merge: true });
-    }, 500); // 500ms delay
+        setDoc(companyDocRef, details, { merge: true }).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: companyDocRef.path,
+                operation: 'update',
+                requestResourceData: details,
+            }));
+        });
+    }, 500);
 };
 
 
-export const updateInventoryInDb = async (companyId: string, inventory: Substance[]) => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(async () => {
-        const batch = writeBatch(db);
-        const inventoryColRef = collection(db, 'companies', companyId, 'inventory');
-        
-        // First, delete all existing documents in the inventory for simplicity
-        const existingInventorySnap = await getDocs(inventoryColRef);
-        existingInventorySnap.forEach(doc => batch.delete(doc.ref));
-
-        // Now, add the new inventory state
-        inventory.forEach(substance => {
-            const { id, ...substanceData } = substance;
-            const docRef = doc(inventoryColRef, id); // Use existing ID
-            batch.set(docRef, substanceData);
-        });
-
-        await batch.commit();
-    }, 1000); // 1-second debounce
-}
-
-export const addSubstanceToDb = async (companyId: string, substance: Substance) => {
+export const addSubstanceToDb = (db: Firestore, companyId: string, substance: Substance) => {
     const newDocRef = doc(collection(db, 'companies', companyId, 'inventory'), substance.id);
-    await setDoc(newDocRef, {
-        productName: substance.productName,
-        casNumber: substance.casNumber,
-        hStatements: substance.hStatements,
-        sevesoCategoryIds: substance.sevesoCategoryIds,
-        arieCategoryIds: substance.arieCategoryIds,
-        isNamedSubstance: substance.isNamedSubstance,
-        namedSubstanceName: substance.namedSubstanceName,
-        quantity: substance.quantity,
+    const { id, ...substanceData } = substance;
+    setDoc(newDocRef, substanceData).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: newDocRef.path,
+            operation: 'create',
+            requestResourceData: substanceData
+        }));
     });
 };
 
-export const deleteSubstanceFromDb = async (companyId: string, substanceId: string) => {
+export const deleteSubstanceFromDb = (db: Firestore, companyId: string, substanceId: string) => {
     const docRef = doc(db, 'companies', companyId, 'inventory', substanceId);
-    await deleteDoc(docRef);
+    deleteDoc(docRef).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        }));
+    });
 };
 
-export const updateSubstanceQuantityInDb = (companyId: string, substanceId: string, quantity: number) => {
+export const updateSubstanceQuantityInDb = (db: Firestore, companyId: string, substanceId: string, quantity: number) => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
         const docRef = doc(db, 'companies', companyId, 'inventory', substanceId);
-        setDoc(docRef, { quantity }, { merge: true });
-    }, 300); // 300ms debounce for quantity updates
+        const data = { quantity };
+        setDoc(docRef, data, { merge: true }).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'update',
+                requestResourceData: data,
+            }));
+        });
+    }, 300);
 };
 
-export const clearInventoryFromDb = async (companyId: string) => {
+export const clearInventoryFromDb = (db: Firestore, companyId: string) => {
     const inventoryColRef = collection(db, 'companies', companyId, 'inventory');
-    const inventorySnap = await getDocs(inventoryColRef);
-
-    if (inventorySnap.empty) {
-        return;
-    }
-
-    const batch = writeBatch(db);
-    inventorySnap.forEach(doc => {
-        batch.delete(doc.ref);
+    
+    getDocs(inventoryColRef).then(inventorySnap => {
+        if (inventorySnap.empty) {
+            return;
+        }
+    
+        const batch = writeBatch(db);
+        inventorySnap.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        batch.commit().catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: inventoryColRef.path,
+                operation: 'delete'
+            }));
+        });
+    }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: inventoryColRef.path,
+            operation: 'list'
+        }));
     });
-    await batch.commit();
 };

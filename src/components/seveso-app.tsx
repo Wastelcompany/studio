@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useTransition } from 'react';
+import { useState, useEffect, useRef, useTransition, useMemo } from 'react';
 import type { Substance, ThresholdMode, Company } from '@/lib/types';
 import SevesoHeader from '@/components/seveso-header';
 import InventoryTable from '@/components/inventory-table';
@@ -16,17 +16,57 @@ import autoTable from 'jspdf-autotable';
 import CompanySelector from './company-selector';
 import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES, classifySubstance } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
-import { auth, db } from '@/lib/firebase';
-import { signInAnonymously, onAuthStateChanged, User } from 'firebase/auth';
-import { getCompanies, createNewCompany, updateCompanyDetails, getCompanyData, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb } from '@/lib/companies';
+import { useUser, useCollection, useMemoFirebase, useFirestore, useAuth, initiateAnonymousSignIn } from '@/firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb } from '@/lib/companies';
 import { Loader2 } from 'lucide-react';
 
 
 export default function SevesoApp() {
-  const [user, setUser] = useState<User | null>(null);
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const { user, isUserLoading: isAuthLoading } = useUser();
+  const db = useFirestore();
+  const auth = useAuth();
+  
+  useEffect(() => {
+    // When auth is ready and there's no user, sign in anonymously.
+    if (!isAuthLoading && !user) {
+        initiateAnonymousSignIn(auth);
+    }
+  }, [isAuthLoading, user, auth]);
+  
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  
+  const companiesQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(db, 'companies'), where('userId', '==', user.uid));
+  }, [user, db]);
+
+  const { data: companiesData, isLoading: isLoadingCompanies } = useCollection<Company>(companiesQuery);
+  const companies = useMemo(() => companiesData?.sort((a, b) => a.name.localeCompare(b.name)) ?? [], [companiesData]);
+
+  const inventoryQuery = useMemoFirebase(() => {
+    if (!selectedCompanyId) return null;
+    return collection(db, 'companies', selectedCompanyId, 'inventory');
+  }, [selectedCompanyId, db]);
+
+  const { data: firestoreInventory, isLoading: isLoadingInventory } = useCollection<Substance>(inventoryQuery);
+
   const [localInventory, setLocalInventory] = useState<Substance[]>([]);
+  
+  useEffect(() => {
+    if (firestoreInventory) {
+      setLocalInventory(firestoreInventory);
+    } else {
+      setLocalInventory([]);
+    }
+  }, [firestoreInventory, selectedCompanyId]);
+
+  // Set default company
+  useEffect(() => {
+    if (!selectedCompanyId && companies.length > 0) {
+      setSelectedCompanyId(companies[0].id);
+    }
+  }, [companies, selectedCompanyId]);
   
   const [thresholdMode, setThresholdMode] = useState<ThresholdMode>('low');
   
@@ -40,60 +80,23 @@ export default function SevesoApp() {
   const [explanationData, setExplanationData] = useState<{ substance: Substance | null; categoryId: string | null; type: 'seveso' | 'arie' | null }>({ substance: null, categoryId: null, type: null });
   
   const [isSavingPdf, setIsSavingPdf] = useState(false);
-  const [isDataLoading, startDataTransition] = useTransition();
-
-  // --- AUTH & DATA LOADING ---
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUser(user);
-      } else {
-        signInAnonymously(auth);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      const unsubscribe = getCompanies(user.uid, setCompanies);
-      return () => unsubscribe();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (selectedCompanyId) {
-      startDataTransition(async () => {
-        const data = await getCompanyData(selectedCompanyId);
-        if (data) {
-          setLocalInventory(data.inventory);
-        } else {
-          setLocalInventory([]);
-        }
-      });
-    } else {
-      setLocalInventory([]);
-    }
-  }, [selectedCompanyId]);
-
 
   const handleSelectCompany = (companyId: string) => {
     setSelectedCompanyId(companyId);
   };
 
-  const handleCreateNewCompany = async () => {
-    if (!user) return;
-    const newCompany = await createNewCompany(user.uid);
-    // getCompanies will update the list automatically, and we can select the new one.
-    setSelectedCompanyId(newCompany.id);
+  const handleCreateNewCompany = () => {
+    if (!user || !db) return;
+    createNewCompany(db, user.uid).then(newCompany => {
+      if (newCompany) {
+        setSelectedCompanyId(newCompany.id);
+      }
+    });
   };
 
   const handleCompanyDetailsChange = (details: Partial<Company>) => {
-      if (!selectedCompanyId) return;
-      // Optimistically update local state for company list
-      setCompanies(prev => prev.map(c => c.id === selectedCompanyId ? { ...c, ...details } : c));
-      // Debounced update to Firestore
-      updateCompanyDetails(selectedCompanyId, details);
+      if (!selectedCompanyId || !db) return;
+      updateCompanyDetails(db, selectedCompanyId, details);
   }
 
   const selectedCompany = companies.find(c => c.id === selectedCompanyId);
@@ -311,33 +314,32 @@ export default function SevesoApp() {
 
 
   const handleAddSubstance = (newSubstance: Omit<Substance, 'id' | 'quantity'>) => {
-    if (!selectedCompanyId) return;
+    if (!selectedCompanyId || !db) return;
     const substanceWithId = {
         ...newSubstance,
         id: `sub-${Date.now()}-${Math.random()}`,
         quantity: 0
     };
-    setLocalInventory(prev => [...prev, substanceWithId]);
-    addSubstanceToDb(selectedCompanyId, substanceWithId);
+    addSubstanceToDb(db, selectedCompanyId, substanceWithId);
   };
   
   const handleUpdateSubstanceQuantity = (id: string, quantity: number) => {
-    if (!selectedCompanyId) return;
+    if (!selectedCompanyId || !db) return;
     const newQuantity = isNaN(quantity) ? 0 : quantity;
+    
     setLocalInventory(prev => prev.map(sub => sub.id === id ? { ...sub, quantity: newQuantity } : sub));
-    updateSubstanceQuantityInDb(selectedCompanyId, id, newQuantity);
+    
+    updateSubstanceQuantityInDb(db, selectedCompanyId, id, newQuantity);
   };
 
   const handleDeleteSubstance = (id: string) => {
-    if (!selectedCompanyId) return;
-    setLocalInventory(prev => prev.filter(sub => sub.id !== id));
-    deleteSubstanceFromDb(selectedCompanyId, id);
+    if (!selectedCompanyId || !db) return;
+    deleteSubstanceFromDb(db, selectedCompanyId, id);
   };
 
   const handleClearAll = () => {
-    if (!selectedCompanyId) return;
-    setLocalInventory([]);
-    clearInventoryFromDb(selectedCompanyId);
+    if (!selectedCompanyId || !db) return;
+    clearInventoryFromDb(db, selectedCompanyId);
     setIsClearAlertOpen(false);
   };
   
@@ -394,16 +396,13 @@ export default function SevesoApp() {
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, type: 'json' | 'excel') => {
-     // This functionality would need to be re-evaluated.
-     // Do we import into the currently selected company or create a new one?
-     // For now, we disable this to avoid ambiguity.
     toast({ title: 'Import (nog) niet beschikbaar', description: 'Deze functie wordt herzien voor gebruik met meerdere bedrijven.' });
     if (event.target) event.target.value = '';
   };
 
-  const isActionDisabled = !selectedCompanyId || isDataLoading;
+  const isActionDisabled = !selectedCompanyId || isLoadingInventory;
 
-  if (!user) {
+  if (isAuthLoading) {
     return (
         <div className="flex items-center justify-center h-screen">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -447,12 +446,12 @@ export default function SevesoApp() {
         onSelectCompany={handleSelectCompany}
         onCreateNew={handleCreateNewCompany}
         onDetailsChange={handleCompanyDetailsChange}
-        disabled={isDataLoading}
+        disabled={isLoadingCompanies}
       />
       
       <div className="mt-8 flex flex-col lg:flex-row gap-8">
         <div className="flex-grow lg:w-2/3">
-          {isDataLoading ? (
+          {isLoadingInventory ? (
              <div className="flex items-center justify-center h-96 border-2 border-dashed rounded-lg">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="ml-4 text-muted-foreground">Inventaris laden...</p>
