@@ -48,7 +48,7 @@ export default function SevesoApp() {
       if (user) {
         setUser(user);
       } else {
-        await signInAnonymously(auth);
+        signInAnonymously(auth);
       }
     });
     return () => unsubscribe();
