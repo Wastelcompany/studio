@@ -51,7 +51,9 @@ service cloud.firestore {
      * Checks if the user owns the parent company document for nested resources.
      */
     function isParentCompanyOwner(companyId) {
-        return isSignedIn() && get(/databases/$(database)/documents/companies/$(companyId)).data.userId == request.auth.uid;
+        return isSignedIn() 
+          && exists(/databases/$(database)/documents/companies/$(companyId))
+          && get(/databases/$(database)/documents/companies/$(companyId)).data.userId == request.auth.uid;
     }
 
     // ------------------------------------------------------------------------
