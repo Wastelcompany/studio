@@ -66,7 +66,7 @@ export default function SevesoHeader({
           <DropdownMenuTrigger asChild>
             <Button variant="outline" disabled={isSavingPdf}>
               {isSavingPdf ? <Loader2 className="animate-spin" /> : <FileDown />}
-              Opslaan als PDF
+              Opslaan rapportage
               <ChevronDown className="ml-1 h-4 w-4 opacity-50" />
             </Button>
           </DropdownMenuTrigger>
