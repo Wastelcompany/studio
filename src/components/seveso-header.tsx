@@ -18,6 +18,7 @@ interface SevesoHeaderProps {
   onExport: (type: 'json' | 'excel') => void;
   onSaveAsPdf: (reportType: 'full' | 'seveso_only') => void;
   isSavingPdf: boolean;
+  disabled: boolean;
 }
 
 export default function SevesoHeader({
@@ -28,6 +29,7 @@ export default function SevesoHeader({
   onExport,
   onSaveAsPdf,
   isSavingPdf,
+  disabled,
 }: SevesoHeaderProps) {
 
   return (
@@ -40,21 +42,21 @@ export default function SevesoHeader({
         <p className="text-muted-foreground">Gevaarlijke Stoffen Analyse - Seveso en ARIE drempelwaarde check</p>
       </div>
       <div className="relative z-10 flex flex-wrap items-center gap-2">
-        <Button onClick={onUpload} type="button"><Upload />Upload SDS</Button>
+        <Button onClick={onUpload} type="button" disabled={disabled}><Upload />Upload SDS</Button>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline"><FileUp /> Import <ChevronDown className="ml-1 h-4 w-4 opacity-50" /></Button>
+            <Button variant="outline" disabled={disabled}><FileUp /> Import <ChevronDown className="ml-1 h-4 w-4 opacity-50" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onImport('json')}>Importeer JSON (.json)</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onImport('excel')}>Importeer Excel (.xlsx)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onImport('json')} disabled>Importeer JSON (.json)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onImport('excel')} disabled>Importeer Excel (.xlsx)</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline"><FileDown /> Export <ChevronDown className="ml-1 h-4 w-4 opacity-50" /></Button>
+            <Button variant="outline" disabled={disabled}><FileDown /> Export <ChevronDown className="ml-1 h-4 w-4 opacity-50" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onExport('json')}>Exporteer JSON (.json)</DropdownMenuItem>
@@ -64,7 +66,7 @@ export default function SevesoHeader({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" disabled={isSavingPdf}>
+            <Button variant="outline" disabled={disabled || isSavingPdf}>
               {isSavingPdf ? <Loader2 className="animate-spin" /> : <FileDown />}
               Opslaan rapportage
               <ChevronDown className="ml-1 h-4 w-4 opacity-50" />
@@ -80,15 +82,13 @@ export default function SevesoHeader({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="outline" size="icon" onClick={onShowReference} aria-label="Referentiegids" type="button">
+        <Button variant="outline" size="icon" onClick={onShowReference} aria-label="Referentiegids" type="button" disabled={disabled}>
           <Info />
         </Button>
-        <Button variant="outline" size="icon" onClick={onClearAll} className="text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label="Alles wissen" type="button">
+        <Button variant="outline" size="icon" onClick={onClearAll} className="text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label="Alles wissen" type="button" disabled={disabled}>
           <Trash2 />
         </Button>
       </div>
     </header>
   );
 }
-
-    

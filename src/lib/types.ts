@@ -15,6 +15,14 @@ export interface NamedSubstance extends HazardCategory {
   };
 }
 
+export interface Company {
+  id: string;
+  userId: string;
+  name: string;
+  address: string;
+  // createdAt?: any;
+}
+
 export interface Substance {
   id: string;
   productName: string;

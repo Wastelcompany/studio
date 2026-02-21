@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useRef } from 'react';
-import type { Substance, ThresholdMode } from '@/lib/types';
+import { useState, useEffect, useRef, useTransition } from 'react';
+import type { Substance, ThresholdMode, Company } from '@/lib/types';
 import SevesoHeader from '@/components/seveso-header';
 import InventoryTable from '@/components/inventory-table';
 import Dashboard from '@/components/dashboard';
@@ -13,14 +13,22 @@ import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import CompanyDetails from './company-details';
+import CompanySelector from './company-selector';
 import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES, classifySubstance } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
+import { auth, db } from '@/lib/firebase';
+import { signInAnonymously, onAuthStateChanged, User } from 'firebase/auth';
+import { getCompanies, createNewCompany, updateCompanyDetails, getCompanyData, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb } from '@/lib/companies';
+import { Loader2 } from 'lucide-react';
+
 
 export default function SevesoApp() {
-  const [inventory, setInventory] = useState<Substance[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [localInventory, setLocalInventory] = useState<Substance[]>([]);
+  
   const [thresholdMode, setThresholdMode] = useState<ThresholdMode>('low');
-  const [companyDetails, setCompanyDetails] = useState({ name: '', address: '' });
   
   const [isSdsUploadOpen, setIsSdsUploadOpen] = useState(false);
   const [isReferenceGuideOpen, setIsReferenceGuideOpen] = useState(false);
@@ -32,11 +40,68 @@ export default function SevesoApp() {
   const [explanationData, setExplanationData] = useState<{ substance: Substance | null; categoryId: string | null; type: 'seveso' | 'arie' | null }>({ substance: null, categoryId: null, type: null });
   
   const [isSavingPdf, setIsSavingPdf] = useState(false);
-  const dashboardRef = useRef<HTMLDivElement>(null);
-  const tableRef = useRef<HTMLDivElement>(null);
+  const [isDataLoading, startDataTransition] = useTransition();
+
+  // --- AUTH & DATA LOADING ---
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUser(user);
+      } else {
+        await signInAnonymously(auth);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      const unsubscribe = getCompanies(user.uid, setCompanies);
+      return () => unsubscribe();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (selectedCompanyId) {
+      startDataTransition(async () => {
+        const data = await getCompanyData(selectedCompanyId);
+        if (data) {
+          setLocalInventory(data.inventory);
+        } else {
+          setLocalInventory([]);
+        }
+      });
+    } else {
+      setLocalInventory([]);
+    }
+  }, [selectedCompanyId]);
+
+
+  const handleSelectCompany = (companyId: string) => {
+    setSelectedCompanyId(companyId);
+  };
+
+  const handleCreateNewCompany = async () => {
+    if (!user) return;
+    const newCompany = await createNewCompany(user.uid);
+    // getCompanies will update the list automatically, and we can select the new one.
+    setSelectedCompanyId(newCompany.id);
+  };
+
+  const handleCompanyDetailsChange = (details: Partial<Company>) => {
+      if (!selectedCompanyId) return;
+      // Optimistically update local state for company list
+      setCompanies(prev => prev.map(c => c.id === selectedCompanyId ? { ...c, ...details } : c));
+      // Debounced update to Firestore
+      updateCompanyDetails(selectedCompanyId, details);
+  }
+
+  const selectedCompany = companies.find(c => c.id === selectedCompanyId);
+
+  // --- ACTIONS ---
 
   const handleShowExplanation = (substanceId: string, categoryId: string, type: 'seveso' | 'arie') => {
-    const substance = inventory.find(sub => sub.id === substanceId);
+    const substance = localInventory.find(sub => sub.id === substanceId);
     if (substance) {
       setExplanationData({ substance, categoryId, type });
     }
@@ -45,12 +110,13 @@ export default function SevesoApp() {
   const generateFileName = (extension: string) => {
     const date = new Date();
     const YYYYMMDD = date.getFullYear() + String(date.getMonth() + 1).padStart(2, '0') + String(date.getDate()).padStart(2, '0');
-    const sanitizedName = (companyDetails.name || 'Naamloos').replace(/[^a-z0-9]/gi, '_');
-    const sanitizedAddress = (companyDetails.address || 'Adresloos').replace(/[^a-z0-9]/gi, '_');
+    const sanitizedName = (selectedCompany?.name || 'Naamloos').replace(/[^a-z0-9]/gi, '_');
+    const sanitizedAddress = (selectedCompany?.address || 'Adresloos').replace(/[^a-z0-9]/gi, '_');
     return `${sanitizedName}.${sanitizedAddress}.${YYYYMMDD}.${extension}`;
   };
 
   const handleSaveAsPdf = async (reportType: 'full' | 'seveso_only') => {
+    if (!selectedCompany) return;
     const includeArie = reportType === 'full';
     setIsSavingPdf(true);
     const toastTitle = includeArie ? "Volledig PDF rapport genereren..." : "Seveso PDF rapport genereren...";
@@ -109,7 +175,7 @@ export default function SevesoApp() {
         doc.text(`Gegenereerd op ${new Date().toLocaleDateString('nl-NL')}`, margin, finalY);
         finalY += 8;
 
-        if (companyDetails.name || companyDetails.address) {
+        if (selectedCompany.name || selectedCompany.address) {
             doc.setFillColor(colors.bgLight[0], colors.bgLight[1], colors.bgLight[2]);
             doc.rect(margin, finalY, pageWidth - (margin * 2), 20, 'F');
             let detailsY = finalY + 6;
@@ -119,12 +185,12 @@ export default function SevesoApp() {
             doc.text("Bedrijfsgegevens", margin + 5, detailsY);
             doc.setFont('helvetica', 'normal');
             detailsY += 5;
-            if (companyDetails.name) { doc.text(companyDetails.name, margin + 5, detailsY); detailsY += 4.5; }
-            if (companyDetails.address) { doc.text(companyDetails.address, margin + 5, detailsY); }
+            if (selectedCompany.name) { doc.text(selectedCompany.name, margin + 5, detailsY); detailsY += 4.5; }
+            if (selectedCompany.address) { doc.text(selectedCompany.address, margin + 5, detailsY); }
             finalY += 30;
         }
 
-        const stats = calculateSummations(inventory, thresholdMode);
+        const stats = calculateSummations(localInventory, thresholdMode);
 
         doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("1. Inleiding", margin, finalY); finalY += 5;
         doc.setFontSize(9.5); doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]); doc.setFont('helvetica', 'normal');
@@ -198,7 +264,7 @@ export default function SevesoApp() {
         let invY = 20; doc.setFontSize(16); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("Volledige Inventaris", margin, invY); invY += 8;
         
         const tableHead = includeArie ? [['Product / CAS', 'Seveso', 'ARIE', 'Voorraad']] : [['Product / CAS', 'Seveso', 'Voorraad']];
-        const tableData = inventory.map(sub => {
+        const tableData = localInventory.map(sub => {
             const sevesoCats = sub.sevesoCategoryIds.map(id => (ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))?.displayId || id).join(", ");
             let rowData: any[] = [
                 { content: sub.productName + (sub.casNumber ? `\n(${sub.casNumber})` : ''), styles: { fontStyle: 'bold' } },
@@ -245,35 +311,44 @@ export default function SevesoApp() {
 
 
   const handleAddSubstance = (newSubstance: Omit<Substance, 'id' | 'quantity'>) => {
-    setInventory(prev => [...prev, {
+    if (!selectedCompanyId) return;
+    const substanceWithId = {
         ...newSubstance,
         id: `sub-${Date.now()}-${Math.random()}`,
         quantity: 0
-    }]);
+    };
+    setLocalInventory(prev => [...prev, substanceWithId]);
+    addSubstanceToDb(selectedCompanyId, substanceWithId);
   };
   
   const handleUpdateSubstanceQuantity = (id: string, quantity: number) => {
-    setInventory(prev => prev.map(sub => sub.id === id ? { ...sub, quantity: isNaN(quantity) ? 0 : quantity } : sub));
+    if (!selectedCompanyId) return;
+    const newQuantity = isNaN(quantity) ? 0 : quantity;
+    setLocalInventory(prev => prev.map(sub => sub.id === id ? { ...sub, quantity: newQuantity } : sub));
+    updateSubstanceQuantityInDb(selectedCompanyId, id, newQuantity);
   };
 
   const handleDeleteSubstance = (id: string) => {
-    setInventory(prev => prev.filter(sub => sub.id !== id));
+    if (!selectedCompanyId) return;
+    setLocalInventory(prev => prev.filter(sub => sub.id !== id));
+    deleteSubstanceFromDb(selectedCompanyId, id);
   };
 
   const handleClearAll = () => {
-    setInventory([]);
-    setCompanyDetails({ name: '', address: ''});
+    if (!selectedCompanyId) return;
+    setLocalInventory([]);
+    clearInventoryFromDb(selectedCompanyId);
     setIsClearAlertOpen(false);
   };
   
   const handleExport = (type: 'json' | 'excel') => {
-    if (inventory.length === 0 && !companyDetails.name && !companyDetails.address) {
-      toast({ variant: 'destructive', title: 'Export Mislukt', description: 'Geen gegevens om te exporteren.' });
+    if (!selectedCompany) {
+      toast({ variant: 'destructive', title: 'Export Mislukt', description: 'Selecteer eerst een bedrijf.' });
       return;
     }
 
     if (type === 'json') {
-        const exportData = { companyDetails, inventory };
+        const exportData = { companyDetails: selectedCompany, inventory: localInventory };
         const dataStr = JSON.stringify(exportData, null, 2);
         const dataBlob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(dataBlob);
@@ -285,18 +360,17 @@ export default function SevesoApp() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     } else {
-        // Excel Export
         const wsData = [
             ["Bedrijfsgegevens", ""],
-            ["Bedrijfsnaam", companyDetails.name || "-"],
-            ["Adres", companyDetails.address || "-"],
+            ["Bedrijfsnaam", selectedCompany.name || "-"],
+            ["Adres", selectedCompany.address || "-"],
             ["Datum", new Date().toLocaleDateString('nl-NL')],
             [],
             ["Inventarisatie Gevaarlijke Stoffen", "", "", "", ""],
             ["Productnaam", "CAS Nummer", "Seveso Categorieën", "ARIE Categorieën", "Voorraad (ton)", "H-zinnen"]
         ];
 
-        inventory.forEach(sub => {
+        localInventory.forEach(sub => {
             const sevesoCats = sub.sevesoCategoryIds.map(id => (ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))?.displayId || id).join(", ");
             const arieCats = sub.arieCategoryIds.map(id => ALL_CATEGORIES[id]?.displayId || id).join(", ");
             wsData.push([
@@ -310,10 +384,7 @@ export default function SevesoApp() {
         });
 
         const ws = XLSX.utils.aoa_to_sheet(wsData);
-        
-        // Basic styling via XLSX (columns width)
         ws['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 40 }];
-
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Seveso Inventaris");
         XLSX.writeFile(wb, generateFileName('xlsx'));
@@ -323,78 +394,23 @@ export default function SevesoApp() {
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, type: 'json' | 'excel') => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        if (type === 'json') {
-            const text = e.target?.result;
-            if (typeof text !== 'string') throw new Error('Ongeldige inhoud');
-            const data = JSON.parse(text);
-            const importedInventory = (data.inventory || data).map((sub: any) => ({
-              ...sub,
-              sevesoCategoryIds: sub.sevesoCategoryIds || sub.sevesoCategories || [],
-              arieCategoryIds: sub.arieCategoryIds || [],
-            }));
-            const importedDetails = data.companyDetails || { name: '', address: '' };
-            if (Array.isArray(importedInventory)) {
-                setInventory(importedInventory);
-                setCompanyDetails(importedDetails);
-            }
-        } else {
-            // Excel Import
-            const data = new Uint8Array(e.target?.result as ArrayBuffer);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
-            
-            // Skip headers and find inventory start (assuming structure matches export)
-            const inventoryStartIdx = jsonData.findIndex(row => row[0] === "Productnaam") + 1;
-            if (inventoryStartIdx <= 0) throw new Error("Ongeldig Excel formaat. Gebruik een export bestand.");
-
-            const importedInventory: Substance[] = jsonData.slice(inventoryStartIdx)
-                .filter(row => row[0]) // Only rows with a product name
-                .map((row, idx) => {
-                    const hStatements = (row[5] || "").split(",").map((s: string) => s.trim()).filter(Boolean);
-                    const { sevesoCategoryIds, arieCategoryIds, isNamed, namedSubstanceName } = classifySubstance(hStatements, row[1] || null);
-                    
-                    return {
-                        id: `sub-xlsx-${Date.now()}-${idx}`,
-                        productName: row[0],
-                        casNumber: row[1] || null,
-                        hStatements: hStatements,
-                        sevesoCategoryIds,
-                        arieCategoryIds,
-                        isNamedSubstance: isNamed,
-                        namedSubstanceName,
-                        quantity: parseFloat(row[4]) || 0
-                    };
-                });
-
-            // Try to get company details from top of sheet
-            const importedDetails = {
-                name: jsonData[1]?.[1] || '',
-                address: jsonData[2]?.[1] || ''
-            };
-
-            setInventory(importedInventory);
-            setCompanyDetails(importedDetails);
-        }
-
-        toast({ title: 'Import succesvol', description: `Gegevens geladen uit ${type.toUpperCase()}.` });
-      } catch (error) {
-        console.error("Import Error:", error);
-        toast({ variant: "destructive", title: "Import Mislukt", description: "Kon bestand niet verwerken." });
-      } finally {
-        if (event.target) event.target.value = '';
-      }
-    };
-
-    if (type === 'json') reader.readAsText(file);
-    else reader.readAsArrayBuffer(file);
+     // This functionality would need to be re-evaluated.
+     // Do we import into the currently selected company or create a new one?
+     // For now, we disable this to avoid ambiguity.
+    toast({ title: 'Import (nog) niet beschikbaar', description: 'Deze functie wordt herzien voor gebruik met meerdere bedrijven.' });
+    if (event.target) event.target.value = '';
   };
+
+  const isActionDisabled = !selectedCompanyId || isDataLoading;
+
+  if (!user) {
+    return (
+        <div className="flex items-center justify-center h-screen">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-4 text-lg">Applicatie laden...</p>
+        </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -406,6 +422,7 @@ export default function SevesoApp() {
         onExport={handleExport}
         onSaveAsPdf={handleSaveAsPdf}
         isSavingPdf={isSavingPdf}
+        disabled={isActionDisabled}
       />
        <input
         type="file"
@@ -413,6 +430,7 @@ export default function SevesoApp() {
         onChange={(e) => handleFileSelect(e, 'json')}
         className="hidden"
         accept="application/json"
+        disabled // Disabled for now
       />
       <input
         type="file"
@@ -420,24 +438,39 @@ export default function SevesoApp() {
         onChange={(e) => handleFileSelect(e, 'excel')}
         className="hidden"
         accept=".xlsx, .xls"
+        disabled // Disabled for now
       />
       
-      <CompanyDetails details={companyDetails} onDetailsChange={setCompanyDetails} />
+      <CompanySelector 
+        companies={companies}
+        selectedCompanyId={selectedCompanyId}
+        onSelectCompany={handleSelectCompany}
+        onCreateNew={handleCreateNewCompany}
+        onDetailsChange={handleCompanyDetailsChange}
+        disabled={isDataLoading}
+      />
       
       <div className="mt-8 flex flex-col lg:flex-row gap-8">
-        <div className="flex-grow lg:w-2/3" ref={tableRef}>
-          <InventoryTable
-            inventory={inventory}
-            onUpdateQuantity={handleUpdateSubstanceQuantity}
-            onDelete={handleDeleteSubstance}
-            thresholdMode={thresholdMode}
-            onUpload={() => setIsSdsUploadOpen(true)}
-            onShowExplanation={handleShowExplanation}
-          />
+        <div className="flex-grow lg:w-2/3">
+          {isDataLoading ? (
+             <div className="flex items-center justify-center h-96 border-2 border-dashed rounded-lg">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="ml-4 text-muted-foreground">Inventaris laden...</p>
+            </div>
+          ) : (
+            <InventoryTable
+                inventory={localInventory}
+                onUpdateQuantity={handleUpdateSubstanceQuantity}
+                onDelete={handleDeleteSubstance}
+                thresholdMode={thresholdMode}
+                onUpload={() => setIsSdsUploadOpen(true)}
+                onShowExplanation={handleShowExplanation}
+            />
+          )}
         </div>
-        <aside className="lg:w-1/3 lg:sticky lg:top-8 h-fit" ref={dashboardRef}>
+        <aside className="lg:w-1/3 lg:sticky lg:top-8 h-fit">
           <Dashboard
-            inventory={inventory}
+            inventory={localInventory}
             thresholdMode={thresholdMode}
             setThresholdMode={setThresholdMode}
           />
@@ -460,7 +493,7 @@ export default function SevesoApp() {
           <AlertDialogHeader>
             <AlertDialogTitle>Weet je het zeker?</AlertDialogTitle>
             <AlertDialogDescription>
-              Deze actie kan niet ongedaan worden gemaakt. Dit zal de volledige inventarisatie en bedrijfsgegevens permanent verwijderen.
+              Deze actie kan niet ongedaan worden gemaakt. Dit zal de volledige inventaris voor het geselecteerde bedrijf wissen.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -482,7 +515,3 @@ export default function SevesoApp() {
     </div>
   );
 }
-
-    
-
-    
