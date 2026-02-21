@@ -1,0 +1,175 @@
+/**
+ * # Firestore Security Rules
+ *
+ * ## Core Philosophy
+ * This ruleset enforces a strict user-ownership model. All data is considered private and is accessible only by the user who created it. There are no public collections or shared data access roles. The rules are designed to be highly secure from an authorization standpoint while remaining flexible on data shapes to support rapid application prototyping.
+ *
+ * ## Data Structure
+ * All user data is hierarchically nested under the `/users/{userId}` path. This structure ensures that ownership is explicitly defined by the document's path, simplifying security logic and enabling secure queries. For example, a user's projects are stored at `/users/{their-id}/sevesoProjects/{projectId}`.
+ *
+ * ## Key Security Decisions
+ * - **No Public Access:** All read and write operations require the user to be authenticated. There are no publicly readable or writable collections.
+ * - **Strict Ownership:** Users can only access documents within their own data tree (i.e., under `/users/{their-id}`). Cross-user access is strictly forbidden.
+ * - **User Listing Disabled:** It is not possible to query the top-level `/users` collection, preventing enumeration of all application users.
+ * - **Denormalization for Authorization:** Key identifiers (like `userId` and `sevesoProjectId`) are expected to be stored directly within documents. This allows for simple, performant rules that validate relational integrity on write operations without requiring costly or slow `get()` calls to other documents.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Checks if a user is authenticated. This rule allows both standard
+     * and anonymous users who have a valid auth token.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the authenticated user's UID matches the document's
+     * owner ID from the path. This is the primary ownership check.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Ensures the document being modified/deleted already exists and that the
+     * requester is the legitimate owner. Prevents writes to non-existent paths.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    // --- Create/Update Validation Helpers (Prototyping Mode) ---
+
+    /**
+     * On create, validates that the user document's internal `id` field
+     * matches the document ID, establishing the ownership link.
+     */
+    function hasValidUserDataOnCreate(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * On update, ensures the user document's internal `id` field is immutable.
+     */
+    function hasValidUserDataOnUpdate() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * On create, validates that the project's internal `userId` field
+     * matches the owner's ID from the path.
+     */
+    function hasValidProjectDataOnCreate(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * On update, ensures the project's internal `userId` field is immutable.
+     */
+    function hasValidProjectDataOnUpdate() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    /**
+     * On create, validates that the substance item's internal `sevesoProjectId`
+     * field matches the parent project's ID from the path.
+     */
+    function hasValidSubstanceDataOnCreate(sevesoProjectId) {
+      return request.resource.data.sevesoProjectId == sevesoProjectId;
+    }
+
+    /**
+     * On update, ensures the substance item's internal `sevesoProjectId` is immutable.
+     */
+    function hasValidSubstanceDataOnUpdate() {
+      return request.resource.data.sevesoProjectId == resource.data.sevesoProjectId;
+    }
+
+    /**
+     * On create, validates that the classification's internal `substanceInventoryItemId`
+     * field matches the parent substance's ID from the path.
+     */
+    function hasValidClassificationDataOnCreate(substanceInventoryItemId) {
+      return request.resource.data.substanceInventoryItemId == substanceInventoryItemId;
+    }
+
+    /**
+     * On update, ensures the classification's internal `substanceInventoryItemId` is immutable.
+     */
+    function hasValidClassificationDataOnUpdate() {
+      return request.resource.data.substanceInventoryItemId == resource.data.substanceInventoryItemId;
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Manages user profile documents.
+     * @path /users/{userId}
+     * @allow A user (auth.uid=`user123`) can (create) their own profile at `/users/user123`.
+     * @deny A user (auth.uid=`user456`) cannot (get) a profile at `/users/user123`.
+     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && hasValidUserDataOnCreate(userId);
+      allow update: if isExistingOwner(userId) && hasValidUserDataOnUpdate();
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Manages Seveso project documents owned by a user.
+       * @path /users/{userId}/sevesoProjects/{sevesoProjectId}
+       * @allow A user (auth.uid=`user123`) can (create) a project at `/users/user123/sevesoProjects/projABC`.
+       * @deny A user (auth.uid=`user456`) cannot (list) projects at `/users/user123/sevesoProjects`.
+       * @principle Enforces document ownership for all operations based on the path.
+       */
+      match /sevesoProjects/{sevesoProjectId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidProjectDataOnCreate(userId);
+        allow update: if isExistingOwner(userId) && hasValidProjectDataOnUpdate();
+        allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description Manages substance inventory items within a specific Seveso project.
+         * @path /users/{userId}/sevesoProjects/{sevesoProjectId}/substanceInventoryItems/{substanceInventoryItemId}
+         * @allow A user (auth.uid=`user123`) can (list) all substances for their project.
+         * @deny A user (auth.uid=`user456`) cannot (delete) a substance from another user's project.
+         * @principle Inherits ownership from the parent user document via the path.
+         */
+        match /substanceInventoryItems/{substanceInventoryItemId} {
+          allow get: if isOwner(userId);
+          allow list: if isOwner(userId);
+          allow create: if isOwner(userId) && hasValidSubstanceDataOnCreate(sevesoProjectId);
+          allow update: if isExistingOwner(userId) && hasValidSubstanceDataOnUpdate();
+          allow delete: if isExistingOwner(userId);
+
+          /**
+           * @description Manages hazard classifications for a specific substance.
+           * @path /users/{userId}/sevesoProjects/{sevesoProjectId}/substanceInventoryItems/{substanceInventoryItemId}/substanceHazardClassifications/{substanceHazardClassificationId}
+           * @allow A user (auth.uid=`user123`) can (update) a hazard classification for a substance in their project.
+           * @deny A user (auth.uid=`user456`) cannot (get) a hazard classification from another user's project.
+           * @principle Deeply nested ownership is enforced by the root {userId} in the path.
+           */
+          match /substanceHazardClassifications/{substanceHazardClassificationId} {
+            allow get: if isOwner(userId);
+            allow list: if isOwner(userId);
+            allow create: if isOwner(userId) && hasValidClassificationDataOnCreate(substanceInventoryItemId);
+            allow update: if isExistingOwner(userId) && hasValidClassificationDataOnUpdate();
+            allow delete: if isExistingOwner(userId);
+          }
+        }
+      }
+    }
+  }
+}
