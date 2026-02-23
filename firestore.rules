@@ -5,11 +5,11 @@
  * This ruleset enforces a strict user-ownership model. All data is considered private and is accessible only by the user who created it. There are no public collections or shared data access roles. The rules are designed to be highly secure from an authorization standpoint.
  *
  * ## Data Structure
- * All company data is stored in a top-level `companies` collection. Each company document contains a `userId` field to signify ownership. This allows for flexible queries while maintaining strict ownership controls. A user's inventory is nested under their company at `/companies/{companyId}/inventory/{substanceId}`.
+ * All company data is stored in a top-level `companies` collection. Each company document contains a `userId` field to signify ownership. This allows for flexible queries while maintaining strict ownership controls. A user's inventory is nested under their company at `/companies/{companyId}/inventory/{substanceId}`. User profiles are stored in a top-level `users` collection.
  *
  * ## Key Security Decisions
  * - **No Public Access:** All read and write operations require the user to be authenticated. There are no publicly readable or writable collections.
- * - **Strict Ownership:** Users can only access documents they own, verified by matching `request.auth.uid` with the `userId` field in the document.
+ * - **Strict Ownership:** Users can only access documents they own, verified by matching `request.auth.uid` with the `userId` field in the document or the document ID itself.
  * - **Query-based Listing:** Listing companies is only permitted via a query that explicitly filters by the authenticated user's ID (e.g., `where('userId', '==', auth.uid)`). This is enforced by the `isOwner` check on read.
  * - **Subcollection Security:** For subcollections like `inventory`, ownership is verified by checking the `userId` on the parent company document using a `get()` call.
  */
@@ -50,6 +50,17 @@ service cloud.firestore {
     // ------------------------------------------------------------------------
     // Collection Rules
     // ------------------------------------------------------------------------
+    
+    /**
+     * @description Manages user profile documents.
+     * @path /users/{userId}
+     * @allow A user can create, read, update and delete their own profile.
+     * @deny A user cannot access another user's profile.
+     */
+    match /users/{userId} {
+      allow read, update, delete: if request.auth.uid == userId;
+      allow create: if request.auth.uid == userId;
+    }
 
     /**
      * @description Manages company documents, which act as containers for substance inventories.

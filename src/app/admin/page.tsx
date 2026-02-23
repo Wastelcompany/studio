@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, LogOut } from "lucide-react";
+import { Shield, LogOut, Users } from "lucide-react";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -21,12 +21,17 @@ export default function AdminPage() {
           </div>
           <CardTitle className="mt-4 text-2xl">Adminpaneel</CardTitle>
           <CardDescription>
-            Deze pagina is bedoeld voor het beheer van gebruikersrechten.
+            Deze pagina is voor het beheer van de applicatie en gebruikers.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center text-muted-foreground">
-            <p>De functionaliteit om rechten van verschillende gebruikers in te stellen is momenteel in ontwikkeling en nog niet beschikbaar.</p>
+          <div className="text-center space-y-4">
+            <div className="flex justify-center">
+              <Users className="w-12 h-12 text-muted-foreground" />
+            </div>
+            <p className="text-muted-foreground">
+              De functionaliteit om een overzicht van alle gebruikers te zien is in ontwikkeling. Dit vereist uitgebreidere beheerdersrechten (custom claims) die in een volgende stap geconfigureerd zullen worden.
+            </p>
           </div>
         </CardContent>
         <CardFooter>

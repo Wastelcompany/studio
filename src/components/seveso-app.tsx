@@ -16,23 +16,23 @@ import autoTable from 'jspdf-autotable';
 import CompanySelector from './company-selector';
 import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES, classifySubstance } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
-import { useUser, useCollection, useMemoFirebase, useFirestore, useAuth, initiateAnonymousSignIn } from '@/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { useUser, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
 import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb } from '@/lib/companies';
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 
 export default function SevesoApp() {
   const { user, isUserLoading: isAuthLoading } = useUser();
   const db = useFirestore();
-  const auth = useAuth();
+  const router = useRouter();
   
   useEffect(() => {
-    // When auth is ready and there's no user, sign in anonymously.
     if (!isAuthLoading && !user) {
-        initiateAnonymousSignIn(auth);
+        router.push('/');
     }
-  }, [isAuthLoading, user, auth]);
+  }, [isAuthLoading, user, router]);
   
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   
@@ -402,7 +402,7 @@ export default function SevesoApp() {
 
   const isActionDisabled = !selectedCompanyId || isLoadingInventory;
 
-  if (isAuthLoading) {
+  if (isAuthLoading || !user) {
     return (
         <div className="flex items-center justify-center h-screen">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
