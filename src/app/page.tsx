@@ -1,9 +1,9 @@
-import SevesoApp from "@/components/seveso-app";
+import LoginForm from "@/components/login-form";
 
-export default function Home() {
+export default function LoginPage() {
   return (
     <main>
-      <SevesoApp />
+      <LoginForm />
     </main>
   );
 }
