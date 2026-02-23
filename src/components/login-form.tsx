@@ -26,6 +26,7 @@ import {
   signInWithEmailAndPassword,
   sendEmailVerification,
   FirebaseError,
+  UserCredential,
 } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 
@@ -44,6 +45,7 @@ export default function LoginForm() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
+  const [lastUserCredential, setLastUserCredential] = useState<UserCredential | null>(null);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -80,8 +82,11 @@ export default function LoginForm() {
     try {
       if (activeTab === 'login') {
         const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+        setLastUserCredential(userCredential); // Save for potential resend
+
         if (!userCredential.user.emailVerified) {
             const resendVerification = async () => {
+              if (!userCredential) return;
               try {
                 await sendEmailVerification(userCredential.user);
                 toast({
@@ -89,10 +94,12 @@ export default function LoginForm() {
                   description: 'Controleer uw inbox voor de nieuwe verificatielink.',
                 });
               } catch (error) {
+                console.error("Error resending verification email:", error);
                 toast({
                   variant: 'destructive',
-                  title: 'Fout bij verzenden',
-                  description: 'Kon de verificatie-e-mail niet opnieuw verzenden.',
+                  title: 'Fout bij verzenden van e-mail',
+                  description: 'Kon de verificatie-e-mail niet opnieuw versturen. Controleer uw Firebase projectinstellingen (bv. support email).',
+                  duration: 10000,
                 });
               }
             };
@@ -126,13 +133,22 @@ export default function LoginForm() {
           createdAt: serverTimestamp(),
         });
         
-        await sendEmailVerification(user);
-
-        toast({
-            variant: "default",
-            title: "Registratie bijna voltooid",
-            description: "Controleer uw inbox en klik op de verificatielink. U kunt daarna inloggen.",
-        });
+        try {
+            await sendEmailVerification(user);
+            toast({
+                variant: "default",
+                title: "Registratie bijna voltooid",
+                description: "Controleer uw inbox en klik op de verificatielink. U kunt daarna inloggen.",
+            });
+        } catch (error) {
+            console.error("Error sending verification email on signup:", error);
+            toast({
+                variant: "destructive",
+                title: "Fout bij verzenden van e-mail",
+                description: "Kon de verificatie-e-mail niet versturen. Controleer uw Firebase projectinstellingen (bv. support email).",
+                duration: 10000,
+            });
+        }
 
         setActiveTab('login'); 
       }
