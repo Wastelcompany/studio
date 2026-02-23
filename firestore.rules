@@ -64,12 +64,12 @@ service cloud.firestore {
      * @path /users/{userId}
      * @allow A user can create their own profile upon registration (before verification).
      * @allow A verified user can read, update, and delete their own profile.
-     * @allow The verified admin user can list all user profiles.
+     * @allow The admin user can list all user profiles, even if not verified.
      */
     match /users/{userId} {
       allow create: if request.auth.uid == userId;
       allow read, update, delete: if isVerifiedUser() && request.auth.uid == userId;
-      allow list: if isVerifiedUser() && request.auth.token.email == 'post@wastelcompany.eu';
+      allow list: if isSignedIn() && request.auth.token.email == 'post@wastelcompany.eu';
     }
 
     /**
