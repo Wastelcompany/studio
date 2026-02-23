@@ -1,3 +1,5 @@
+import type { Timestamp } from 'firebase/firestore';
+
 export type ThresholdMode = 'low' | 'high';
 
 export interface HazardCategory {
@@ -41,4 +43,11 @@ export interface SummationGroup {
   group: 'health' | 'physical' | 'environment' | 'other' | 'named';
   totalRatio: number;
   isExceeded: boolean;
+}
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  createdAt: Timestamp;
+  displayName?: string;
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { Upload, FileDown, Trash2, Info, FileUp, Loader2, ChevronDown, LogOut } from 'lucide-react';
 import {
@@ -32,9 +34,12 @@ export default function SevesoHeader({
   disabled,
 }: SevesoHeaderProps) {
   const router = useRouter();
+  const auth = useAuth();
 
   const handleLogout = () => {
-    router.push('/');
+    signOut(auth).then(() => {
+        router.push('/');
+    });
   };
 
   return (

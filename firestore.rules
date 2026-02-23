@@ -55,11 +55,13 @@ service cloud.firestore {
      * @description Manages user profile documents.
      * @path /users/{userId}
      * @allow A user can create, read, update and delete their own profile.
+     * @allow The admin user can list all user profiles.
      * @deny A user cannot access another user's profile.
      */
     match /users/{userId} {
       allow read, update, delete: if request.auth.uid == userId;
       allow create: if request.auth.uid == userId;
+      allow list: if isSignedIn() && request.auth.token.email == 'admin@chemstats.app';
     }
 
     /**
