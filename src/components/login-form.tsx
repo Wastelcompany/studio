@@ -77,7 +77,7 @@ export default function LoginForm() {
     setIsSubmitting(true);
     try {
       if (activeTab === 'login') {
-        if (data.email.toLowerCase() === 'admin@chemstats.app') {
+        if (data.email.toLowerCase() === 'post@wastelcompany.eu') {
             await signInWithEmailAndPassword(auth, data.email, data.password);
             router.push('/admin');
         } else {

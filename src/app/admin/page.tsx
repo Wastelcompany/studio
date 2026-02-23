@@ -19,7 +19,7 @@ export default function AdminPage() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
 
-  const isAdmin = user?.email === 'admin@chemstats.app';
+  const isAdmin = user?.email === 'post@wastelcompany.eu';
 
   const usersQuery = useMemoFirebase(() => {
     if (!isAdmin) return null;
@@ -72,7 +72,7 @@ export default function AdminPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {users.sort((a, b) => a.email === 'admin@chemstats.app' ? -1 : (b.email === 'admin@chemstats.app' ? 1 : 0)).map((u) => (
+                    {users.sort((a, b) => a.email === 'post@wastelcompany.eu' ? -1 : (b.email === 'post@wastelcompany.eu' ? 1 : 0)).map((u) => (
                         <TableRow key={u.uid}>
                             <TableCell className="font-medium">{u.email}</TableCell>
                             <TableCell className="text-muted-foreground text-xs font-mono">{u.uid}</TableCell>
@@ -80,7 +80,7 @@ export default function AdminPage() {
                                 {u.createdAt?.seconds ? format(new Date(u.createdAt.seconds * 1000), 'dd-MM-yyyy HH:mm') : 'N/A'}
                             </TableCell>
                             <TableCell className="text-right">
-                                {u.email === 'admin@chemstats.app' ? (
+                                {u.email === 'post@wastelcompany.eu' ? (
                                     <Badge variant="default" className="bg-primary/80">Admin</Badge>
                                 ) : (
                                     <Badge variant="secondary">Gebruiker</Badge>

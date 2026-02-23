@@ -61,7 +61,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, update, delete: if request.auth.uid == userId;
       allow create: if request.auth.uid == userId;
-      allow list: if isSignedIn() && request.auth.token.email == 'admin@chemstats.app';
+      allow list: if isSignedIn() && request.auth.token.email == 'post@wastelcompany.eu';
     }
 
     /**
