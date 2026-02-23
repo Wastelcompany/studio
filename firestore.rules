@@ -2,16 +2,19 @@
  * # Firestore Security Rules
  *
  * ## Core Philosophy
- * This ruleset enforces a strict user-ownership model. All data is considered private and is accessible only by the user who created it. There are no public collections or shared data access roles. The rules are designed to be highly secure from an authorization standpoint.
+ * This ruleset enforces a strict user-ownership model where users must have a verified
+ * email address to access data. All data is private and accessible only by the verified
+ * user who created it.
  *
- * ## Data Structure
- * All company data is stored in a top-level `companies` collection. Each company document contains a `userId` field to signify ownership. This allows for flexible queries while maintaining strict ownership controls. A user's inventory is nested under their company at `/companies/{companyId}/inventory/{substanceId}`. User profiles are stored in a top-level `users` collection.
- *
- * ## Key Security Decisions
- * - **No Public Access:** All read and write operations require the user to be authenticated. There are no publicly readable or writable collections.
- * - **Strict Ownership:** Users can only access documents they own, verified by matching `request.auth.uid` with the `userId` field in the document or the document ID itself.
- * - **Query-based Listing:** Listing companies is only permitted via a query that explicitly filters by the authenticated user's ID (e.g., `where('userId', '==', auth.uid)`). This is enforced by the `isOwner` check on read.
- * - **Subcollection Security:** For subcollections like `inventory`, ownership is verified by checking the `userId` on the parent company document using a `get()` call.
+ * ## Data Structure & Security
+ * - **Email Verification:** Access to all data collections (except for creating one's own
+ *   user profile upon signup) requires `request.auth.token.email_verified == true`.
+ * - **Strict Ownership:** Verified users can only access documents they own, verified
+ *   by matching `request.auth.uid` with the `userId` field in the document.
+ * - **Query-based Listing:** Listing companies is only permitted for verified users via a
+ *   query that explicitly filters by their user ID.
+ * - **Subcollection Security:** Access to subcollections like `inventory` is granted by
+ *   checking the ownership of the parent company document.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -29,22 +32,27 @@ service cloud.firestore {
     }
 
     /**
-     * Checks if the authenticated user's UID matches the document's `userId` field.
-     * Used for read, update, and delete operations on existing documents.
-     * This rule is robust against documents that may be missing the 'userId' field.
+     * Checks if the user is authenticated and their email is verified.
      */
-    function isOwner() {
-      return isSignedIn() 
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    /**
+     * Checks if the authenticated user's UID matches the document's `userId` field
+     * and their email is verified.
+     */
+    function isVerifiedOwner() {
+      return isVerifiedUser() 
              && "userId" in resource.data 
              && request.auth.uid == resource.data.userId;
     }
     
     /**
-     * Checks if the authenticated user's UID matches the `userId` field
-     * in the data of the document being created.
+     * Checks if the user is creating a document for themselves and is verified.
      */
-    function isCreatingAsOwner() {
-        return isSignedIn() && request.auth.uid == request.resource.data.userId;
+    function isCreatingAsVerifiedOwner() {
+        return isVerifiedUser() && request.auth.uid == request.resource.data.userId;
     }
 
     // ------------------------------------------------------------------------
@@ -54,35 +62,32 @@ service cloud.firestore {
     /**
      * @description Manages user profile documents.
      * @path /users/{userId}
-     * @allow A user can create, read, update and delete their own profile.
-     * @allow The admin user can list all user profiles.
-     * @deny A user cannot access another user's profile.
+     * @allow A user can create their own profile upon registration (before verification).
+     * @allow A verified user can read, update, and delete their own profile.
+     * @allow The verified admin user can list all user profiles.
      */
     match /users/{userId} {
-      allow read, update, delete: if request.auth.uid == userId;
       allow create: if request.auth.uid == userId;
-      allow list: if isSignedIn() && request.auth.token.email == 'post@wastelcompany.eu';
+      allow read, update, delete: if isVerifiedUser() && request.auth.uid == userId;
+      allow list: if isVerifiedUser() && request.auth.token.email == 'post@wastelcompany.eu';
     }
 
     /**
      * @description Manages company documents, which act as containers for substance inventories.
      * @path /companies/{companyId}
-     * @allow A user can create, read, update, and delete their own company documents.
-     * @allow A user can list only the companies they own via a client-side query.
-     * @deny A user cannot access another user's company in any way.
+     * @allow A verified user can create, read, update, and delete their own company documents.
      */
     match /companies/{companyId} {
-      allow read, update, delete: if isOwner();
-      allow create: if isCreatingAsOwner();
+      allow read, update, delete: if isVerifiedOwner();
+      allow create: if isCreatingAsVerifiedOwner();
 
       /**
        * @description Manages the substance inventory for a specific company.
        * @path /companies/{companyId}/inventory/{substanceId}
-       * @allow The company owner can perform any action (read, list, create, update, delete).
-       * @deny Anyone other than the company owner is denied all access.
+       * @allow The verified company owner can perform any action.
        */
       match /inventory/{substanceId} {
-        allow read, write: if request.auth != null &&
+        allow read, write: if isVerifiedUser() &&
                              exists(/databases/$(database)/documents/companies/$(companyId)) &&
                              get(/databases/$(database)/documents/companies/$(companyId)).data.userId == request.auth.uid;
       }

@@ -142,7 +142,7 @@
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores public profile information for each user. The document ID is the same as the user's auth UID. Admin users (admin@chemstats.app) have read access to this entire collection."
+          "description": "Stores public profile information for each user. The document ID is the same as the user's auth UID. Profile creation is allowed upon signup, but all subsequent access requires email verification. The verified admin user (post@wastelcompany.eu) has read access to this entire collection."
         }
       },
       {
@@ -152,7 +152,7 @@
           "schema": {
             "$ref": "#/backend/entities/Company"
           },
-          "description": "Stores company profile information. Documents in this collection contain a `userId` field to indicate ownership. Access is restricted based on this field."
+          "description": "Stores company profile information. Documents in this collection contain a `userId` field to indicate ownership. Access is restricted to the verified owner of the document."
         }
       },
       {
@@ -162,7 +162,7 @@
           "schema": {
             "$ref": "#/backend/entities/SubstanceInventoryItem"
           },
-          "description": "Contains chemical substances belonging to a specific company. Access is restricted to the owner of the parent company.",
+          "description": "Contains chemical substances belonging to a specific company. Access is restricted to the verified owner of the parent company.",
           "params": [
             {
               "name": "companyId",
@@ -176,6 +176,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed around a top-level `companies` collection. This model was chosen to simplify querying for company data and to decouple companies from users, allowing for potential future features like sharing companies between users. Security is maintained by embedding a `userId` field in each company document, which is then used in Firestore Security Rules to enforce ownership. All subcollections, such as `inventory`, inherit access rights by checking the ownership of the parent company document, ensuring data remains secure and private to the owner. A `users` collection is also added to store user profile information, with special read-access for an admin role."
+    "reasoning": "The Firestore structure is designed around a top-level `companies` collection. This model was chosen to simplify querying for company data and to decouple companies from users, allowing for potential future features like sharing companies between users. Security is maintained by embedding a `userId` field in each company document, which is then used in Firestore Security Rules to enforce ownership. All subcollections, such as `inventory`, inherit access rights by checking the ownership of the parent company document, ensuring data remains secure and private to the owner. A `users` collection is also added to store user profile information, with special read-access for an admin role. Access to all data now requires users to have a verified email address."
   }
 }

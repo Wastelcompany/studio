@@ -23,6 +23,7 @@ import { useAuth, useFirestore } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendEmailVerification,
   FirebaseError,
 } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
@@ -56,7 +57,7 @@ export default function LoginForm() {
       case 'auth/wrong-password':
       case 'auth/invalid-credential':
         title = 'Login Mislukt';
-        description = 'E-mailadres of wachtwoord is onjuist.';
+        description = 'E-mailadres of wachtwoord is onjuist, of uw e-mailadres is nog niet geverifieerd.';
         break;
       case 'auth/email-already-in-use':
         title = 'Registratie Mislukt';
@@ -77,23 +78,45 @@ export default function LoginForm() {
     setIsSubmitting(true);
     try {
       if (activeTab === 'login') {
+        const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+        if (!userCredential.user.emailVerified) {
+            toast({
+                variant: 'destructive',
+                title: 'E-mail niet geverifieerd',
+                description: 'Controleer uw inbox en klik op de link om uw account te activeren voordat u kunt inloggen.',
+            });
+            await auth.signOut(); // Force sign out
+            setIsSubmitting(false);
+            return;
+        }
+
         if (data.email.toLowerCase() === 'post@wastelcompany.eu') {
-            await signInWithEmailAndPassword(auth, data.email, data.password);
             router.push('/admin');
         } else {
-            await signInWithEmailAndPassword(auth, data.email, data.password);
             router.push('/dashboard');
         }
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
         const user = userCredential.user;
+
+        // The user document is created here, BEFORE verification is required for other actions.
         const userDocRef = doc(db, 'users', user.uid);
         await setDoc(userDocRef, {
           uid: user.uid,
           email: user.email,
           createdAt: serverTimestamp(),
         });
-        router.push('/dashboard');
+        
+        // Now send the verification email.
+        await sendEmailVerification(user);
+
+        toast({
+            variant: "default",
+            title: "Registratie bijna voltooid",
+            description: "Controleer uw inbox en klik op de verificatielink. U kunt daarna inloggen.",
+        });
+
+        router.push('/'); // Go back to login page
       }
     } catch (error) {
       if (error instanceof FirebaseError) {
