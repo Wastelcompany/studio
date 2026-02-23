@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from "@/components/ui/toast";
 import { LogIn, UserPlus } from 'lucide-react';
 import { useAuth, useFirestore } from '@/firebase';
 import {
@@ -57,7 +58,7 @@ export default function LoginForm() {
       case 'auth/wrong-password':
       case 'auth/invalid-credential':
         title = 'Login Mislukt';
-        description = 'E-mailadres of wachtwoord is onjuist, of uw e-mailadres is nog niet geverifieerd.';
+        description = 'E-mailadres of wachtwoord is onjuist.';
         break;
       case 'auth/email-already-in-use':
         title = 'Registratie Mislukt';
@@ -80,11 +81,30 @@ export default function LoginForm() {
       if (activeTab === 'login') {
         const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
         if (!userCredential.user.emailVerified) {
+            const resendVerification = async () => {
+              try {
+                await sendEmailVerification(userCredential.user);
+                toast({
+                  title: 'Verificatie-e-mail opnieuw verzonden',
+                  description: 'Controleer uw inbox voor de nieuwe verificatielink.',
+                });
+              } catch (error) {
+                toast({
+                  variant: 'destructive',
+                  title: 'Fout bij verzenden',
+                  description: 'Kon de verificatie-e-mail niet opnieuw verzenden.',
+                });
+              }
+            };
+            
             toast({
                 variant: 'destructive',
                 title: 'E-mail niet geverifieerd',
-                description: 'Controleer uw inbox en klik op de link om uw account te activeren voordat u kunt inloggen.',
+                description: 'Controleer uw inbox en klik op de link om uw account te activeren.',
+                action: <ToastAction altText="Opnieuw verzenden" onClick={resendVerification}>Opnieuw verzenden</ToastAction>,
+                duration: 10000,
             });
+
             await auth.signOut(); // Force sign out
             setIsSubmitting(false);
             return;
@@ -99,7 +119,6 @@ export default function LoginForm() {
         const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
         const user = userCredential.user;
 
-        // The user document is created here, BEFORE verification is required for other actions.
         const userDocRef = doc(db, 'users', user.uid);
         await setDoc(userDocRef, {
           uid: user.uid,
@@ -107,7 +126,6 @@ export default function LoginForm() {
           createdAt: serverTimestamp(),
         });
         
-        // Now send the verification email.
         await sendEmailVerification(user);
 
         toast({
@@ -116,7 +134,7 @@ export default function LoginForm() {
             description: "Controleer uw inbox en klik op de verificatielink. U kunt daarna inloggen.",
         });
 
-        router.push('/'); // Go back to login page
+        setActiveTab('login'); 
       }
     } catch (error) {
       if (error instanceof FirebaseError) {
@@ -131,7 +149,7 @@ export default function LoginForm() {
   
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <Tabs defaultValue="login" className="w-full max-w-sm" onValueChange={(value) => {
+      <Tabs value={activeTab} className="w-full max-w-sm" onValueChange={(value) => {
           setActiveTab(value);
           reset();
       }}>
