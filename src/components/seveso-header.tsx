@@ -1,8 +1,8 @@
-
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Upload, FileDown, Trash2, Info, FileUp, Loader2, ChevronDown } from 'lucide-react';
+import { Upload, FileDown, Trash2, Info, FileUp, Loader2, ChevronDown, LogOut } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +31,11 @@ export default function SevesoHeader({
   isSavingPdf,
   disabled,
 }: SevesoHeaderProps) {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    router.push('/');
+  };
 
   return (
     <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -88,6 +93,7 @@ export default function SevesoHeader({
         <Button variant="outline" size="icon" onClick={onClearAll} className="text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label="Alles wissen" type="button" disabled={disabled}>
           <Trash2 />
         </Button>
+        <Button variant="outline" onClick={handleLogout}><LogOut />Uitloggen</Button>
       </div>
     </header>
   );

@@ -1,7 +1,17 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Shield } from "lucide-react";
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Shield, LogOut } from "lucide-react";
 
 export default function AdminPage() {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    router.push('/');
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-2xl">
@@ -19,6 +29,12 @@ export default function AdminPage() {
             <p>De functionaliteit om rechten van verschillende gebruikers in te stellen is momenteel in ontwikkeling en nog niet beschikbaar.</p>
           </div>
         </CardContent>
+        <CardFooter>
+          <Button variant="outline" className="w-full" onClick={handleLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Uitloggen
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );
