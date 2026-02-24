@@ -75,7 +75,7 @@ service cloud.firestore {
 
     /**
      * @description Manages company documents.
-     * @allow Create if user is creating for themselves, is not disabled, and sets customerId correctly.
+     * @allow Create if user is creating for themselves and is not disabled.
      * @allow Read if user is not disabled and is a member of the company's customer group, OR if user is admin.
      * @allow Update if user is the owner and is not disabled, OR if user is admin. The userId must not change.
      * @allow Delete if user is the owner and is not disabled, OR if user is admin.
@@ -83,8 +83,7 @@ service cloud.firestore {
      */
     match /companies/{companyId} {
       allow create: if isCreatingAsOwner() && 
-                       isNotDisabled(request.auth.uid) &&
-                       request.resource.data.customerId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.customerId;
+                       isNotDisabled(request.auth.uid);
                        
       allow read: if isAdmin() || (isNotDisabled(request.auth.uid) && isMemberOfSameCustomerGroup(resource.data));
 
