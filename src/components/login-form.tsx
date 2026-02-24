@@ -18,15 +18,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { ToastAction } from "@/components/ui/toast";
 import { LogIn, UserPlus } from 'lucide-react';
 import { useAuth, useFirestore } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  sendEmailVerification,
   FirebaseError,
-  UserCredential,
 } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 
@@ -45,7 +42,6 @@ export default function LoginForm() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
-  const [lastUserCredential, setLastUserCredential] = useState<UserCredential | null>(null);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -81,41 +77,7 @@ export default function LoginForm() {
     setIsSubmitting(true);
     try {
       if (activeTab === 'login') {
-        const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-        setLastUserCredential(userCredential); // Save for potential resend
-
-        if (!userCredential.user.emailVerified) {
-            const resendVerification = async () => {
-              if (!userCredential) return;
-              try {
-                await sendEmailVerification(userCredential.user);
-                toast({
-                  title: 'Verificatie-e-mail opnieuw verzonden',
-                  description: 'Controleer uw inbox voor de nieuwe verificatielink.',
-                });
-              } catch (error) {
-                console.error("Error resending verification email:", error);
-                toast({
-                  variant: 'destructive',
-                  title: 'Fout bij verzenden van e-mail',
-                  description: 'Kon de verificatie-e-mail niet opnieuw versturen. Controleer uw Firebase projectinstellingen (bv. support email).',
-                  duration: 10000,
-                });
-              }
-            };
-            
-            toast({
-                variant: 'destructive',
-                title: 'E-mail niet geverifieerd',
-                description: 'Controleer uw inbox en klik op de link om uw account te activeren.',
-                action: <ToastAction altText="Opnieuw verzenden" onClick={resendVerification}>Opnieuw verzenden</ToastAction>,
-                duration: 10000,
-            });
-
-            await auth.signOut(); // Force sign out
-            setIsSubmitting(false);
-            return;
-        }
+        await signInWithEmailAndPassword(auth, data.email, data.password);
 
         if (data.email.toLowerCase() === 'post@wastelcompany.eu') {
             router.push('/admin');
@@ -133,24 +95,11 @@ export default function LoginForm() {
           createdAt: serverTimestamp(),
         });
         
-        try {
-            await sendEmailVerification(user);
-            toast({
-                variant: "default",
-                title: "Registratie bijna voltooid",
-                description: "Controleer uw inbox en klik op de verificatielink. U kunt daarna inloggen.",
-            });
-        } catch (error) {
-            console.error("Error sending verification email on signup:", error);
-            toast({
-                variant: "destructive",
-                title: "Fout bij verzenden van e-mail",
-                description: "Kon de verificatie-e-mail niet versturen. Controleer uw Firebase projectinstellingen (bv. support email).",
-                duration: 10000,
-            });
-        }
-
-        setActiveTab('login'); 
+        toast({
+            title: "Registratie succesvol",
+            description: "U wordt nu doorgestuurd naar het dashboard.",
+        });
+        router.push('/dashboard');
       }
     } catch (error) {
       if (error instanceof FirebaseError) {

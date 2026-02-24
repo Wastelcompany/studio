@@ -32,27 +32,19 @@ service cloud.firestore {
     }
 
     /**
-     * Checks if the user is authenticated and their email is verified.
+     * Checks if the authenticated user's UID matches the document's `userId` field.
      */
-    function isVerifiedUser() {
-      return isSignedIn() && request.auth.token.email_verified == true;
-    }
-
-    /**
-     * Checks if the authenticated user's UID matches the document's `userId` field
-     * and their email is verified.
-     */
-    function isVerifiedOwner() {
-      return isVerifiedUser() 
+    function isOwner() {
+      return isSignedIn() 
              && "userId" in resource.data 
              && request.auth.uid == resource.data.userId;
     }
     
     /**
-     * Checks if the user is creating a document for themselves and is verified.
+     * Checks if the user is creating a document for themselves.
      */
-    function isCreatingAsVerifiedOwner() {
-        return isVerifiedUser() && request.auth.uid == request.resource.data.userId;
+    function isCreatingAsOwner() {
+        return isSignedIn() && request.auth.uid == request.resource.data.userId;
     }
 
     // ------------------------------------------------------------------------
@@ -62,32 +54,32 @@ service cloud.firestore {
     /**
      * @description Manages user profile documents.
      * @path /users/{userId}
-     * @allow A user can create their own profile upon registration (before verification).
-     * @allow A verified user can read, update, and delete their own profile.
-     * @allow The admin user can list all user profiles, even if not verified.
+     * @allow A user can create their own profile upon registration.
+     * @allow An authenticated user can read, update, and delete their own profile.
+     * @allow The admin user can list all user profiles.
      */
     match /users/{userId} {
       allow create: if request.auth.uid == userId;
-      allow read, update, delete: if isVerifiedUser() && request.auth.uid == userId;
+      allow read, update, delete: if isSignedIn() && request.auth.uid == userId;
       allow list: if isSignedIn() && request.auth.token.email == 'post@wastelcompany.eu';
     }
 
     /**
      * @description Manages company documents, which act as containers for substance inventories.
      * @path /companies/{companyId}
-     * @allow A verified user can create, read, update, and delete their own company documents.
+     * @allow An authenticated user can create, read, update, and delete their own company documents.
      */
     match /companies/{companyId} {
-      allow read, update, delete: if isVerifiedOwner();
-      allow create: if isCreatingAsVerifiedOwner();
+      allow read, update, delete: if isOwner();
+      allow create: if isCreatingAsOwner();
 
       /**
        * @description Manages the substance inventory for a specific company.
        * @path /companies/{companyId}/inventory/{substanceId}
-       * @allow The verified company owner can perform any action.
+       * @allow The company owner can perform any action.
        */
       match /inventory/{substanceId} {
-        allow read, write: if isVerifiedUser() &&
+        allow read, write: if isSignedIn() &&
                              exists(/databases/$(database)/documents/companies/$(companyId)) &&
                              get(/databases/$(database)/documents/companies/$(companyId)).data.userId == request.auth.uid;
       }
