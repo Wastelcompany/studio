@@ -90,11 +90,9 @@ service cloud.firestore {
       allow update, delete: if isAdmin() || (isOwner(get(/databases/$(database)/documents/companies/$(companyId)).data) && 
                                isNotDisabled(request.auth.uid));
 
-      // Corrected list rule: Allow listing if signed in and not disabled.
-      // The validity of the query is then checked against the 'read' rules.
-      // Admins can read all, so any query is valid for them.
-      // Users can only read if customerId matches, so their query MUST filter by customerId.
-      allow list: if isSignedIn() && isNotDisabled(request.auth.uid);
+      // Allow any signed-in user to attempt a list. The `read` rule provides the actual security
+      // by filtering the results of the query. This prevents complex `get` calls in the list rule itself.
+      allow list: if isSignedIn();
 
       /**
        * @description Manages the substance inventory for a specific company.
