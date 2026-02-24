@@ -94,8 +94,7 @@ service cloud.firestore {
                        request.resource.data.userId == resource.data.userId
                      );
 
-      allow delete: if isAdmin() || (isOwner(get(/databases/$(database)/documents/companies/$(companyId)).data) && 
-                               isNotDisabled(request.auth.uid));
+      allow delete: if isAdmin() || (isOwner(resource.data) && isNotDisabled(request.auth.uid));
 
       allow list: if isSignedIn();
 
