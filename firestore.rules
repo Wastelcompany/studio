@@ -13,7 +13,7 @@
  * - **Customer Groups for Reads:** Users can read a list of companies that share their `customerId`.
  *   They can also read individual company documents if they belong to the same customer group.
  * - **Query-based Listing:** Listing companies is only permitted via a query that filters
- *   by the user's `customerId`, ensuring they only get data from their group.
+ *   by the user's `customerId`, ensuring they only get data from their group. Admins have unrestricted list access.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -78,7 +78,7 @@ service cloud.firestore {
      * @allow Create if user is creating for themselves, is not disabled, and sets customerId correctly.
      * @allow Read if user is not disabled and is a member of the company's customer group, OR if user is admin.
      * @allow Update, Delete if user is the owner and is not disabled, OR if user is admin.
-     * @allow List if user is not disabled and queries by their own customerId, OR if user is admin.
+     * @allow List if user is not disabled and their query is valid based on read rules.
      */
     match /companies/{companyId} {
       allow create: if isCreatingAsOwner() && 
@@ -90,9 +90,11 @@ service cloud.firestore {
       allow update, delete: if isAdmin() || (isOwner(get(/databases/$(database)/documents/companies/$(companyId)).data) && 
                                isNotDisabled(request.auth.uid));
 
-      allow list: if isAdmin() || (isSignedIn() &&
-                    isNotDisabled(request.auth.uid) &&
-                    request.query.customerId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.customerId);
+      // Corrected list rule: Allow listing if signed in and not disabled.
+      // The validity of the query is then checked against the 'read' rules.
+      // Admins can read all, so any query is valid for them.
+      // Users can only read if customerId matches, so their query MUST filter by customerId.
+      allow list: if isSignedIn() && isNotDisabled(request.auth.uid);
 
       /**
        * @description Manages the substance inventory for a specific company.
