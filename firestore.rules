@@ -76,31 +76,31 @@ service cloud.firestore {
     /**
      * @description Manages company documents.
      * @allow Create if user is creating for themselves, is not disabled, and sets customerId correctly.
-     * @allow Read if user is not disabled and is a member of the company's customer group.
-     * @allow Update, Delete if user is the owner and is not disabled.
-     * @allow List if user is not disabled and queries by their own customerId.
+     * @allow Read if user is not disabled and is a member of the company's customer group, OR if user is admin.
+     * @allow Update, Delete if user is the owner and is not disabled, OR if user is admin.
+     * @allow List if user is not disabled and queries by their own customerId, OR if user is admin.
      */
     match /companies/{companyId} {
       allow create: if isCreatingAsOwner() && 
                        isNotDisabled(request.auth.uid) &&
                        request.resource.data.customerId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.customerId;
                        
-      allow read: if isNotDisabled(request.auth.uid) && isMemberOfSameCustomerGroup(resource.data);
+      allow read: if isAdmin() || (isNotDisabled(request.auth.uid) && isMemberOfSameCustomerGroup(resource.data));
 
-      allow update, delete: if isOwner(get(/databases/$(database)/documents/companies/$(companyId)).data) && 
-                               isNotDisabled(request.auth.uid);
+      allow update, delete: if isAdmin() || (isOwner(get(/databases/$(database)/documents/companies/$(companyId)).data) && 
+                               isNotDisabled(request.auth.uid));
 
-      allow list: if isSignedIn() &&
+      allow list: if isAdmin() || (isSignedIn() &&
                     isNotDisabled(request.auth.uid) &&
-                    request.query.customerId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.customerId;
+                    request.query.customerId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.customerId);
 
       /**
        * @description Manages the substance inventory for a specific company.
-       * @allow Access is granted if the user has read access to the parent company.
+       * @allow Access is granted if the user has read access to the parent company or is an admin.
        */
       match /inventory/{substanceId} {
-        allow read, write: if isNotDisabled(request.auth.uid) && 
-                             isMemberOfSameCustomerGroup(get(/databases/$(database)/documents/companies/$(companyId)).data);
+        allow read, write: if isAdmin() || (isNotDisabled(request.auth.uid) && 
+                             isMemberOfSameCustomerGroup(get(/databases/$(database)/documents/companies/$(companyId)).data));
       }
     }
   }
