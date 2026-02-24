@@ -66,6 +66,10 @@ export default function LoginForm() {
         title = 'Registratie Mislukt';
         description = 'Het wachtwoord is te zwak. Gebruik minimaal 6 tekens.';
         break;
+      case 'auth/user-disabled':
+        title = 'Account Gedeactiveerd';
+        description = 'Uw account is gedeactiveerd. Neem contact op met de beheerder.';
+        break;
       default:
         description = error.message;
         break;
@@ -93,6 +97,9 @@ export default function LoginForm() {
           uid: user.uid,
           email: user.email,
           createdAt: serverTimestamp(),
+          disabled: false,
+          customerId: user.uid, // Default customerId to the user's own uid
+          customerName: user.email, // Default customer name to the user's email
         });
         
         toast({

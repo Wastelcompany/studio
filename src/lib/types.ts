@@ -22,7 +22,7 @@ export interface Company {
   userId: string;
   name: string;
   address: string;
-  // createdAt?: any;
+  customerId: string;
 }
 
 export interface Substance {
@@ -50,4 +50,7 @@ export interface UserProfile {
   email: string;
   createdAt: Timestamp;
   displayName?: string;
+  customerId: string;
+  customerName: string;
+  disabled: boolean;
 }

@@ -7,9 +7,10 @@ import { FirestorePermissionError } from '@/firebase/errors';
 // Debounce mechanism
 let debounceTimer: NodeJS.Timeout;
 
-export const createNewCompany = async (db: Firestore, userId: string): Promise<Company | null> => {
+export const createNewCompany = async (db: Firestore, userId: string, customerId: string): Promise<Company | null> => {
     const companyData = {
         userId: userId,
+        customerId: customerId,
         name: 'Nieuw Bedrijf',
         address: '',
         createdAt: Timestamp.now(),
@@ -20,6 +21,7 @@ export const createNewCompany = async (db: Firestore, userId: string): Promise<C
         return {
             id: newCompanyRef.id,
             userId,
+            customerId,
             name: 'Nieuw Bedrijf',
             address: '',
         };

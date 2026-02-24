@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useTransition, useMemo } from 'react';
-import type { Substance, ThresholdMode, Company } from '@/lib/types';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import type { Substance, ThresholdMode, Company, UserProfile } from '@/lib/types';
 import SevesoHeader from '@/components/seveso-header';
 import InventoryTable from '@/components/inventory-table';
 import Dashboard from '@/components/dashboard';
@@ -16,8 +16,8 @@ import autoTable from 'jspdf-autotable';
 import CompanySelector from './company-selector';
 import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES, classifySubstance } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
-import { useUser, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc } from '@/firebase';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb } from '@/lib/companies';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -33,13 +33,19 @@ export default function SevesoApp() {
         router.push('/');
     }
   }, [isAuthLoading, user, router]);
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(db, 'users', user.uid);
+  }, [user, db]);
+  const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<UserProfile>(userProfileRef);
   
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   
   const companiesQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return query(collection(db, 'companies'), where('userId', '==', user.uid));
-  }, [user, db]);
+    if (!userProfile?.customerId) return null;
+    return query(collection(db, 'companies'), where('customerId', '==', userProfile.customerId));
+  }, [userProfile, db]);
 
   const { data: companiesData, isLoading: isLoadingCompanies } = useCollection<Company>(companiesQuery);
   const companies = useMemo(() => companiesData?.sort((a, b) => a.name.localeCompare(b.name)) ?? [], [companiesData]);
@@ -65,6 +71,8 @@ export default function SevesoApp() {
   useEffect(() => {
     if (!selectedCompanyId && companies.length > 0) {
       setSelectedCompanyId(companies[0].id);
+    } else if (companies.length === 0) {
+      setSelectedCompanyId(null);
     }
   }, [companies, selectedCompanyId]);
   
@@ -86,8 +94,8 @@ export default function SevesoApp() {
   };
 
   const handleCreateNewCompany = () => {
-    if (!user || !db) return;
-    createNewCompany(db, user.uid).then(newCompany => {
+    if (!user || !db || !userProfile) return;
+    createNewCompany(db, user.uid, userProfile.customerId).then(newCompany => {
       if (newCompany) {
         setSelectedCompanyId(newCompany.id);
       }
@@ -400,9 +408,9 @@ export default function SevesoApp() {
     if (event.target) event.target.value = '';
   };
 
-  const isActionDisabled = !selectedCompanyId || isLoadingInventory;
+  const isActionDisabled = !selectedCompanyId || isLoadingInventory || isLoadingCompanies;
 
-  if (isAuthLoading || !user) {
+  if (isAuthLoading || isLoadingUserProfile || !user) {
     return (
         <div className="flex items-center justify-center h-screen">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />

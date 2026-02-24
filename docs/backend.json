@@ -14,6 +14,10 @@
           "type": "string",
           "description": "Reference to the User who owns this company."
         },
+        "customerId": {
+          "type": "string",
+          "description": "Identifier for the customer group this company belongs to."
+        },
         "name": {
           "type": "string",
           "description": "A user-defined name for the company or facility analysis."
@@ -31,7 +35,8 @@
       "required": [
         "id",
         "userId",
-        "name"
+        "name",
+        "customerId"
       ]
     },
     "SubstanceInventoryItem": {
@@ -119,12 +124,27 @@
           "type": "string",
           "format": "date-time",
           "description": "Timestamp when the user profile was created."
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Identifier for grouping users into a single customer account."
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Display name for the customer group."
+        },
+        "disabled": {
+          "type": "boolean",
+          "description": "Flag to disable user account."
         }
       },
       "required": [
         "uid",
         "email",
-        "createdAt"
+        "createdAt",
+        "customerId",
+        "customerName",
+        "disabled"
       ]
     }
   },
@@ -142,7 +162,7 @@
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores public profile information for each user. The document ID is the same as the user's auth UID. Profile creation is allowed upon signup, but all subsequent access requires email verification. The verified admin user (post@wastelcompany.eu) has read access to this entire collection."
+          "description": "Stores public profile information for each user. The document ID is the same as the user's auth UID. Access is restricted, except for the admin user who has read/write access to this entire collection to manage user properties like groups and disabled status."
         }
       },
       {
@@ -152,7 +172,7 @@
           "schema": {
             "$ref": "#/backend/entities/Company"
           },
-          "description": "Stores company profile information. Documents in this collection contain a `userId` field to indicate ownership. Access is restricted to the verified owner of the document."
+          "description": "Stores company profile information. Documents contain a `userId` for ownership and a `customerId` for group sharing. Write access is restricted to the owner. Read access is granted to any user within the same customer group."
         }
       },
       {
@@ -162,7 +182,7 @@
           "schema": {
             "$ref": "#/backend/entities/SubstanceInventoryItem"
           },
-          "description": "Contains chemical substances belonging to a specific company. Access is restricted to the verified owner of the parent company.",
+          "description": "Contains chemical substances belonging to a specific company. Access is restricted based on the ownership and customer group of the parent company.",
           "params": [
             {
               "name": "companyId",
@@ -176,6 +196,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed around a top-level `companies` collection. This model was chosen to simplify querying for company data and to decouple companies from users, allowing for potential future features like sharing companies between users. Security is maintained by embedding a `userId` field in each company document, which is then used in Firestore Security Rules to enforce ownership. All subcollections, such as `inventory`, inherit access rights by checking the ownership of the parent company document, ensuring data remains secure and private to the owner. A `users` collection is also added to store user profile information, with special read-access for an admin role. Access to all data now requires users to have a verified email address."
+    "reasoning": "The Firestore structure is designed around user ownership and customer-level sharing. The `users` collection now includes `customerId`, `customerName`, and `disabled` fields to facilitate grouping and account management by an admin. The `companies` collection also includes a `customerId`, which is used to enable query-based sharing of company data among users of the same customer group. Security rules enforce that users can only see companies matching their `customerId`, and only write to companies they personally own (`userId`). The admin role (`post@wastelcompany.eu`) has special privileges to manage user profiles."
   }
 }
