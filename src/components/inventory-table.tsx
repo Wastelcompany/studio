@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Trash2, FileSpreadsheet, Upload } from "lucide-react";
-import type { Substance, ThresholdMode, HazardCategory } from "@/lib/types";
+import type { Substance, ThresholdMode, NamedSubstance } from "@/lib/types";
 import { ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, ARIE_THRESHOLDS } from "@/lib/seveso";
 import { Progress } from './ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -42,6 +42,7 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
         displayCategoryId: string;
         isExceeded: boolean;
         type: 'Seveso' | 'ARIE';
+        threshold: number;
     }[] = [];
 
     const addedContributions = new Set<string>();
@@ -66,6 +67,7 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
                   displayCategoryId: category.displayId || catId,
                   isExceeded: percentage >= 100,
                   type: 'Seveso',
+                  threshold: threshold,
               });
               addedContributions.add(key);
           }
@@ -91,6 +93,7 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
                   displayCategoryId: category.displayId || catId,
                   isExceeded: percentage >= 100,
                   type: 'ARIE',
+                  threshold: threshold,
               });
               addedContributions.add(key);
           }
@@ -98,11 +101,9 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
     });
 
     return results.sort((a, b) => {
-      // Primary sort: 'Seveso' comes before 'ARIE'
       if (a.type !== b.type) {
         return a.type === 'Seveso' ? -1 : 1;
       }
-      // Secondary sort: Alphabetically by category display ID
       return a.displayCategoryId.localeCompare(b.displayCategoryId);
     });
 
@@ -134,6 +135,8 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
             </TooltipTrigger>
             <TooltipContent>
               <p className="font-semibold">{contrib.categoryName}</p>
+              <p className="text-xs text-muted-foreground">Drempel ({contrib.type === 'Seveso' ? mode : 'ARIE'}): {contrib.threshold.toLocaleString('nl-NL')} ton</p>
+              <p className="text-xs text-muted-foreground">Voorraad: {substance.quantity.toLocaleString('nl-NL')} ton</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -183,7 +186,9 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    {allSevesoCategories.map((cat) => (
+                    {allSevesoCategories.map((cat) => {
+                      const threshold = SEVESO_THRESHOLDS[cat.id] || (cat as NamedSubstance).threshold;
+                      return (
                       <TooltipProvider key={cat.id}>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -196,17 +201,25 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>{cat.name}</p>
-                            <p className="text-xs text-muted-foreground">Klik voor onderbouwing</p>
+                            <p className="font-semibold">{cat.name}</p>
+                            {threshold && (
+                                <>
+                                <p className="text-xs text-muted-foreground">Lage drempel: {threshold.low.toLocaleString('nl-NL')} ton</p>
+                                <p className="text-xs text-muted-foreground">Hoge drempel: {threshold.high.toLocaleString('nl-NL')} ton</p>
+                                </>
+                            )}
+                            <p className="text-xs text-muted-foreground/80 mt-1">Klik voor onderbouwing</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                    ))}
+                    )})}
                   </div>
                 </TableCell>
                 <TableCell>
                     <div className="flex flex-wrap gap-1">
-                        {allArieCategories.map((cat) => (
+                        {allArieCategories.map((cat) => {
+                          const threshold = ARIE_THRESHOLDS[cat.id];
+                          return (
                             <TooltipProvider key={cat.id}>
                                 <Tooltip>
                                 <TooltipTrigger asChild>
@@ -219,12 +232,13 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                                     </Badge>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>{cat.name}</p>
-                                    <p className="text-xs text-muted-foreground">Klik voor onderbouwing</p>
+                                    <p className="font-semibold">{cat.name}</p>
+                                    {threshold && <p className="text-xs text-muted-foreground">Drempel: {threshold.toLocaleString('nl-NL')} ton</p>}
+                                    <p className="text-xs text-muted-foreground/80 mt-1">Klik voor onderbouwing</p>
                                 </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
-                        ))}
+                        )})}
                     </div>
                 </TableCell>
                 <TableCell>
@@ -238,13 +252,11 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                     }
                     onBlur={() => setEditingValue(null)}
                     onChange={(e) => {
-                        // Keep the raw value with comma or period for display
                         setEditingValue({ id: substance.id, value: e.target.value });
                         
                         const value = e.target.value.replace(',', '.');
                         let quantity = parseFloat(value);
                         
-                        // For live calculations, an empty/invalid field is treated as 0
                         if (isNaN(quantity)) {
                             onUpdateQuantity(substance.id, 0);
                         } else if (quantity < 0) {

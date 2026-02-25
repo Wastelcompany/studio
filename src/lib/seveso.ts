@@ -337,16 +337,70 @@ export const calculateSummations = (inventory: Substance[], mode: ThresholdMode)
   };
 };
 
-export const REFERENCE_GUIDE_DATA = Object.entries(SEVESO_THRESHOLDS).map(([categoryId, thresholds]) => {
-  const category = ALL_CATEGORIES[categoryId];
-  if (!category) return null;
-  const hPhrases = Object.entries(H_PHRASE_MAPPING)
-    .filter(([, catIds]) => catIds.includes(categoryId))
-    .map(([hPhrase]) => hPhrase);
-  
-  return {
-    hPhrase: hPhrases.join(', ') || 'Specifiek',
-    categoryId: category.id,
-    categoryName: category.name,
-  };
-}).filter(Boolean) as { hPhrase: string, categoryId: string, categoryName: string }[];
+const generateSevesoReference = () => {
+    const sevesoReferenceData: { hPhrase: string, categoryId: string, categoryName: string, low: number, high: number }[] = [];
+    const hPhrasesForSevesoCats: Record<string, string[]> = {};
+
+    const allSevesoCats = { ...SEVESO_THRESHOLDS, ...Object.values(NAMED_SUBSTANCES).reduce((acc, sub) => ({...acc, [sub.id]: sub.threshold }), {})};
+
+    Object.keys(allSevesoCats).forEach(catId => {
+        hPhrasesForSevesoCats[catId] = [];
+    });
+
+    for (const [hPhrase, catIds] of Object.entries(H_PHRASE_MAPPING)) {
+        for (const catId of catIds) {
+            if (hPhrasesForSevesoCats[catId]) {
+                 hPhrasesForSevesoCats[catId].push(hPhrase);
+            }
+        }
+    }
+
+    for (const [catId, hPhrases] of Object.entries(hPhrasesForSevesoCats)) {
+        const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+        const threshold = allSevesoCats[catId];
+
+        if (category && threshold) {
+            sevesoReferenceData.push({
+                hPhrase: hPhrases.join(', ') || 'Benoemde Stof',
+                categoryId: category.displayId || category.id,
+                categoryName: category.name,
+                low: threshold.low,
+                high: threshold.high,
+            });
+        }
+    }
+    return sevesoReferenceData.sort((a, b) => a.categoryId.localeCompare(b.categoryId));
+}
+
+const generateArieReference = () => {
+    const arieReferenceData: { hPhrase: string, categoryId: string, categoryName: string, threshold: number }[] = [];
+    const hPhrasesForArieCats: Record<string, string[]> = {};
+
+    Object.keys(ARIE_THRESHOLDS).forEach(catId => {
+        hPhrasesForArieCats[catId] = [];
+    });
+
+    for (const [hPhrase, catIds] of Object.entries(H_PHRASE_MAPPING)) {
+        for (const catId of catIds) {
+            if (hPhrasesForArieCats[catId]) {
+                hPhrasesForArieCats[catId].push(hPhrase);
+            }
+        }
+    }
+
+    for (const [catId, hPhrases] of Object.entries(hPhrasesForArieCats)) {
+        const category = ALL_CATEGORIES[catId];
+        if (category) {
+            arieReferenceData.push({
+                hPhrase: hPhrases.join(', ') || 'Specifiek',
+                categoryId: category.displayId || category.id,
+                categoryName: category.name,
+                threshold: ARIE_THRESHOLDS[catId]
+            });
+        }
+    }
+    return arieReferenceData.sort((a, b) => a.categoryId.localeCompare(b.categoryId));
+}
+
+export const REFERENCE_GUIDE_DATA = generateSevesoReference();
+export const ARIE_REFERENCE_GUIDE_DATA = generateArieReference();
