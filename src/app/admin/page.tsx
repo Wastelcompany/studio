@@ -117,8 +117,8 @@ export default function AdminPage() {
     try {
       await deleteUserAndData(db, selectedUser);
        toast({
-          title: "Gebruiker Verwijderd",
-          description: `Het profiel en alle data van ${selectedUser.email} zijn verwijderd.`,
+          title: "Gebruikersdata Verwijderd",
+          description: `De data van ${selectedUser.email} is verwijderd. Verwijder de gebruiker in de Firebase Console (Authentication) om het e-mailadres vrij te maken.`,
       });
       setIsDeleteDialogOpen(false);
     } catch(error) {
@@ -201,7 +201,7 @@ export default function AdminPage() {
                                   <Button variant="ghost" size="icon" onClick={() => handleToggleDisable(u)} disabled={isUpdating} title={u.disabled ? 'Activeren' : 'Deactiveren'}>
                                       {u.disabled ? <UserCheck className="h-4 w-4 text-green-600" /> : <UserX className="h-4 w-4 text-destructive" />}
                                   </Button>
-                                   <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(u)} disabled={isUpdating} title="Gebruiker verwijderen">
+                                   <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(u)} disabled={isUpdating} title="Gebruikersdata verwijderen">
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                   </Button>
                                 </>
@@ -276,14 +276,16 @@ export default function AdminPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Weet u het zeker?</AlertDialogTitle>
             <AlertDialogDescription>
-              Deze actie kan niet ongedaan worden gemaakt. Dit verwijdert het profiel en alle bijbehorende data van <span className="font-bold">{selectedUser?.email}</span> permanent.
+                Deze actie kan niet ongedaan worden gemaakt. Dit verwijdert het profiel en alle bijbehorende data (bedrijven, inventaris) van <span className="font-bold">{selectedUser?.email}</span> permanent uit de database.
+                <br/><br/>
+                <span className="font-bold">Let op:</span> het e-mailadres blijft geregistreerd in het authenticatiesysteem. Om het e-mailadres volledig vrij te maken voor een nieuwe registratie, moet u de gebruiker ook verwijderen in de Firebase Console (onder Authentication).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isUpdating}>Annuleren</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteUser} disabled={isUpdating} className="bg-destructive hover:bg-destructive/90">
               {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Ja, verwijder gebruiker
+              Ja, verwijder data
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
