@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -144,6 +144,8 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
 
 
 export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, thresholdMode, onUpload, onShowExplanation }: InventoryTableProps) {
+  const [editingValue, setEditingValue] = useState<{id: string, value: string} | null>(null);
+
   if (inventory.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-16 px-4 border-2 border-dashed rounded-lg">
@@ -229,12 +231,22 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                   <Input
                     type="text"
                     inputMode="decimal"
-                    value={substance.quantity}
+                    value={
+                      editingValue && editingValue.id === substance.id
+                        ? editingValue.value
+                        : substance.quantity
+                    }
+                    onBlur={() => setEditingValue(null)}
                     onChange={(e) => {
+                        // Keep the raw value with comma or period for display
+                        setEditingValue({ id: substance.id, value: e.target.value });
+                        
                         const value = e.target.value.replace(',', '.');
                         let quantity = parseFloat(value);
+                        
+                        // For live calculations, an empty/invalid field is treated as 0
                         if (isNaN(quantity)) {
-                            onUpdateQuantity(substance.id, NaN);
+                            onUpdateQuantity(substance.id, 0);
                         } else if (quantity < 0) {
                             onUpdateQuantity(substance.id, 0);
                         } else {
