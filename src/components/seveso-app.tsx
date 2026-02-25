@@ -16,16 +16,19 @@ import autoTable from 'jspdf-autotable';
 import CompanySelector from './company-selector';
 import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES, classifySubstance } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
-import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc } from '@/firebase';
+import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc, useAuth } from '@/firebase';
 import { collection, query, where, doc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb } from '@/lib/companies';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserX, LogOut } from 'lucide-react';
+import { Button } from './ui/button';
 import { useRouter } from 'next/navigation';
 
 
 export default function SevesoApp() {
   const { user, isUserLoading: isAuthLoading } = useUser();
   const db = useFirestore();
+  const auth = useAuth();
   const router = useRouter();
   
   useEffect(() => {
@@ -43,7 +46,7 @@ export default function SevesoApp() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   
   const companiesQuery = useMemoFirebase(() => {
-    if (!userProfile?.customerId) return null;
+    if (!userProfile?.customerId || userProfile?.disabled) return null;
     return query(collection(db, 'companies'), where('customerId', '==', userProfile.customerId));
   }, [userProfile, db]);
 
@@ -415,6 +418,20 @@ export default function SevesoApp() {
         <div className="flex items-center justify-center h-screen">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="ml-4 text-lg">Applicatie laden...</p>
+        </div>
+    );
+  }
+
+  if (userProfile?.disabled) {
+    return (
+        <div className="flex flex-col items-center justify-center h-screen text-center p-4">
+            <UserX className="h-12 w-12 text-destructive mb-4" />
+            <h1 className="text-2xl font-bold">Account Gedeactiveerd</h1>
+            <p className="text-muted-foreground mt-2">Uw account is gedeactiveerd. Neem contact op met de beheerder.</p>
+            <Button variant="outline" className="mt-6" onClick={() => signOut(auth)}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Uitloggen
+            </Button>
         </div>
     );
   }

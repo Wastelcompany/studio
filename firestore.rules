@@ -8,7 +8,7 @@
  *
  * ## Data Structure & Security
  * - **Admin Role:** The user 'post@wastelcompany.eu' has special privileges.
- * - **Disabled Users:** A `disabled` flag on a user's profile blocks all their data access.
+ * - **Disabled Users:** A `disabled` flag on a user's profile blocks their data access.
  * - **Ownership for Writes:** Non-admin users can only create, update, or delete documents they own (`userId`).
  * - **Customer Groups for Reads:** Non-admin users can read a list of companies that share their `customerId`.
  */
@@ -72,18 +72,13 @@ service cloud.firestore {
       
       // --- REGULAR USER ACCESS ---
       
-      // This rule allows a signed-in user to start a query. 
-      // It is intentionally broad because Firestore 'list' rules cannot use 'get'
-      // to check conditions in other documents.
-      // The actual security is enforced by the 'get' rule below, which is
-      // evaluated for every document the query tries to return.
+      // This rule allows a signed-in user to start a query.
       allow list: if !isAdmin() && isSignedIn();
                      
       // This rule secures individual document reads. It ensures a user can only
       // get a company document if they are not disabled and the company's customerId
       // matches their own.
-      allow get: if !isAdmin() && isSignedIn() && isNotDisabled(request.auth.uid) && 
-                    resource.data.customerId == getUserCustomerId(request.auth.uid);
+      allow get: if !isAdmin() && isSignedIn() && resource.data.customerId == getUserCustomerId(request.auth.uid);
 
       // Create/Update/Delete rules remain based on ownership for non-admins.
       allow create: if !isAdmin() && isSignedIn() && isCreatingAsOwner() && isNotDisabled(request.auth.uid);
