@@ -7,7 +7,7 @@ import { FlaskConical, Flame, Leaf, AlertTriangle, Atom } from 'lucide-react';
 export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   // SEVESO Categories
   H1: { id: 'H1', name: 'Acuut toxisch, categorie 1 (alle blootstellingsroutes)', group: 'health' },
-  H2: { id: 'H2', name: 'Acuut toxisch, categorie 2 (alle blootstellingsroutes)', group: 'health' },
+  H2: { id: 'H2', name: 'Acuut toxisch, categorie 2 & 3 (alle blootstellingsroutes)', group: 'health' },
   H3: { id: 'H3', name: 'STOT eenmalig, cat. 1', group: 'health' },
   P1a: { id: 'P1a', name: 'Explosieve stoffen (instabiel, 1.1, 1.2, 1.3, 1.5)', group: 'physical' },
   P1b: { id: 'P1b', name: 'Explosieve stoffen (1.4)', group: 'physical' },
@@ -27,10 +27,10 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   O3: { id: 'O3', name: 'Kankerverwekkend, mutageen, reprotoxisch (CMR), cat 1A/1B', group: 'other' },
 
   // ARIE Categories
-  'ARIE-H2': { id: 'ARIE-H2', name: 'Acuut toxisch, categorie 2', group: 'health', displayId: 'H2 (ARIE)' },
-  'ARIE-H3': { id: 'ARIE-H3', name: 'Acuut toxisch, categorie 3', group: 'health', displayId: 'H3 (ARIE)' }, // New for ARIE specificity
-  'ARIE-CMR': { id: 'ARIE-CMR', name: 'Kankerverwekkend/mutageen/reprotoxisch', group: 'health', displayId: 'CMR (ARIE)' },
-  'ARIE-FLAM': { id: 'ARIE-FLAM', name: 'Ontvlambare gassen en vloeistoffen', group: 'physical', displayId: 'Ontvlambaar (ARIE)' },
+  'ARIE-H-CAT12': { id: 'ARIE-H-CAT12', name: 'Acuut toxisch, categorie 1 & 2', group: 'health', displayId: 'A.Tox 1/2' },
+  'ARIE-H-CAT3': { id: 'ARIE-H-CAT3', name: 'Acuut toxisch, cat. 3 & STOT SE cat. 1', group: 'health', displayId: 'A.Tox 3' },
+  'ARIE-CMR': { id: 'ARIE-CMR', name: 'Kankerverwekkend/mutageen/reprotoxisch cat 1/2', group: 'health', displayId: 'CMR' },
+  'ARIE-FLAM': { id: 'ARIE-FLAM', name: 'Ontvlambare gassen en vloeistoffen', group: 'physical', displayId: 'Ontvlambaar' },
 };
 
 
@@ -46,7 +46,7 @@ export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
 export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = {
   H1: { low: 5, high: 20 },
   H2: { low: 50, high: 200 },
-  H3: { low: 50, high: 200 }, // Corrected value
+  H3: { low: 50, high: 200 },
   P1a: { low: 10, high: 50 },
   P1b: { low: 50, high: 200 },
   P2: { low: 10, high: 50 },
@@ -61,31 +61,24 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   E1: { low: 100, high: 200 },
   E2: { low: 200, high: 500 },
   O1: { low: 100, high: 500 },
-  O2: { low: 10, high: 50 }, // Corrected value
+  O2: { low: 10, high: 50 },
   O3: { low: 10, high: 50 },
 };
 
 // ARIE-specific thresholds
 export const ARIE_THRESHOLDS: Record<string, number> = {
-    'ARIE-H2': 0.2,
-    'ARIE-H3': 1, // Corrected value
+    'ARIE-H-CAT12': 0.2,
+    'ARIE-H-CAT3': 1,
     'ARIE-CMR': 0.5,
     'ARIE-FLAM': 10,
 };
 
 // Maps H-phrases to one or more category IDs
 export const H_PHRASE_MAPPING: Record<string, string[]> = {
-  'H300': ['H1'], 'H310': ['H1'], 'H330': ['H1'],
-  'H301': ['H2', 'ARIE-H3'], 'H311': ['H2', 'ARIE-H3'], 'H331': ['H2', 'ARIE-H3'], // Map to H2 (Seveso) and specific ARIE cat
-  // H302, H312, H332 are not relevant
-  'H370': ['H3'], // STOT SE 1, only for H3
+  // Seveso only
   'EUH001': ['P1a'], 'H200': ['P1a'], 'H201': ['P1a'], 'H202': ['P1a'], 'H203': ['P1a'], 'H205': ['P1a'],
   'H204': ['P1b'],
-  'H220': ['P2', 'ARIE-FLAM'], 'H221': ['P2', 'ARIE-FLAM'],
-  'H222': ['P5c'], 'H223': ['P5c'], // Aerosols
-  'H224': ['P5a', 'ARIE-FLAM'],
-  'H225': ['P5c', 'ARIE-FLAM'],
-  'H226': ['P5c', 'ARIE-FLAM'],
+  'H222': ['P5c'], 'H223': ['P5c'],
   'H240': ['P6a'], 'H241': ['P6a'],
   'H242': ['P6b'],
   'H250': ['P7'],
@@ -93,9 +86,23 @@ export const H_PHRASE_MAPPING: Record<string, string[]> = {
   'H400': ['E1'], 'H410': ['E1'],
   'H411': ['E2'],
   'EUH014': ['O1'], 'EUH029': ['O1'], 'EUH032': ['O1'],
-  'H260': ['O2'], // Water reactive
-  'H261': [], // not relevant
-  'H340': ['O3', 'ARIE-CMR'], 'H350': ['O3', 'ARIE-CMR'], 'H350i': ['O3', 'ARIE-CMR'], 'H360': ['O3', 'ARIE-CMR'], 'H360F': ['O3', 'ARIE-CMR'], 'H360D': ['O3', 'ARIE-CMR'], 'H360FD': ['O3', 'ARIE-CMR'], 'H360Fd': ['O3', 'ARIE-CMR'], 'H360Df': ['O3', 'ARIE-CMR'],
+  'H260': ['O2'],
+
+  // ARIE only
+  'H302': ['ARIE-H-CAT3'], 'H312': ['ARIE-H-CAT3'], 'H332': ['ARIE-H-CAT3'],
+  'H341': ['ARIE-CMR'], 'H351': ['ARIE-CMR'],
+  'H361': ['ARIE-CMR'], 'H361f': ['ARIE-CMR'], 'H361d': ['ARIE-CMR'], 'H361fd': ['ARIE-CMR'],
+
+  // Combined Seveso and ARIE
+  'H300': ['H1', 'ARIE-H-CAT12'], 'H310': ['H1', 'ARIE-H-CAT12'], 'H330': ['H1', 'ARIE-H-CAT12'],
+  'H301': ['H2', 'ARIE-H-CAT12'], 'H311': ['H2', 'ARIE-H-CAT12'], 'H331': ['H2', 'ARIE-H-CAT12'],
+  'H370': ['H3', 'ARIE-H-CAT3'],
+  'H220': ['P2', 'ARIE-FLAM'], 'H221': ['P2', 'ARIE-FLAM'],
+  'H224': ['P5a', 'ARIE-FLAM'],
+  'H225': ['P5c', 'ARIE-FLAM'],
+  'H226': ['P5c', 'ARIE-FLAM'],
+  'H340': ['O3', 'ARIE-CMR'], 'H350': ['O3', 'ARIE-CMR'], 'H350i': ['O3', 'ARIE-CMR'],
+  'H360': ['O3', 'ARIE-CMR'], 'H360F': ['O3', 'ARIE-CMR'], 'H360D': ['O3', 'ARIE-CMR'], 'H360FD': ['O3', 'ARIE-CMR'], 'H360Fd': ['O3', 'ARIE-CMR'], 'H360Df': ['O3', 'ARIE-CMR'],
 };
 
 export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
@@ -132,14 +139,20 @@ export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
     'H331': 'Giftig bij inademing',
     'H332': 'Schadelijk bij inademing',
     'H340': 'Kan genetische afwijkingen veroorzaken',
+    'H341': 'Verdacht van het veroorzaken van genetische afwijkingen',
     'H350': 'Kan kanker veroorzaken',
     'H350i': 'Kan kanker veroorzaken bij inademing',
+    'H351': 'Verdacht van het veroorzaken van kanker',
     'H360': 'Kan de vruchtbaarheid of het ongeboren kind schaden',
     'H360F': 'Kan de vruchtbaarheid schaden',
     'H360D': 'Kan het ongeboren kind schaden',
     'H360FD': 'Kan de vruchtbaarheid schaden. Kan het ongeboren kind schaden.',
     'H360Fd': 'Kan de vruchtbaarheid schaden. Wordt ervan verdacht het ongeboren kind te schaden.',
     'H360Df': 'Kan het ongeboren kind schaden. Wordt ervan verdacht de vruchtbaarheid te schaden.',
+    'H361': 'Kan mogelijk de vruchtbaarheid of het ongeboren kind schaden',
+    'H361f': 'Wordt ervan verdacht de vruchtbaarheid te schaden',
+    'H361d': 'Wordt ervan verdacht het ongeboren kind te schaden',
+    'H361fd': 'Wordt ervan verdacht de vruchtbaarheid te schaden en het ongeboren kind te schaden',
     'H370': 'Veroorzaakt schade aan organen',
     'H372': 'Veroorzaakt schade aan organen bij langdurige of herhaalde blootstelling',
     'H400': 'Zeer giftig voor in het water levende organismen',
@@ -355,4 +368,3 @@ const generateArieReference = () => {
 export const REFERENCE_GUIDE_DATA = generateSevesoReference();
 export const ARIE_REFERENCE_GUIDE_DATA = generateArieReference();
 
-    
