@@ -56,6 +56,10 @@ service cloud.firestore {
       }
       return requestUserProfile.data.customerId == company.customerId;
     }
+    
+    function getUserCustomerId(uid) {
+        return get(/databases/$(database)/documents/users/$(uid)).data.customerId;
+    }
 
     // ------------------------------------------------------------------------
     // Collection Rules
@@ -63,42 +67,49 @@ service cloud.firestore {
     
     /**
      * @description Manages user profile documents.
+     * @allow Admin has full read/write access.
      * @allow A user can create their own profile upon registration.
      * @allow An authenticated user can read their own profile.
-     * @allow Admin can read all profiles and write to any profile to manage them.
      */
     match /users/{userId} {
+      allow read, write: if isAdmin();
       allow create: if request.auth.uid == userId;
       allow read: if isSignedIn() && request.auth.uid == userId;
-      allow list, write: if isAdmin();
     }
 
     /**
      * @description Manages company documents.
      */
     match /companies/{companyId} {
-      // Explicit list for admin to bypass complex read rule on queries
-      allow list: if isAdmin();
+      // ADMIN ACCESS: Full control for the admin. This rule must be first.
+      allow read, write: if isAdmin();
       
-      allow create: if isAdmin() || 
-                       (isCreatingAsOwner() && isNotDisabled(request.auth.uid));
+      // USER ACCESS: Below rules apply only if the user is NOT an admin.
+      
+      // Users can only query for companies that match their own customerId
+      allow list: if isSignedIn() && isNotDisabled(request.auth.uid) &&
+                     request.query.where.customerId == getUserCustomerId(request.auth.uid);
+                     
+      // Users can read a company document if it matches their customerId
+      allow read: if isSignedIn() && isNotDisabled(request.auth.uid) && 
+                     resource.data.customerId == getUserCustomerId(request.auth.uid);
+
+      // Create/Update/Delete rules remain based on ownership
+      allow create: if isSignedIn() && isCreatingAsOwner() && isNotDisabled(request.auth.uid);
                        
-      allow read: if isAdmin() || 
-                     (isNotDisabled(request.auth.uid) && isMemberOfSameCustomerGroup(resource.data));
+      allow update: if isSignedIn() && isOwner(resource.data) && isNotDisabled(request.auth.uid) && request.resource.data.userId == resource.data.userId;
 
-      allow update: if isAdmin() || 
-                       (isOwner(resource.data) && isNotDisabled(request.auth.uid) && request.resource.data.userId == resource.data.userId);
-
-      allow delete: if isAdmin() || 
-                       (isOwner(resource.data) && isNotDisabled(request.auth.uid));
+      allow delete: if isSignedIn() && isOwner(resource.data) && isNotDisabled(request.auth.uid);
 
       /**
        * @description Manages the substance inventory for a specific company.
        * @allow Access is granted if the user has read access to the parent company or is an admin.
        */
       match /inventory/{substanceId} {
-        allow read, write: if isAdmin() || (isNotDisabled(request.auth.uid) && 
-                             isMemberOfSameCustomerGroup(get(/databases/$(database)/documents/companies/$(companyId)).data));
+        allow read, write: if isAdmin() || (
+                              isSignedIn() && isNotDisabled(request.auth.uid) && 
+                              get(/databases/$(database)/documents/companies/$(companyId)).data.customerId == getUserCustomerId(request.auth.uid)
+                            );
       }
     }
   }
