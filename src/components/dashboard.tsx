@@ -19,7 +19,7 @@ interface DashboardProps {
 
 export default function Dashboard({ inventory, thresholdMode, setThresholdMode }: DashboardProps) {
   const { summationGroups, arieSummationGroups, overallStatus, criticalGroup, arieTotal, arieExceeded } = useSevesoCalculator(inventory, thresholdMode);
-  const [selectedGroup, setSelectedGroup] = useState<SummationGroupType | null>(null);
+  const [selectedGroupInfo, setSelectedGroupInfo] = useState<{ group: SummationGroupType, type: 'seveso' | 'arie' } | null>(null);
 
   const getStatusIcon = () => {
     switch (overallStatus) {
@@ -73,7 +73,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
             return (
               <div 
                 key={group.group} 
-                onClick={() => group.totalRatio > 0 && setSelectedGroup(group)} 
+                onClick={() => group.totalRatio > 0 && setSelectedGroupInfo({ group, type: 'seveso' })} 
                 className={group.totalRatio > 0 ? "cursor-pointer hover:bg-muted/50 p-2 -m-2 rounded-lg" : "p-2 -m-2"}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -121,7 +121,11 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
           {arieSummationGroups.map((group) => {
             const percentage = Math.round(group.totalRatio * 100);
             return (
-              <div key={group.group} className="p-2 -m-2 rounded-lg">
+              <div 
+                key={group.group}
+                onClick={() => group.totalRatio > 0 && setSelectedGroupInfo({ group, type: 'arie' })}
+                className={group.totalRatio > 0 ? "cursor-pointer hover:bg-muted/50 p-2 -m-2 rounded-lg" : "p-2 -m-2"}
+              >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2 text-sm font-medium">
                     <group.icon className="w-4 h-4 text-muted-foreground" />
@@ -157,11 +161,12 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
       </Card>
 
       <GroupDetailsDialog
-        isOpen={!!selectedGroup}
-        onOpenChange={(open) => !open && setSelectedGroup(null)}
-        group={selectedGroup}
+        isOpen={!!selectedGroupInfo}
+        onOpenChange={(open) => !open && setSelectedGroupInfo(null)}
+        group={selectedGroupInfo?.group ?? null}
         inventory={inventory}
         mode={thresholdMode}
+        type={selectedGroupInfo?.type ?? 'seveso'}
       />
     </div>
   );

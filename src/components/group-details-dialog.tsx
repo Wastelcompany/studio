@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { Substance, SummationGroup, ThresholdMode } from '@/lib/types';
-import { ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS } from '@/lib/seveso';
+import { ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, ARIE_THRESHOLDS } from '@/lib/seveso';
 import { ScrollArea } from './ui/scroll-area';
 
 interface GroupDetailsDialogProps {
@@ -26,9 +26,10 @@ interface GroupDetailsDialogProps {
   group: SummationGroup | null;
   inventory: Substance[];
   mode: ThresholdMode;
+  type: 'seveso' | 'arie';
 }
 
-export default function GroupDetailsDialog({ isOpen, onOpenChange, group, inventory, mode }: GroupDetailsDialogProps) {
+export default function GroupDetailsDialog({ isOpen, onOpenChange, group, inventory, mode, type }: GroupDetailsDialogProps) {
   const contributingSubstances = useMemo(() => {
     if (!group) return [];
     
@@ -36,18 +37,30 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
       .map(substance => {
         let contribution = 0;
         
-        substance.sevesoCategoryIds.forEach(catId => {
-          const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-          if (category && category.group === group.group) {
-            const thresholdInfo = SEVESO_THRESHOLDS[catId] || (category as any)?.threshold;
-            if (thresholdInfo) {
-              const threshold = thresholdInfo[mode];
-              if (threshold > 0 && substance.quantity > 0) {
-                contribution += substance.quantity / threshold;
+        if (type === 'seveso') {
+            substance.sevesoCategoryIds.forEach(catId => {
+              const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+              if (category && category.group === group.group) {
+                const thresholdInfo = SEVESO_THRESHOLDS[catId] || (category as any)?.threshold;
+                if (thresholdInfo) {
+                  const threshold = thresholdInfo[mode];
+                  if (threshold > 0 && substance.quantity > 0) {
+                    contribution += substance.quantity / threshold;
+                  }
+                }
               }
-            }
-          }
-        });
+            });
+        } else { // ARIE
+            substance.arieCategoryIds.forEach(catId => {
+                const category = ALL_CATEGORIES[catId];
+                if (category && category.group === group.group) {
+                    const threshold = ARIE_THRESHOLDS[catId];
+                    if (threshold > 0 && substance.quantity > 0) {
+                        contribution += substance.quantity / threshold;
+                    }
+                }
+            });
+        }
 
         return {
           ...substance,
@@ -57,7 +70,7 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
       .filter(item => item.contribution > 0)
       .sort((a, b) => b.contribution - a.contribution);
 
-  }, [group, inventory, mode]);
+  }, [group, inventory, mode, type]);
 
   if (!group) return null;
 
@@ -65,7 +78,7 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Details voor: {group.name}</DialogTitle>
+          <DialogTitle>Details voor: {group.name} ({type.toUpperCase()})</DialogTitle>
           <DialogDescription>
             De volgende stoffen dragen bij aan de sommatie voor deze groep. Het totaal is {Math.round(group.totalRatio * 100)}%.
           </DialogDescription>
