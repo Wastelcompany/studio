@@ -23,8 +23,8 @@ import { useAuth, useFirestore } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  FirebaseError,
 } from 'firebase/auth';
+import type { FirebaseError } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 
 
@@ -109,8 +109,8 @@ export default function LoginForm() {
         router.push('/dashboard');
       }
     } catch (error) {
-      if (error instanceof FirebaseError) {
-        handleAuthError(error);
+      if (error && typeof error === 'object' && 'code' in error) {
+        handleAuthError(error as FirebaseError);
       } else {
         toast({ variant: 'destructive', title: 'Fout', description: 'Er is een onverwachte fout opgetreden.' });
       }
