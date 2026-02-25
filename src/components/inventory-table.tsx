@@ -98,11 +98,12 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
     });
 
     return results.sort((a, b) => {
-      if (a.categoryId.startsWith('ARIE') && !b.categoryId.startsWith('ARIE')) return 1;
-      if (!a.categoryId.startsWith('ARIE') && b.categoryId.startsWith('ARIE')) return -1;
-      const catComp = a.categoryId.localeCompare(b.categoryId);
-      if (catComp !== 0) return catComp;
-      return a.type.localeCompare(b.type);
+      // Primary sort: 'Seveso' comes before 'ARIE'
+      if (a.type !== b.type) {
+        return a.type === 'Seveso' ? -1 : 1;
+      }
+      // Secondary sort: Alphabetically by category display ID
+      return a.displayCategoryId.localeCompare(b.displayCategoryId);
     });
 
   }, [substance, mode]);
