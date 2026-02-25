@@ -13,12 +13,11 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   P1a: { id: 'P1a', name: 'Explosieve stoffen (instabiel, 1.1, 1.2, 1.3, 1.5)', group: 'physical' },
   P1b: { id: 'P1b', name: 'Explosieve stoffen (1.4)', group: 'physical' },
   P2: { id: 'P2', name: 'Ontvlambare gassen, categorie 1 en 2', group: 'physical' },
-  P3a: { id: 'P3a', name: 'Ontvlambare aerosolen, categorie 1 (ontvlambaar)', group: 'physical' },
-  P3b: { id: 'P3b', name: 'Ontvlambare aerosolen, categorie 2 (zeer/extreem ontvlambaar)', group: 'physical' },
+  // P3a and P3b are removed and merged into P5c via H-phrase mapping
   P4: { id: 'P4', name: 'Oxiderende gassen, categorie 1', group: 'physical' },
   P5a: { id: 'P5a', name: 'Ontvlambare vloeistoffen, categorie 1', group: 'physical' },
   P5b: { id: 'P5b', name: 'Ontvlambare vloeistoffen, cat 2/3 (onder druk/hoge T)', group: 'physical' },
-  P5c: { id: 'P5c', name: 'Ontvlambare vloeistoffen, categorie 2 en 3', group: 'physical' },
+  P5c: { id: 'P5c', name: 'Ontvlambare vloeistoffen, categorie 2 en 3 & Aerosolen', group: 'physical' },
   P6a: { id: 'P6a', name: 'Zelfontledende stoffen & Organische peroxiden, Type A/B', group: 'physical' },
   P6b: { id: 'P6b', name: 'Zelfontledende stoffen & Organische peroxiden, Type C,D,E,F', group: 'physical' },
   P7: { id: 'P7', name: 'Pyrofore vloeistoffen en vaste stoffen, categorie 1', group: 'physical' },
@@ -48,8 +47,6 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   P1a: { low: 10, high: 50 },
   P1b: { low: 50, high: 200 },
   P2: { low: 10, high: 50 },
-  P3a: { low: 150, high: 500 }, 
-  P3b: { low: 5000, high: 50000 }, 
   P4: { low: 50, high: 200 },
   P5a: { low: 10, high: 50 },
   P5b: { low: 50, high: 200 },
@@ -61,7 +58,7 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   E1: { low: 100, high: 200 },
   E2: { low: 200, high: 500 },
   O1: { low: 100, high: 500 },
-  O2: { low: 50, high: 200 },
+  O2: { low: 10, high: 50 },
   O3: { low: 10, high: 50 },
 };
 
@@ -114,9 +111,9 @@ export const H_PHRASE_MAPPING: Record<string, string[]> = {
   'H205': ['P1a'],
   
   // Physical - Flammable Gases / Aerosols
-  'H220': ['ARIE-Gas-1'],
-  'H221': ['ARIE-Gas-2'],
-  'H222': ['P3b'], 'H223': ['P3a'],
+  'H220': ['P2', 'ARIE-Gas-1'],
+  'H221': ['P2', 'ARIE-Gas-2'],
+  'H222': ['P5c'], 'H223': ['P5c'],
   
   // Physical - Flammable Liquids
   'H224': ['P5a', 'ARIE-Vloeistof-1'],
@@ -141,8 +138,8 @@ export const H_PHRASE_MAPPING: Record<string, string[]> = {
 
   // Other - Water reactive
   'EUH014': ['O1'], 'EUH029': ['O1'], 'EUH032': ['O1'],
-  'H260': ['O2', 'P7'], 
-  'H261': ['O2'], 
+  'H260': ['O2'],
+  'H261': [],
   
   // Other - CMR
   'H340': ['O3'], 'H350': ['O3'], 'H350i': ['O3'], 'H360': ['O3'], 'H360F': ['O3'], 'H360D': ['O3'], 'H360FD': ['O3'], 'H360Fd': ['O3'], 'H360Df': ['O3'],
