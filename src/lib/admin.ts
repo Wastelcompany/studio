@@ -1,5 +1,5 @@
 import type { Firestore, UserProfile } from '@/lib/types';
-import { collection, doc, getDocs, query, updateDoc, where, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDocs, query, updateDoc, where, writeBatch, deleteDoc } from 'firebase/firestore';
 
 /**
  * Toggles the disabled status of a user in Firestore.
@@ -16,6 +16,7 @@ export const toggleUserDisabledStatus = async (db: Firestore, uid: string, curre
 
 /**
  * Updates a user's customer group and migrates their existing companies to the new group.
+ * This now fetches all companies in the old customer group and filters client-side to avoid restrictive query rules.
  * @param db The Firestore instance.
  * @param userToUpdate The full UserProfile object of the user being updated.
  * @param newCustomerName The new customer name for the group.
@@ -26,20 +27,17 @@ export const updateUserGroup = async (db: Firestore, userToUpdate: UserProfile, 
     
     // 1. Determine the target customerId.
     let targetCustomerId: string;
-    const q = query(usersRef, where('customerName', '==', newCustomerName), where('uid', '!=', userToUpdate.uid));
+    const q = query(usersRef, where('customerName', '==', newCustomerName));
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
         // An existing group with this name is found, use its customerId.
         targetCustomerId = querySnapshot.docs[0].data().customerId;
     } else {
-        // This is a new group name, or the user is being moved to their own new group.
-        // We generate a new unique ID for the customer group.
-        // Using a new doc ID from a collection is a simple way to get a unique ID.
-        targetCustomerId = doc(collection(db, 'customers')).id;
+        // This is a new group name. The user being moved will define the new group, using their own UID as the group's ID.
+        targetCustomerId = userToUpdate.uid;
     }
 
-    // Start a batch to perform atomic updates.
     const batch = writeBatch(db);
 
     // 2. Update the user's profile with the new customerId and customerName.
@@ -50,15 +48,53 @@ export const updateUserGroup = async (db: Firestore, userToUpdate: UserProfile, 
     });
 
     // 3. Find all companies owned by this user and update their customerId.
-    const userCompaniesQuery = query(companiesRef, where('userId', '==', userToUpdate.uid));
-    const companiesSnapshot = await getDocs(userCompaniesQuery);
-    
-    if (!companiesSnapshot.empty) {
-        companiesSnapshot.forEach(companyDoc => {
-            batch.update(companyDoc.ref, { customerId: targetCustomerId });
-        });
+    // NEW STRATEGY: Query by the old customerId (which is allowed) and then filter by userId on the client.
+    if (userToUpdate.customerId) {
+        const userCompaniesQuery = query(companiesRef, where('customerId', '==', userToUpdate.customerId));
+        const companiesSnapshot = await getDocs(userCompaniesQuery);
+        
+        const companiesToUpdate = companiesSnapshot.docs.filter(doc => doc.data().userId === userToUpdate.uid);
+
+        if (companiesToUpdate.length > 0) {
+            companiesToUpdate.forEach(companyDoc => {
+                batch.update(companyDoc.ref, { customerId: targetCustomerId });
+            });
+        }
     }
     
     // 4. Commit all changes in the batch.
+    await batch.commit();
+};
+
+
+/**
+ * Deletes a user's profile and all associated data (companies and their inventories).
+ * Note: This does not delete the Firebase Auth user, only their data within Firestore.
+ * @param db The Firestore instance.
+ * @param userToDelete The user profile of the user to delete.
+ */
+export const deleteUserAndData = async (db: Firestore, userToDelete: UserProfile): Promise<void> => {
+    const batch = writeBatch(db);
+    const companiesRef = collection(db, 'companies');
+
+    // 1. Find all companies owned by the user.
+    const companiesQuery = query(companiesRef, where('userId', '==', userToDelete.uid));
+    const companiesSnapshot = await getDocs(companiesQuery);
+
+    // 2. For each company, delete its inventory subcollection, then delete the company itself.
+    for (const companyDoc of companiesSnapshot.docs) {
+        const inventoryRef = collection(db, 'companies', companyDoc.id, 'inventory');
+        const inventorySnapshot = await getDocs(inventoryRef);
+        inventorySnapshot.forEach(inventoryDoc => {
+            batch.delete(inventoryDoc.ref);
+        });
+        batch.delete(companyDoc.ref);
+    }
+    
+    // 3. Delete the user's profile document.
+    const userDocRef = doc(db, 'users', userToDelete.uid);
+    batch.delete(userDocRef);
+    
+    // 4. Commit all deletions.
     await batch.commit();
 };

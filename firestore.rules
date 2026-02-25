@@ -4,16 +4,13 @@
  * ## Core Philosophy
  * This ruleset enforces a strict user-ownership model for writing data, but allows
  * for group-based reading of data. A user's access can be disabled by an admin.
+ * The admin role has full read/write access to all data for management purposes.
  *
  * ## Data Structure & Security
- * - **Admin Role:** The user 'post@wastelcompany.eu' has special privileges to manage users.
+ * - **Admin Role:** The user 'post@wastelcompany.eu' has special privileges.
  * - **Disabled Users:** A `disabled` flag on a user's profile blocks all their data access.
- * - **Ownership for Writes:** Users can only create, update, or delete documents they own,
- *   verified by matching `request.auth.uid` with the `userId` field in a document.
- * - **Customer Groups for Reads:** Users can read a list of companies that share their `customerId`.
- *   They can also read individual company documents if they belong to the same customer group.
- * - **Query-based Listing:** Listing companies is only permitted via a query that filters
- *   by the user's `customerId`, ensuring they only get data from their group. Admins have unrestricted list access.
+ * - **Ownership for Writes:** Non-admin users can only create, update, or delete documents they own (`userId`).
+ * - **Customer Groups for Reads:** Non-admin users can read a list of companies that share their `customerId`.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -27,8 +24,8 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isOwner(doc) {
-      return isSignedIn() && "userId" in doc && request.auth.uid == doc.userId;
+    function isOwner(docData) {
+      return isSignedIn() && "userId" in docData && request.auth.uid == docData.userId;
     }
     
     function isCreatingAsOwner() {
@@ -43,19 +40,6 @@ service cloud.firestore {
       let userProfile = get(/databases/$(database)/documents/users/$(uid));
       return userProfile.data.disabled == false;
     }
-
-    function isMemberOfSameCustomerGroup(company) {
-      let requestUserProfile = get(/databases/$(database)/documents/users/$(request.auth.uid));
-      // User must have a customerId to be in a group.
-      if (!('customerId' in requestUserProfile.data) || requestUserProfile.data.customerId == null) {
-        return false;
-      }
-      // Company must have a customerId.
-      if (!('customerId' in company) || company.customerId == null) {
-        return false;
-      }
-      return requestUserProfile.data.customerId == company.customerId;
-    }
     
     function getUserCustomerId(uid) {
         return get(/databases/$(database)/documents/users/$(uid)).data.customerId;
@@ -67,47 +51,49 @@ service cloud.firestore {
     
     /**
      * @description Manages user profile documents.
-     * @allow Admin has full read/write access.
-     * @allow A user can create their own profile upon registration.
-     * @allow An authenticated user can read their own profile.
      */
     match /users/{userId} {
+      // Admin has full read/write access.
       allow read, write: if isAdmin();
+      
+      // A user can create their own profile upon registration.
       allow create: if request.auth.uid == userId;
+      
+      // An authenticated user can read their own profile.
       allow read: if isSignedIn() && request.auth.uid == userId;
     }
 
     /**
-     * @description Manages company documents.
+     * @description Manages company documents and their subcollections.
      */
     match /companies/{companyId} {
-      // ADMIN ACCESS: Full control for the admin. This rule must be first.
+      // ADMIN ACCESS: Full control for the admin. This rule must be first to ensure it's evaluated.
       allow read, write: if isAdmin();
       
-      // USER ACCESS: Below rules apply only if the user is NOT an admin.
+      // --- REGULAR USER ACCESS ---
       
-      // Users can only query for companies that match their own customerId
-      allow list: if isSignedIn() && isNotDisabled(request.auth.uid) &&
+      // Users can query for companies that match their own customerId. This is the only allowed list operation for non-admins.
+      allow list: if !isAdmin() && isSignedIn() && isNotDisabled(request.auth.uid) &&
                      request.query.where.customerId == getUserCustomerId(request.auth.uid);
                      
-      // Users can read a company document if it matches their customerId
-      allow read: if isSignedIn() && isNotDisabled(request.auth.uid) && 
-                     resource.data.customerId == getUserCustomerId(request.auth.uid);
+      // Users can read a single company document if it matches their customerId.
+      allow get: if !isAdmin() && isSignedIn() && isNotDisabled(request.auth.uid) && 
+                    resource.data.customerId == getUserCustomerId(request.auth.uid);
 
-      // Create/Update/Delete rules remain based on ownership
-      allow create: if isSignedIn() && isCreatingAsOwner() && isNotDisabled(request.auth.uid);
+      // Create/Update/Delete rules remain based on ownership for non-admins.
+      allow create: if !isAdmin() && isSignedIn() && isCreatingAsOwner() && isNotDisabled(request.auth.uid);
                        
-      allow update: if isSignedIn() && isOwner(resource.data) && isNotDisabled(request.auth.uid) && request.resource.data.userId == resource.data.userId;
+      allow update: if !isAdmin() && isSignedIn() && isOwner(resource.data) && isNotDisabled(request.auth.uid) && request.resource.data.userId == resource.data.userId;
 
-      allow delete: if isSignedIn() && isOwner(resource.data) && isNotDisabled(request.auth.uid);
+      allow delete: if !isAdmin() && isSignedIn() && isOwner(resource.data) && isNotDisabled(request.auth.uid);
 
       /**
        * @description Manages the substance inventory for a specific company.
-       * @allow Access is granted if the user has read access to the parent company or is an admin.
        */
       match /inventory/{substanceId} {
+        // Grant access if user is admin OR has read access to the parent company.
         allow read, write: if isAdmin() || (
-                              isSignedIn() && isNotDisabled(request.auth.uid) && 
+                              !isAdmin() && isSignedIn() && isNotDisabled(request.auth.uid) && 
                               get(/databases/$(database)/documents/companies/$(companyId)).data.customerId == getUserCustomerId(request.auth.uid)
                             );
       }

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Users, UserCog, Pencil, UserX, UserCheck } from "lucide-react";
+import { Loader2, LogOut, Users, UserCog, Pencil, UserX, UserCheck, Trash2 } from "lucide-react";
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -23,9 +23,19 @@ import {
   DialogFooter,
   DialogClose
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { toggleUserDisabledStatus, updateUserGroup } from '@/lib/admin';
+import { toggleUserDisabledStatus, updateUserGroup, deleteUserAndData } from '@/lib/admin';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -35,6 +45,7 @@ export default function AdminPage() {
   const { toast } = useToast();
 
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [newGroupName, setNewGroupName] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
@@ -58,6 +69,11 @@ export default function AdminPage() {
     setSelectedUser(user);
     setNewGroupName(user.customerName || '');
     setIsGroupDialogOpen(true);
+  }
+
+  const handleOpenDeleteDialog = (user: UserProfile) => {
+    setSelectedUser(user);
+    setIsDeleteDialogOpen(true);
   }
 
   const handleToggleDisable = async (userToToggle: UserProfile) => {
@@ -94,6 +110,24 @@ export default function AdminPage() {
       setIsUpdating(false);
     }
   };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser || !db) return;
+    setIsUpdating(true);
+    try {
+      await deleteUserAndData(db, selectedUser);
+       toast({
+          title: "Gebruiker Verwijderd",
+          description: `Het profiel en alle data van ${selectedUser.email} zijn verwijderd.`,
+      });
+      setIsDeleteDialogOpen(false);
+    } catch(error) {
+       console.error(error);
+      toast({ variant: 'destructive', title: "Fout", description: "Kon de gebruiker en diens data niet verwijderen." });
+    } finally {
+        setIsUpdating(false);
+    }
+  }
 
   const renderContent = () => {
     if (isUserLoading || (isAdmin && isLoadingUsers)) {
@@ -161,11 +195,14 @@ export default function AdminPage() {
                             <TableCell className="text-right">
                               {u.email !== 'post@wastelcompany.eu' && (
                                 <>
-                                  <Button variant="ghost" size="icon" onClick={() => handleOpenGroupDialog(u)} disabled={isUpdating}>
+                                  <Button variant="ghost" size="icon" onClick={() => handleOpenGroupDialog(u)} disabled={isUpdating} title="Groep aanpassen">
                                     <Pencil className="h-4 w-4" />
                                   </Button>
-                                  <Button variant="ghost" size="icon" onClick={() => handleToggleDisable(u)} disabled={isUpdating}>
+                                  <Button variant="ghost" size="icon" onClick={() => handleToggleDisable(u)} disabled={isUpdating} title={u.disabled ? 'Activeren' : 'Deactiveren'}>
                                       {u.disabled ? <UserCheck className="h-4 w-4 text-green-600" /> : <UserX className="h-4 w-4 text-destructive" />}
+                                  </Button>
+                                   <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(u)} disabled={isUpdating} title="Gebruiker verwijderen">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
                                   </Button>
                                 </>
                               )}
@@ -233,6 +270,25 @@ export default function AdminPage() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Weet u het zeker?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deze actie kan niet ongedaan worden gemaakt. Dit verwijdert het profiel en alle bijbehorende data van <span className="font-bold">{selectedUser?.email}</span> permanent.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUpdating}>Annuleren</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} disabled={isUpdating} className="bg-destructive hover:bg-destructive/90">
+              {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Ja, verwijder gebruiker
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
