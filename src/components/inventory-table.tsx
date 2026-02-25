@@ -227,11 +227,21 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                 </TableCell>
                 <TableCell>
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     value={substance.quantity}
-                    onChange={(e) => onUpdateQuantity(substance.id, parseFloat(e.target.value))}
+                    onChange={(e) => {
+                        const value = e.target.value.replace(',', '.');
+                        let quantity = parseFloat(value);
+                        if (isNaN(quantity)) {
+                            onUpdateQuantity(substance.id, NaN);
+                        } else if (quantity < 0) {
+                            onUpdateQuantity(substance.id, 0);
+                        } else {
+                            onUpdateQuantity(substance.id, quantity);
+                        }
+                    }}
                     className="w-24 h-9 ml-auto text-right"
-                    min="0"
                   />
                 </TableCell>
                 <TableCell>
