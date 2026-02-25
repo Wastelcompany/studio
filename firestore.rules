@@ -75,27 +75,22 @@ service cloud.firestore {
 
     /**
      * @description Manages company documents.
-     * @allow Create if user is creating for themselves and is not disabled.
-     * @allow Read if user is not disabled and is a member of the company's customer group, OR if user is admin.
-     * @allow Update if user is the owner and is not disabled, OR if user is admin. The userId must not change.
-     * @allow Delete if user is the owner and is not disabled, OR if user is admin.
-     * @allow List if user is signed in. Results are filtered by the read rule.
      */
     match /companies/{companyId} {
-      allow create: if isCreatingAsOwner() && 
-                       isNotDisabled(request.auth.uid);
+      // Explicit list for admin to bypass complex read rule on queries
+      allow list: if isAdmin();
+      
+      allow create: if isAdmin() || 
+                       (isCreatingAsOwner() && isNotDisabled(request.auth.uid));
                        
-      allow read: if isAdmin() || (isNotDisabled(request.auth.uid) && isMemberOfSameCustomerGroup(resource.data));
+      allow read: if isAdmin() || 
+                     (isNotDisabled(request.auth.uid) && isMemberOfSameCustomerGroup(resource.data));
 
-      allow update: if isAdmin() || (
-                       isOwner(resource.data) && 
-                       isNotDisabled(request.auth.uid) &&
-                       request.resource.data.userId == resource.data.userId
-                     );
+      allow update: if isAdmin() || 
+                       (isOwner(resource.data) && isNotDisabled(request.auth.uid) && request.resource.data.userId == resource.data.userId);
 
-      allow delete: if isAdmin() || (isOwner(resource.data) && isNotDisabled(request.auth.uid));
-
-      allow list: if isSignedIn();
+      allow delete: if isAdmin() || 
+                       (isOwner(resource.data) && isNotDisabled(request.auth.uid));
 
       /**
        * @description Manages the substance inventory for a specific company.
