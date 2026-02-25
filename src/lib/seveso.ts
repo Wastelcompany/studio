@@ -7,7 +7,8 @@ import { FlaskConical, Flame, Leaf, AlertTriangle, Atom, Briefcase } from 'lucid
 export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   H1: { id: 'H1', name: 'Acuut toxisch, categorie 1 (alle blootstellingsroutes)', group: 'health' },
   H2: { id: 'H2', name: 'Acuut toxisch, categorie 2 (alle blootstellingsroutes)', group: 'health' },
-  H3: { id: 'H3', name: 'Acuut toxisch, categorie 3 (inademing) & STOT eenmalig 1', group: 'health' },
+  H3: { id: 'H3', name: 'STOT eenmalig, cat. 1', group: 'health' },
+  'H3-Tox-ARIE': { id: 'H3-Tox-ARIE', name: 'Acuut toxisch, cat. 3 (ARIE)', group: 'health', displayId: 'H3' },
   H4: { id: 'H4', name: 'Huidcorrosie, categorie 1', group: 'health' }, // Primarily ARIE
 
   P1a: { id: 'P1a', name: 'Explosieve stoffen (instabiel, 1.1, 1.2, 1.3, 1.5)', group: 'physical' },
@@ -43,7 +44,7 @@ export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
 export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = {
   H1: { low: 5, high: 20 },
   H2: { low: 50, high: 200 },
-  H3: { low: 200, high: 500 },
+  H3: { low: 50, high: 200 },
   P1a: { low: 10, high: 50 },
   P1b: { low: 50, high: 200 },
   P2: { low: 10, high: 50 },
@@ -67,14 +68,15 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
     H1: 0.05,
     H2: 0.2,
     H3: 1, // STOT SE 1
+    'H3-Tox-ARIE': 1, // Acuut toxisch, cat 3
     H4: 5,
     O3: 0.5, // CMR
     P1a: 0.05,
     P1b: 1, // Overige ontplofbare stoffen
     P6a: 0.05, // Type A of B
-    P6b: 1, // Type C, D, E of F (H242) - TOEGEVOEGD
+    P6b: 1, // Type C, D, E of F (H242)
     P7: 0.05,
-    O1: 0.5, // Water reactief (toxisch gas) - TOEGEVOEGD
+    O1: 0.5, // Water reactief (toxisch gas)
     O2: 0.05, // Water reactief (ontvlambaar gas)
     'ARIE-Gas-1': 5,
     'ARIE-Gas-2': 50,
@@ -99,9 +101,8 @@ ALL_CATEGORIES['ARIE-Ox-Vast-1'] = { id: 'ARIE-Ox-Vast-1', name: 'Oxiderende vas
 
 export const H_PHRASE_MAPPING: Record<string, string[]> = {
   // Health
-  'H300': ['H1'], 'H310': ['H1'], 'H330': ['H1'],
-  'H301': ['H2'], 'H311': ['H2'], 'H331': ['H2'],
-  'H332': ['H3'], 
+  'H300': ['H1', 'H2'], 'H310': ['H1', 'H2'], 'H330': ['H1', 'H2'],
+  'H301': ['H2', 'H3-Tox-ARIE'], 'H311': ['H2', 'H3-Tox-ARIE'], 'H331': ['H2', 'H3-Tox-ARIE'], // H2 for Seveso-summation rule, H3-Tox-ARIE for correct ARIE calculation
   'H370': ['H3'], 
   'H314': ['H4'],
 
