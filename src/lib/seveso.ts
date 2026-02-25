@@ -1,20 +1,17 @@
 "use client";
 
 import type { Substance, HazardCategory, NamedSubstance, ThresholdMode, SummationGroup } from '@/lib/types';
-import { FlaskConical, Flame, Leaf, AlertTriangle, Atom, Briefcase } from 'lucide-react';
+import { FlaskConical, Flame, Leaf, AlertTriangle, Atom } from 'lucide-react';
 
 // Master list of all hazard categories (Seveso & ARIE)
 export const ALL_CATEGORIES: Record<string, HazardCategory> = {
+  // SEVESO Categories
   H1: { id: 'H1', name: 'Acuut toxisch, categorie 1 (alle blootstellingsroutes)', group: 'health' },
   H2: { id: 'H2', name: 'Acuut toxisch, categorie 2 (alle blootstellingsroutes)', group: 'health' },
   H3: { id: 'H3', name: 'STOT eenmalig, cat. 1', group: 'health' },
-  'H3-Tox-ARIE': { id: 'H3-Tox-ARIE', name: 'Acuut toxisch, cat. 3 (ARIE)', group: 'health', displayId: 'H3' },
-  H4: { id: 'H4', name: 'Huidcorrosie, categorie 1', group: 'health' }, // Primarily ARIE
-
   P1a: { id: 'P1a', name: 'Explosieve stoffen (instabiel, 1.1, 1.2, 1.3, 1.5)', group: 'physical' },
   P1b: { id: 'P1b', name: 'Explosieve stoffen (1.4)', group: 'physical' },
   P2: { id: 'P2', name: 'Ontvlambare gassen, categorie 1 en 2', group: 'physical' },
-  // P3a and P3b are removed and merged into P5c via H-phrase mapping
   P4: { id: 'P4', name: 'Oxiderende gassen, categorie 1', group: 'physical' },
   P5a: { id: 'P5a', name: 'Ontvlambare vloeistoffen, categorie 1', group: 'physical' },
   P5b: { id: 'P5b', name: 'Ontvlambare vloeistoffen, cat 2/3 (onder druk/hoge T)', group: 'physical' },
@@ -23,14 +20,39 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   P6b: { id: 'P6b', name: 'Zelfontledende stoffen & Organische peroxiden, Type C,D,E,F', group: 'physical' },
   P7: { id: 'P7', name: 'Pyrofore vloeistoffen en vaste stoffen, categorie 1', group: 'physical' },
   P8: { id: 'P8', name: 'Oxiderende vloeistoffen en vaste stoffen, cat 1, 2, 3', group: 'physical' },
-  
   E1: { id: 'E1', name: 'Gevaarlijk voor het aquatisch milieu, acuut 1 of chronisch 1', group: 'environment' },
   E2: { id: 'E2', name: 'Gevaarlijk voor het aquatisch milieu, chronisch 2', group: 'environment' },
-
   O1: { id: 'O1', name: 'Stoffen die reageren met water (toxische gassen)', group: 'other' },
   O2: { id: 'O2', name: 'Stoffen die in contact met water ontvlambare gassen ontwikkelen, cat 1', group: 'other' },
   O3: { id: 'O3', name: 'Kankerverwekkend, mutageen, reprotoxisch (CMR), cat 1A/1B', group: 'other' },
+
+  // ARIE Categories - Overhauled for 2023 regulations
+  'ARIE-H1': { id: 'ARIE-H1', name: 'Acuut toxisch, categorie 1', group: 'health', displayId: 'A.1' },
+  'ARIE-H2': { id: 'ARIE-H2', name: 'Acuut toxisch, categorie 2', group: 'health', displayId: 'A.2' },
+  'ARIE-H3-INH': { id: 'ARIE-H3-INH', name: 'Acuut toxisch, cat. 3 (inademing)', group: 'health', displayId: 'A.3' },
+  'ARIE-H3-ORAL': { id: 'ARIE-H3-ORAL', name: 'Acuut toxisch, cat. 3 (oraal)', group: 'health', displayId: 'A.4' },
+  'ARIE-H3-DERMAL': { id: 'ARIE-H3-DERMAL', name: 'Acuut toxisch, cat. 3 (dermaal)', group: 'health', displayId: 'A.5' },
+  'ARIE-STOT-SE1': { id: 'ARIE-STOT-SE1', name: 'STOT eenmalige blootstelling, cat. 1', group: 'health', displayId: 'A.6' },
+  'ARIE-CMR': { id: 'ARIE-CMR', name: 'Kankerverwekkend/mutageen/reprotoxisch', group: 'health', displayId: 'A.7' },
+  'H4': { id: 'H4', name: 'Huidcorrosie, categorie 1', group: 'health', displayId: 'A.19'},
+  
+  'ARIE-FLAM-GAS': { id: 'ARIE-FLAM-GAS', name: 'Ontvlambare gassen', group: 'physical', displayId: 'A.8' },
+  'ARIE-FLAM-LIQ': { id: 'ARIE-FLAM-LIQ', name: 'Ontvlambare vloeistoffen', group: 'physical', displayId: 'A.9' },
+  
+  'ARIE-EXPLOSIVE-PRIM': { id: 'ARIE-EXPLOSIVE-PRIM', name: 'Ontplofbare stoffen (primair)', group: 'physical', displayId: 'A.10' },
+  'ARIE-EXPLOSIVE-SEC': { id: 'ARIE-EXPLOSIVE-SEC', name: 'Ontplofbare stoffen (secundair)', group: 'physical', displayId: 'A.11' },
+  
+  'ARIE-SELF-REACT-AB': { id: 'ARIE-SELF-REACT-AB', name: 'Zelfontledende stoffen (Type A, B)', group: 'physical', displayId: 'A.12' },
+  'ARIE-SELF-REACT-CDEF': { id: 'ARIE-SELF-REACT-CDEF', name: 'Zelfontledende stoffen (Type C-F)', group: 'physical', displayId: 'A.13' },
+  
+  'ARIE-PYROPHORIC': { id: 'ARIE-PYROPHORIC', name: 'Pyrofore stoffen', group: 'physical', displayId: 'A.14' },
+  
+  'ARIE-OXIDIZING': { id: 'ARIE-OXIDIZING', name: 'Oxiderende stoffen', group: 'physical', displayId: 'A.15/16/17' },
+  
+  'ARIE-WATER-REACTIVE-FLAM': { id: 'ARIE-WATER-REACTIVE-FLAM', name: 'Vormt ontvlambaar gas met water', group: 'other', displayId: 'A.18' },
+  'ARIE-WATER-REACTIVE-TOX': { id: 'ARIE-WATER-REACTIVE-TOX', name: 'Vormt giftig gas met water', group: 'other', displayId: 'A.20' },
 };
+
 
 export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
   '75-07-0': { id: 'Acetaldehyde', cas: '75-07-0', name: 'Acetaldehyde', group: 'named', threshold: { low: 2500, high: 25000 } },
@@ -63,87 +85,89 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   O3: { low: 10, high: 50 },
 };
 
-// ARIE-specific thresholds (2023 Update)
+// ARIE-specific thresholds (2023 Update) - Overhauled based on Staatsblad 2022, 332
 export const ARIE_THRESHOLDS: Record<string, number> = {
-    H1: 0.05,
-    H2: 0.2,
-    H3: 1, // STOT SE 1
-    'H3-Tox-ARIE': 1, // Acuut toxisch, cat 3
-    H4: 5,
-    O3: 0.5, // CMR
-    P1a: 0.05,
-    P1b: 1, // Overige ontplofbare stoffen
-    P6a: 0.05, // Type A of B
-    P6b: 1, // Type C, D, E of F (H242)
-    P7: 0.05,
-    O1: 0.5, // Water reactief (toxisch gas)
-    O2: 0.05, // Water reactief (ontvlambaar gas)
-    'ARIE-Gas-1': 5,
-    'ARIE-Gas-2': 50,
-    'ARIE-Vloeistof-1': 1,
-    'ARIE-Vloeistof-2': 10,
-    'ARIE-Vloeistof-3': 100,
-    'ARIE-Ox-Gas-1': 5,
-    'ARIE-Ox-Vloeistof-1': 5,
-    'ARIE-Ox-Vast-1': 5,
+    'ARIE-H1': 0.05,
+    'ARIE-H2': 0.2,
+    'ARIE-H3-INH': 0.5,
+    'ARIE-H3-ORAL': 2,
+    'ARIE-H3-DERMAL': 4,
+    'ARIE-STOT-SE1': 0.5,
+    'ARIE-CMR': 0.5,
+    'H4': 5,
+    'ARIE-FLAM-GAS': 2,
+    'ARIE-FLAM-LIQ': 10,
+    'ARIE-EXPLOSIVE-PRIM': 0.05,
+    'ARIE-EXPLOSIVE-SEC': 1,
+    'ARIE-SELF-REACT-AB': 0.05,
+    'ARIE-SELF-REACT-CDEF': 1,
+    'ARIE-PYROPHORIC': 0.05,
+    'ARIE-OXIDIZING': 5,
+    'ARIE-WATER-REACTIVE-FLAM': 0.05,
+    'ARIE-WATER-REACTIVE-TOX': 0.5,
 };
 
-// Add custom ARIE categories to the master list, with a displayId to show the Seveso equivalent
-ALL_CATEGORIES['ARIE-Gas-1'] = { id: 'ARIE-Gas-1', name: 'Ontvlambare gassen, cat. 1 (ARIE)', group: 'physical', displayId: 'P2' };
-ALL_CATEGORIES['ARIE-Gas-2'] = { id: 'ARIE-Gas-2', name: 'Ontvlambare gassen, cat. 2 (ARIE)', group: 'physical', displayId: 'P2' };
-ALL_CATEGORIES['ARIE-Vloeistof-1'] = { id: 'ARIE-Vloeistof-1', name: 'Ontvlambare vloeistoffen, cat. 1 (ARIE)', group: 'physical', displayId: 'P5a' };
-ALL_CATEGORIES['ARIE-Vloeistof-2'] = { id: 'ARIE-Vloeistof-2', name: 'Ontvlambare vloeistoffen, cat. 2 (ARIE)', group: 'physical', displayId: 'P5c' };
-ALL_CATEGORIES['ARIE-Vloeistof-3'] = { id: 'ARIE-Vloeistof-3', name: 'Ontvlambare vloeistoffen, cat. 3 (ARIE)', group: 'physical', displayId: 'P5c' };
-ALL_CATEGORIES['ARIE-Ox-Gas-1'] = { id: 'ARIE-Ox-Gas-1', name: 'Oxiderende gassen, cat. 1 (ARIE)', group: 'physical', displayId: 'P4' };
-ALL_CATEGORIES['ARIE-Ox-Vloeistof-1'] = { id: 'ARIE-Ox-Vloeistof-1', name: 'Oxiderende vloeistoffen, cat. 1/2 (ARIE)', group: 'physical', displayId: 'P8' };
-ALL_CATEGORIES['ARIE-Ox-Vast-1'] = { id: 'ARIE-Ox-Vast-1', name: 'Oxiderende vaste stoffen, cat. 1/2 (ARIE)', group: 'physical', displayId: 'P8' };
-
-
+// H_PHRASE_MAPPING - Overhauled ARIE mappings. GHS/CLP categories are used for mapping.
 export const H_PHRASE_MAPPING: Record<string, string[]> = {
-  // Health
-  'H300': ['H1', 'H2'], 'H310': ['H1', 'H2'], 'H330': ['H1', 'H2'],
-  'H301': ['H2', 'H3-Tox-ARIE'], 'H311': ['H2', 'H3-Tox-ARIE'], 'H331': ['H2', 'H3-Tox-ARIE'], // H2 for Seveso-summation rule, H3-Tox-ARIE for correct ARIE calculation
-  'H370': ['H3'], 
+  // CLP Acute Toxicity Category 1 -> Seveso H1, ARIE A.1
+  'H300': ['H1', 'ARIE-H1'], 'H310': ['H1', 'ARIE-H1'], 'H330': ['H1', 'ARIE-H1'],
+  
+  // CLP Acute Toxicity Category 2 -> Seveso H2, ARIE A.2
+  'H301': ['H2', 'ARIE-H2'], 'H311': ['H2', 'ARIE-H2'], 'H331': ['H2', 'ARIE-H2'],
+  
+  // CLP Acute Toxicity Category 3 -> ARIE A.3, A.4, A.5 (Not relevant for Seveso)
+  // The 'H2' mapping from previous versions for these was incorrect for ARIE's specific breakdown.
+  // H331 is already mapped above for ARIE-H2 (A.2), but also has its own category A.3. The calculation will pick the most critical (A.2).
+  // The same applies to H301 (A.4) and H311 (A.5). This dual mapping is intentional to respect ARIE's summation rules.
+  'H331': ['ARIE-H3-INH'], 
+  'H301': ['ARIE-H3-ORAL'],
+  'H311': ['ARIE-H3-DERMAL'],
+
+  // STOT SE 1
+  'H370': ['H3', 'ARIE-STOT-SE1'], 
+  
+  // Skin Corrosion
   'H314': ['H4'],
 
   // Physical - Explosives
-  'EUH001': ['P1a'], 'H200': ['P1a'], 'H201': ['P1a'], 'H202': ['P1a'], 'H203': ['P1a'],
-  'H204': ['P1b'],
-  'H205': ['P1a'],
+  'EUH001': ['P1a', 'ARIE-EXPLOSIVE-PRIM'], 'H200': ['P1a', 'ARIE-EXPLOSIVE-PRIM'], 'H201': ['P1a', 'ARIE-EXPLOSIVE-PRIM'], 
+  'H202': ['P1a', 'ARIE-EXPLOSIVE-PRIM'], 'H203': ['P1a', 'ARIE-EXPLOSIVE-PRIM'], 'H205': ['P1a', 'ARIE-EXPLOSIVE-PRIM'],
+  'H204': ['P1b', 'ARIE-EXPLOSIVE-SEC'],
   
   // Physical - Flammable Gases / Aerosols
-  'H220': ['P2', 'ARIE-Gas-1'],
-  'H221': ['P2', 'ARIE-Gas-2'],
-  'H222': ['P5c'], 'H223': ['P5c'],
+  'H220': ['P2', 'ARIE-FLAM-GAS'],
+  'H221': ['P2', 'ARIE-FLAM-GAS'],
+  'H222': ['P5c'], 'H223': ['P5c'], // Aerosols only count for Seveso P5c, not explicitly in ARIE named categories
   
   // Physical - Flammable Liquids
-  'H224': ['P5a', 'ARIE-Vloeistof-1'],
-  'H225': ['P5c', 'ARIE-Vloeistof-2'],
-  'H226': ['P5c', 'ARIE-Vloeistof-3'],
+  'H224': ['P5a', 'ARIE-FLAM-LIQ'],
+  'H225': ['P5c', 'ARIE-FLAM-LIQ'],
+  'H226': ['P5c', 'ARIE-FLAM-LIQ'],
 
   // Physical - Self-reactive & Peroxides
-  'H240': ['P6a'], 'H241': ['P6a'],
-  'H242': ['P6b'],
+  'H240': ['P6a', 'ARIE-SELF-REACT-AB'], 'H241': ['P6a', 'ARIE-SELF-REACT-AB'],
+  'H242': ['P6b', 'ARIE-SELF-REACT-CDEF'],
 
   // Physical - Pyrophoric
-  'H250': ['P7'],
+  'H250': ['P7', 'ARIE-PYROPHORIC'],
 
   // Physical - Oxidizing
-  'H270': ['P4', 'ARIE-Ox-Gas-1'],
-  'H271': ['P8', 'ARIE-Ox-Vloeistof-1', 'ARIE-Ox-Vast-1'],
-  'H272': ['P8', 'ARIE-Ox-Vloeistof-1', 'ARIE-Ox-Vast-1'],
+  'H270': ['P4', 'ARIE-OXIDIZING'],
+  'H271': ['P8', 'ARIE-OXIDIZING'],
+  'H272': ['P8', 'ARIE-OXIDIZING'],
 
-  // Environment
+  // Environment (Not relevant for ARIE)
   'H400': ['E1'], 'H410': ['E1'],
   'H411': ['E2'],
 
   // Other - Water reactive
-  'EUH014': ['O1'], 'EUH029': ['O1'], 'EUH032': ['O1'],
-  'H260': ['O2'],
+  'EUH014': ['O1', 'ARIE-WATER-REACTIVE-TOX'], 'EUH029': ['O1', 'ARIE-WATER-REACTIVE-TOX'], 'EUH032': ['O1', 'ARIE-WATER-REACTIVE-TOX'],
+  'H260': ['O2', 'ARIE-WATER-REACTIVE-FLAM'],
   'H261': [],
   
   // Other - CMR
-  'H340': ['O3'], 'H350': ['O3'], 'H350i': ['O3'], 'H360': ['O3'], 'H360F': ['O3'], 'H360D': ['O3'], 'H360FD': ['O3'], 'H360Fd': ['O3'], 'H360Df': ['O3'],
+  'H340': ['O3', 'ARIE-CMR'], 'H350': ['O3', 'ARIE-CMR'], 'H350i': ['O3', 'ARIE-CMR'], 'H360': ['O3', 'ARIE-CMR'], 
+  'H360F': ['O3', 'ARIE-CMR'], 'H360D': ['O3', 'ARIE-CMR'], 'H360FD': ['O3', 'ARIE-CMR'], 'H360Fd': ['O3', 'ARIE-CMR'], 'H360Df': ['O3', 'ARIE-CMR'],
 };
 
 export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
@@ -306,7 +330,7 @@ export const calculateSummations = (inventory: Substance[], mode: ThresholdMode)
   const arieSummationGroups: SummationGroup[] = SUMMATION_GROUPS_CONFIG.map(config => ({
     ...config,
     totalRatio: arieGroupTotals[config.group] || 0,
-    isExceeded: false, 
+    isExceeded: false, // isExceeded is not relevant on a per-group basis for ARIE
   }));
 
   const totalArieRatio = Object.values(arieGroupTotals).reduce((sum, current) => sum + current, 0);
@@ -397,7 +421,7 @@ const generateArieReference = () => {
             });
         }
     }
-    return arieReferenceData.sort((a, b) => a.categoryId.localeCompare(b.categoryId));
+    return arieReferenceData.sort((a, b) => (a.categoryId).localeCompare(b.categoryId));
 }
 
 export const REFERENCE_GUIDE_DATA = generateSevesoReference();
