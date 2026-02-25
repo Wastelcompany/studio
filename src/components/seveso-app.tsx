@@ -331,6 +331,7 @@ export default function SevesoApp() {
         id: `sub-${Date.now()}-${Math.random()}`,
         quantity: 0
     };
+    setLocalInventory(prevInventory => [...prevInventory, substanceWithId]);
     addSubstanceToDb(db, selectedCompanyId, substanceWithId);
   };
   
