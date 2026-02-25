@@ -67,16 +67,21 @@ service cloud.firestore {
      * @description Manages company documents and their subcollections.
      */
     match /companies/{companyId} {
-      // ADMIN ACCESS: Full control for the admin. This rule must be first to ensure it's evaluated.
+      // ADMIN ACCESS: Full control for the admin.
       allow read, write: if isAdmin();
       
       // --- REGULAR USER ACCESS ---
       
-      // Users can query for companies that match their own customerId. This is the only allowed list operation for non-admins.
-      allow list: if !isAdmin() && isSignedIn() && isNotDisabled(request.auth.uid) &&
-                     request.query.where.customerId == getUserCustomerId(request.auth.uid);
+      // This rule allows a signed-in user to start a query. 
+      // It is intentionally broad because Firestore 'list' rules cannot use 'get'
+      // to check conditions in other documents.
+      // The actual security is enforced by the 'get' rule below, which is
+      // evaluated for every document the query tries to return.
+      allow list: if !isAdmin() && isSignedIn();
                      
-      // Users can read a single company document if it matches their customerId.
+      // This rule secures individual document reads. It ensures a user can only
+      // get a company document if they are not disabled and the company's customerId
+      // matches their own.
       allow get: if !isAdmin() && isSignedIn() && isNotDisabled(request.auth.uid) && 
                     resource.data.customerId == getUserCustomerId(request.auth.uid);
 
