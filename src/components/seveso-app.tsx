@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -12,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES } from '@/lib/seveso';
+import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, ARIE_THRESHOLDS } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
 import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc, useAuth } from '@/firebase';
 import { collection, query, where, doc } from 'firebase/firestore';
@@ -160,6 +161,13 @@ export default function SevesoApp() {
             }
         };
 
+        const checkPageBreak = (needed: number) => {
+          if (finalY + needed > pageHeight - 30) {
+            doc.addPage();
+            finalY = 20;
+          }
+        };
+
         doc.setFontSize(22);
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.setFont('helvetica', 'bold');
@@ -253,24 +261,21 @@ export default function SevesoApp() {
         const hZinDesc = "De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS) van elk product. Deze gegevens bepalen in welke 'gevarengroep' (Gezondheid, Fysisch of Milieu) een stof wordt ingedeeld.\n\nEen essentieel punt in deze analyse is dat de ARIE-regeling bepaalde gezondheidsgevaren strenger classificeert dan de Omgevingswet. Zo worden bijtende stoffen (H314) binnen de Arbo-wetgeving (ARIE) volledig meegerekend als een acuut gezondheidsgevaar voor werknemers, terwijl deze bij de huidige hoeveelheden binnen de Seveso-systematiek vaak buiten de gezondheidssommatie vallen.";
         const splitHZinDesc = doc.splitTextToSize(hZinDesc, pageWidth - (margin * 2));
         doc.text(splitHZinDesc, margin, finalY);
-        finalY += (splitHZinDesc.length * 5) + 2;
+        finalY += (splitHZinDesc.length * 5) + 6;
 
         // Sub 2.2
         doc.setFont('helvetica', 'bold');
         doc.text("2.2 De Sommatieregeling", margin, finalY);
         finalY += 4.5;
         doc.setFont('helvetica', 'normal');
-        const sommatieDesc = "Voor de uiteindelijke statusbepaling wordt de sommatieregel toegepast. Per gevarengroep wordt de aanwezige hoeveelheid van een stof vergeleken met de wettelijke drempelwaarde voor die categorie (de zogenaamde 'fractie').\n\nDe fracties van alle stoffen binnen één categorie worden bij elkaar opgeteld. Indien de som van deze fracties de waarde 1,0 (100%) bereikt of overschrijdt, is het betreffende wettelijke regime van kracht.";
+        const sommatieDesc = "Voor de uiteindelijke statusbepaling wordt de sommatieregel toegepast. Per gevarengroep wordt de aanwezige hoeveelheid van een stof vergeleken met de wettelijke drempelwaarde voor die categorie (de zogenaamde 'fractie').\n\nIndien de som van deze fracties de waarde 1,0 (100%) bereikt of overschrijdt, is het betreffende wettelijke regime van kracht.";
         const splitSommatieDesc = doc.splitTextToSize(sommatieDesc, pageWidth - (margin * 2));
         doc.text(splitSommatieDesc, margin, finalY);
         finalY += (splitSommatieDesc.length * 5) + 10;
 
-        if (finalY > pageHeight - 60) {
-            doc.addPage();
-            finalY = 20;
-        }
+        checkPageBreak(80);
 
-        doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("3. Resultaten", margin, finalY); finalY += 6;
+        doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("3. Resultaten per Gevarengroep", margin, finalY); finalY += 6;
         const isSevesoExceeded = stats.overallStatus !== 'Geen';
         
         if (includeArie) {
@@ -319,11 +324,94 @@ export default function SevesoApp() {
             finalY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, finalY, colWidth) + 6;
         }
 
-        doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("4. Conclusie", margin, finalY); finalY += 5;
-        const conclusieText = includeArie
-            ? `Op basis van de huidige inventarisatie is de inrichting ${isSevesoExceeded ? 'wel' : 'niet'} aan te merken als een Seveso-inrichting (${stats.overallStatus === 'Geen' ? 'geen drempels overschreden' : stats.overallStatus}). Tevens is de inrichting ${stats.arieExceeded ? 'wel' : 'niet'} ARIE-plichtig. De hoogste sommatiewaarde binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%.`
-            : `Op basis van de huidige inventarisatie is de inrichting ${isSevesoExceeded ? 'wel' : 'niet'} aan te merken als een Seveso-inrichting (${stats.overallStatus === 'Geen' ? 'geen drempels overschreden' : stats.overallStatus}).`;
-        const splitConclusie = doc.splitTextToSize(conclusieText, pageWidth - (margin * 2)); doc.text(splitConclusie, margin, finalY);
+        checkPageBreak(120);
+
+        // --- Section 6: Conclusies ---
+        doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("6. Conclusies", margin, finalY); finalY += 8;
+        
+        // 6.1 Seveso Conclusie
+        doc.setFontSize(10); doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]); doc.setFont('helvetica', 'bold'); doc.text("6.1 Uitgebreide Conclusie Seveso (Omgevingswet)", margin, finalY); finalY += 5;
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+        const sevesoMaxRatio = Math.max(...stats.summationGroups.map(g => g.totalRatio));
+        const marginValue = Math.max(0, 100 - Math.round(sevesoMaxRatio * 100));
+        
+        let sevesoConclusieText = "";
+        if (!isSevesoExceeded) {
+            sevesoConclusieText = `Op basis van de uitgevoerde inventarisatie en sommatie kan worden geconcludeerd dat ${selectedCompany.name || 'het bedrijf'} op de onderzochte locatie niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting binnen de categorie ${stats.criticalGroup || 'gevaren'} bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is voordat de ondergrens van het Besluit activiteiten leefomgeving (Bal) in beeld komt.\n\nVanuit het perspectief van de Omgevingswet wordt de locatie beschouwd als een reguliere inrichting. Er zijn geen aanvullende publiekrechtelijke verplichtingen van kracht met betrekking tot het voorkomen van zware ongevallen richting de omgeving. Deze status is echter een momentopname; bij structurele wijzigingen in de procesvoering of een significante toename van de opslagcapaciteit is een herberekening strikt noodzakelijk.`;
+        } else {
+            sevesoConclusieText = `Op basis van de huidige inventarisatie wordt de inrichting aangemerkt als een ${stats.overallStatus}-inrichting onder het Besluit activiteiten leefomgeving (Bal). De wettelijke drempelwaarde wordt in de gevarengroep ${stats.criticalGroup} overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%).\n\nDit betekent dat de inrichting onderworpen is aan de Seveso-III richtlijn en moet voldoen aan uitgebreide verplichtingen op het gebied van externe veiligheid en preventiebeleid voor zware ongevallen. Zie hoofdstuk 7 voor de specifieke vervolgstappen.`;
+        }
+        const splitSevesoConclusie = doc.splitTextToSize(sevesoConclusieText, pageWidth - (margin * 2));
+        doc.text(splitSevesoConclusie, margin, finalY);
+        finalY += (splitSevesoConclusie.length * 5) + 8;
+
+        // 6.2 ARIE Conclusie
+        if (includeArie) {
+            checkPageBreak(80);
+            doc.setFontSize(10); doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]); doc.setFont('helvetica', 'bold'); doc.text("6.2 Uitgebreide Conclusie ARIE (Arbo-wetgeving)", margin, finalY); finalY += 5;
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+            
+            let arieConclusieText = "";
+            if (!stats.arieExceeded) {
+                arieConclusieText = `De inrichting wordt op basis van de vigerende Arbo-wetgeving niet aangemerkt als ARIE-plichtig. De hoogste fractie binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%. De inrichting kan voor de arbeidsveiligheid volstaan met de reguliere Risico-Inventarisatie en -Evaluatie (RI&E).`;
+            } else {
+                // Find a relevant substance that contributes to the critical ARIE group for the text
+                const criticalArieGroupObj = stats.arieSummationGroups.find(g => g.name === stats.criticalArieGroup);
+                const contribSub = [...localInventory].sort((a, b) => {
+                    // Quick heuristic to find the top contributor to the ARIE status
+                    return b.quantity - a.quantity;
+                })[0];
+                const subName = contribSub?.productName || 'gevaarlijke stoffen';
+
+                arieConclusieText = `De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Met een gecumuleerde fractie van ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%) in de gevarengroep ${stats.criticalArieGroup} wordt de wettelijke drempelwaarde overschreden. De analyse wijst uit dat deze status direct herleidbaar is naar de aanwezigheid van stoffen zoals ${subName}.\n\nOmdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen acute gevaren op de werkvloer, weegt de wetgever bepaalde eigenschappen (zoals bijtendheid H314) zwaarder dan in de Seveso-systematiek. Deze overschrijding impliceert dat de standaard Arbo-RI&E niet langer volstaat en dat ${selectedCompany.name || 'het bedrijf'} wettelijk verplicht is aanvullende beheersmaatregelen te implementeren.`;
+            }
+            const splitArieConclusie = doc.splitTextToSize(arieConclusieText, pageWidth - (margin * 2));
+            doc.text(splitArieConclusie, margin, finalY);
+            finalY += (splitArieConclusie.length * 5) + 12;
+        }
+
+        // --- Section 7: Wettelijke Vervolgstappen ---
+        if (isSevesoExceeded || stats.arieExceeded) {
+            checkPageBreak(120);
+            doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("7. Wettelijke Vervolgstappen", margin, finalY); finalY += 8;
+            doc.setFontSize(9.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
+            doc.text("Naar aanleiding van de bovenstaande conclusies dient de inrichting rekening te houden met de volgende juridische en organisatorische vervolgstappen.", margin, finalY);
+            finalY += 10;
+
+            if (isSevesoExceeded) {
+                doc.setFont('helvetica', 'bold'); doc.text("7.1 Seveso: Verplichtingen bij overschrijding van de drempelwaarden", margin, finalY); finalY += 6;
+                doc.setFont('helvetica', 'normal');
+                const steps = [
+                    "Kennisgeving: De inrichting moet onverwijld een formele kennisgeving van de Seveso-status indienen bij het bevoegd gezag (de Omgevingsdienst) en de Veiligheidsregio via het Omgevingsloket.",
+                    "Veiligheidsbeheerssysteem (VBS): De exploitant dient een integraal VBS te implementeren dat voldoet aan de eisen van bijlage III van de Seveso-III richtlijn.",
+                    "Dominosituatie-onderzoek: Er moet worden onderzocht of de inrichting deel uitmaakt van een dominosituatie, waarbij incidenten effect kunnen hebben op naburige risicobedrijven.",
+                    stats.overallStatus === 'Hogedrempel' ? "Veiligheidsrapport (Hogedrempel): Het opstellen van een gedetailleerd Veiligheidsrapport (VR) is verplicht, inclusief kwantitatieve risicoanalyses (QRA)." : "PBZO-document (Lagedrempel): Het opstellen van een document waarin het Preventiebeleid Zware Ongevallen is vastgelegd."
+                ];
+                steps.forEach(step => {
+                    const splitStep = doc.splitTextToSize(`• ${step}`, pageWidth - (margin * 2) - 5);
+                    doc.text(splitStep, margin + 5, finalY);
+                    finalY += (splitStep.length * 5) + 2;
+                });
+                finalY += 6;
+            }
+
+            if (stats.arieExceeded) {
+                checkPageBreak(60);
+                doc.setFont('helvetica', 'bold'); doc.text("7.2 ARIE-plicht: Actuele actiepunten", margin, finalY); finalY += 6;
+                doc.setFont('helvetica', 'normal');
+                const arieSteps = [
+                    "Melding NLA: De inrichting moet de status als ARIE-bedrijf formeel en schriftelijk melden bij de Nederlandse Arbeidsinspectie (NLA).",
+                    "Aanvullende RI&E (ARIE-RI&E): Er moet per direct een verdieping van de RI&E worden uitgevoerd waarbij specifieke scenario's voor zware ongevallen zijn onderbouwd.",
+                    "Preventiebeleid Zware Ongevallen (PBZO): De directie moet een PBZO-document opstellen waarin de doelstellingen voor het voorkomen van zware ongevallen zijn vastgelegd.",
+                    "Informatie en Instructie: Werknemers moeten aantoonbaar worden geïnformeerd over de specifieke gevaren en getraind worden in noodprocedures."
+                ];
+                arieSteps.forEach(step => {
+                    const splitStep = doc.splitTextToSize(`• ${step}`, pageWidth - (margin * 2) - 5);
+                    doc.text(splitStep, margin + 5, finalY);
+                    finalY += (splitStep.length * 5) + 2;
+                });
+            }
+        }
 
         doc.addPage();
         let invY = 20; doc.setFontSize(16); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("Volledige Inventaris", margin, invY); invY += 8;
