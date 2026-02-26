@@ -15,6 +15,7 @@ export interface NamedSubstance extends HazardCategory {
     low: number;
     high: number;
   };
+  arieThreshold?: number;
 }
 
 export interface Company {

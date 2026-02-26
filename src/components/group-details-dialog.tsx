@@ -38,28 +38,53 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
         let contribution = 0;
         
         if (type === 'seveso') {
+            let isAppliedAsNamed = false;
             substance.sevesoCategoryIds.forEach(catId => {
-              const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-              if (category && category.group === group.group) {
-                const thresholdInfo = SEVESO_THRESHOLDS[catId] || (category as any)?.threshold;
-                if (thresholdInfo) {
-                  const threshold = thresholdInfo[mode];
-                  if (threshold > 0 && substance.quantity > 0) {
+              const namedSub = Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+              if (namedSub && namedSub.group === group.group) {
+                const threshold = namedSub.threshold[mode];
+                if (threshold > 0 && substance.quantity > 0) {
                     contribution += substance.quantity / threshold;
-                  }
+                    isAppliedAsNamed = true;
                 }
               }
             });
-        } else { // ARIE
-            substance.arieCategoryIds.forEach(catId => {
-                const category = ALL_CATEGORIES[catId];
-                if (category && category.group === group.group) {
-                    const threshold = ARIE_THRESHOLDS[catId];
+
+            if (!isAppliedAsNamed) {
+                substance.sevesoCategoryIds.forEach(catId => {
+                  const category = ALL_CATEGORIES[catId];
+                  const thresholdInfo = SEVESO_THRESHOLDS[catId];
+                  if (category && category.group === group.group && thresholdInfo) {
+                    const threshold = thresholdInfo[mode];
                     if (threshold > 0 && substance.quantity > 0) {
-                        contribution += substance.quantity / threshold;
+                      contribution += substance.quantity / threshold;
                     }
-                }
+                  }
+                });
+            }
+        } else { // ARIE
+            let isAppliedAsNamed = false;
+            substance.arieCategoryIds.forEach(catId => {
+              const namedSub = Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+              if (namedSub && namedSub.group === group.group && namedSub.arieThreshold !== undefined) {
+                  if (namedSub.arieThreshold > 0 && substance.quantity > 0) {
+                      contribution += substance.quantity / namedSub.arieThreshold;
+                      isAppliedAsNamed = true;
+                  }
+              }
             });
+
+            if (!isAppliedAsNamed) {
+                substance.arieCategoryIds.forEach(catId => {
+                    const category = ALL_CATEGORIES[catId];
+                    if (category && category.group === group.group) {
+                        const threshold = ARIE_THRESHOLDS[catId];
+                        if (threshold > 0 && substance.quantity > 0) {
+                            contribution += substance.quantity / threshold;
+                        }
+                    }
+                });
+            }
         }
 
         return {

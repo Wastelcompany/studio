@@ -35,12 +35,12 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
           </DialogDescription>
         </DialogHeader>
         <div className="text-sm text-muted-foreground mt-4 space-y-2">
-            <p>De beoordeling is gebaseerd op de Seveso III-richtlijn (2012/18/EU) en de ARIE-regeling. Elke gevarenaanduiding (H-zin) wordt gekoppeld aan een specifieke gevarencategorie. De totale hoeveelheid van stoffen binnen dezelfde categorie wordt opgeteld en vergeleken met de wettelijke drempelwaarden.</p>
+            <p>De beoordeling is gebaseerd op de Seveso III-richtlijn (2012/18/EU) en de ARIE-regeling. Elke gevarenaanduiding (H-zin) wordt gekoppeld aan een specifieke gevarencategorie of een benoemde stof. De totale hoeveelheid van stoffen binnen dezelfde groep wordt opgeteld en vergeleken met de wettelijke drempelwaarden.</p>
         </div>
         <Tabs defaultValue="seveso-cats" className="mt-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="seveso-cats">Seveso Categorieën</TabsTrigger>
-            <TabsTrigger value="seveso-named">Seveso Benoemd</TabsTrigger>
+            <TabsTrigger value="seveso-named">Benoemde Stoffen</TabsTrigger>
             <TabsTrigger value="arie">ARIE Koppelingen</TabsTrigger>
           </TabsList>
           
@@ -51,7 +51,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                     <TableRow>
                     <TableHead>Seveso Categorie</TableHead>
                     <TableHead>Omschrijving</TableHead>
-                    <TableHead>Gerelateerde H-Zin(nen)</TableHead>
+                    <TableHead>H-Zin(nen)</TableHead>
                     <TableHead className="text-right">Lage Drempel (ton)</TableHead>
                     <TableHead className="text-right">Hoge Drempel (ton)</TableHead>
                     </TableRow>
@@ -77,20 +77,20 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                 <TableHeader className="sticky top-0 bg-background">
                     <TableRow>
                     <TableHead>Stofnaam</TableHead>
-                    <TableHead>Type</TableHead>
                     <TableHead>CAS Nummer</TableHead>
-                    <TableHead className="text-right">Lage Drempel (ton)</TableHead>
-                    <TableHead className="text-right">Hoge Drempel (ton)</TableHead>
+                    <TableHead className="text-right">Seveso Laag (t)</TableHead>
+                    <TableHead className="text-right">Seveso Hoog (t)</TableHead>
+                    <TableHead className="text-right">ARIE (t)</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {(SEVESO_NAMED_REFERENCE || []).map(({ categoryId, categoryName, hPhrase, low, high }) => (
-                    <TableRow key={categoryId}>
-                        <TableCell className="font-medium">{categoryId}</TableCell>
-                        <TableCell>{categoryName}</TableCell>
-                        <TableCell className="text-muted-foreground">{hPhrase}</TableCell>
-                        <TableCell className="text-right font-mono">{low.toLocaleString('nl-NL')}</TableCell>
-                        <TableCell className="text-right font-mono">{high.toLocaleString('nl-NL')}</TableCell>
+                    {(SEVESO_NAMED_REFERENCE || []).map((sub) => (
+                    <TableRow key={sub.categoryId}>
+                        <TableCell className="font-medium">{sub.categoryId}</TableCell>
+                        <TableCell className="text-muted-foreground">{sub.hPhrase.replace('CAS: ', '')}</TableCell>
+                        <TableCell className="text-right font-mono">{sub.low.toLocaleString('nl-NL')}</TableCell>
+                        <TableCell className="text-right font-mono">{sub.high.toLocaleString('nl-NL')}</TableCell>
+                        <TableCell className="text-right font-mono font-bold text-primary">{sub.arie ? sub.arie.toLocaleString('nl-NL') : '-'}</TableCell>
                     </TableRow>
                     ))}
                 </TableBody>
@@ -105,8 +105,8 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                     <TableRow>
                     <TableHead>ARIE Categorie</TableHead>
                     <TableHead>Omschrijving</TableHead>
-                    <TableHead>Gerelateerde H-Zin(nen)</TableHead>
-                    <TableHead className="text-right">Drempelwaarde (ton)</TableHead>
+                    <TableHead>H-Zin(nen)</TableHead>
+                    <TableHead className="text-right">Drempel (ton)</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
