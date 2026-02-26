@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useCollection, useMemoFirebase, useFirestore, useAuth } from '@/firebase';
 import { collection } from 'firebase/firestore';
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Users, UserCog, Pencil, UserX, UserCheck, Trash2, Building2, Search, X } from "lucide-react";
+import { Loader2, LogOut, Users, UserCog, Pencil, UserX, UserCheck, Trash2, Building2, Search, X, Briefcase, Plus, MapPin, Hash } from "lucide-react";
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,7 +22,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -36,7 +35,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { toggleUserDisabledStatus, updateUserGroup, deleteUserAndData } from '@/lib/admin';
+import { toggleUserDisabledStatus, updateUserGroup, deleteUserAndData, createCompanyFromKvk, renameCustomerGroup } from '@/lib/admin';
 import { deleteCompanyFromDb } from '@/lib/companies';
 import {
   Tooltip,
@@ -45,6 +44,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { getShortId } from '@/lib/utils';
+import { kvkSearch, type KvkSearchOutput } from '@/ai/flows/kvk-search-flow';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -56,14 +56,27 @@ export default function AdminPage() {
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
   const [isDeleteUserDialogOpen, setIsDeleteUserDialogOpen] = useState(false);
   const [isDeleteCompanyDialogOpen, setIsDeleteCompanyDialogOpen] = useState(false);
+  const [isKvkDialogOpen, setIsKvkDialogOpen] = useState(false);
+  const [isRenameGroupDialogOpen, setIsRenameGroupDialogOpen] = useState(false);
+
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+
   const [newGroupName, setNewGroupName] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   
+  // KVK Search State
+  const [kvkQuery, setKvkQuery] = useState('');
+  const [isSearchingKvk, setIsSearchingKvk] = useState(false);
+  const [kvkResults, setKvkResults] = useState<KvkSearchOutput['results']>([]);
+  const [selectedKvkResult, setSelectedKvkResult] = useState<KvkSearchOutput['results'][0] | null>(null);
+  const [targetCustomerId, setTargetCustomerId] = useState('');
+
   // Per-column filters
   const [userFilters, setUserFilters] = useState({ email: "", group: "", status: "" });
   const [companyFilters, setCompanyFilters] = useState({ name: "", group: "", owner: "" });
+  const [customerFilters, setCustomerFilters] = useState({ name: "", users: "", companies: "" });
 
   const isAdmin = user?.email === 'post@wastelcompany.eu';
 
@@ -80,6 +93,26 @@ export default function AdminPage() {
   const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
   const { data: companies, isLoading: isLoadingCompanies } = useCollection<Company>(companiesQuery);
 
+  const customerGroups = useMemo(() => {
+    if (!users) return [];
+    const groups: Record<string, { id: string, name: string, userCount: number, companyCount: number }> = {};
+    
+    users.forEach(u => {
+      if (!groups[u.customerId]) {
+        groups[u.customerId] = { id: u.customerId, name: u.customerName || 'Geen naam', userCount: 0, companyCount: 0 };
+      }
+      groups[u.customerId].userCount++;
+    });
+
+    companies?.forEach(c => {
+      if (groups[c.customerId]) {
+        groups[c.customerId].companyCount++;
+      }
+    });
+
+    return Object.values(groups);
+  }, [users, companies]);
+
   const handleLogout = () => {
     signOut(auth).then(() => {
         router.push('/');
@@ -90,6 +123,12 @@ export default function AdminPage() {
     setSelectedUser(user);
     setNewGroupName(user.customerName || '');
     setIsGroupDialogOpen(true);
+  }
+
+  const handleOpenRenameGroupDialog = (customerId: string, currentName: string) => {
+    setSelectedCustomerId(customerId);
+    setNewGroupName(currentName);
+    setIsRenameGroupDialogOpen(true);
   }
 
   const handleOpenDeleteUserDialog = (user: UserProfile) => {
@@ -137,6 +176,20 @@ export default function AdminPage() {
     }
   };
 
+  const handleRenameGroup = async () => {
+    if (!selectedCustomerId || !newGroupName.trim() || !db) return;
+    setIsUpdating(true);
+    try {
+      await renameCustomerGroup(db, selectedCustomerId, newGroupName.trim());
+      toast({ title: "Klantgroep hernoemd", description: `De groep is nu '${newGroupName.trim()}'.` });
+      setIsRenameGroupDialogOpen(false);
+    } catch (error) {
+      toast({ variant: 'destructive', title: "Fout", description: "Kon de groep niet hernoemen." });
+    } finally {
+      setIsUpdating(false);
+    }
+  }
+
   const handleDeleteUser = async () => {
     if (!selectedUser || !db) return;
     setIsUpdating(true);
@@ -173,6 +226,43 @@ export default function AdminPage() {
     }
   }
 
+  const handleKvkSearch = async () => {
+    if (!kvkQuery.trim()) return;
+    setIsSearchingKvk(true);
+    try {
+      const result = await kvkSearch({ query: kvkQuery });
+      setKvkResults(result.results);
+      if (result.results.length === 0) {
+        toast({ title: "Geen resultaten", description: "Geen bedrijven gevonden voor deze zoekopdracht." });
+      }
+    } catch (error) {
+      toast({ variant: 'destructive', title: "Zoekfout", description: "Kon niet zoeken in KVK register." });
+    } finally {
+      setIsSearchingKvk(false);
+    }
+  };
+
+  const handleAddCompanyFromKvk = async () => {
+    if (!selectedKvkResult || !targetCustomerId || !db || !user) return;
+    setIsUpdating(true);
+    try {
+      await createCompanyFromKvk(db, user.uid, targetCustomerId, {
+        name: selectedKvkResult.name,
+        address: selectedKvkResult.address
+      });
+      toast({ title: "Bedrijf toegevoegd", description: `${selectedKvkResult.name} is geregistreerd.` });
+      setIsKvkDialogOpen(false);
+      // Reset
+      setKvkResults([]);
+      setSelectedKvkResult(null);
+      setKvkQuery('');
+    } catch (error) {
+      toast({ variant: 'destructive', title: "Fout", description: "Kon bedrijf niet toevoegen." });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const renderUsersTable = () => {
     const filteredUsers = (users || [])
       .filter(u => {
@@ -205,7 +295,7 @@ export default function AdminPage() {
             </div>
             <ScrollArea className="h-[500px]">
                 <Table>
-                    <TableHeader className="bg-muted/30">
+                    <TableHeader className="bg-muted/30 sticky top-0 z-10">
                         <TableRow>
                             <TableHead className="py-3">
                                 <div className="space-y-1">
@@ -351,10 +441,13 @@ export default function AdminPage() {
                         <X className="mr-2 h-3 w-3" /> Filters wissen
                     </Button>
                 )}
+                <Button onClick={() => setIsKvkDialogOpen(true)} className="gap-2">
+                  <Plus className="h-4 w-4" /> Nieuw bedrijf (KVK)
+                </Button>
             </div>
             <ScrollArea className="h-[500px]">
                 <Table>
-                    <TableHeader className="bg-muted/30">
+                    <TableHeader className="bg-muted/30 sticky top-0 z-10">
                         <TableRow>
                             <TableHead className="py-3">
                                 <div className="space-y-1">
@@ -412,7 +505,7 @@ export default function AdminPage() {
                                             {owner?.customerName || 'Onbekend'}
                                         </TableCell>
                                         <TableCell className="text-xs">
-                                            {owner?.email || 'N/A'}
+                                            {owner?.email || 'Admin / Onbekend'}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <TooltipProvider>
@@ -441,6 +534,99 @@ export default function AdminPage() {
                 </Table>
             </ScrollArea>
         </div>
+    );
+  };
+
+  const renderCustomersTable = () => {
+    const filteredCustomers = customerGroups
+      .filter(g => {
+        const matchName = !customerFilters.name || g.name.toLowerCase().includes(customerFilters.name.toLowerCase());
+        const matchUsers = !customerFilters.users || g.userCount.toString().includes(customerFilters.users);
+        const matchCompanies = !customerFilters.companies || g.companyCount.toString().includes(customerFilters.companies);
+        return matchName && matchUsers && matchCompanies;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const hasCustomerFilters = customerFilters.name || customerFilters.users || customerFilters.companies;
+
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center px-1">
+          <span className="text-sm text-muted-foreground">{filteredCustomers.length} resultaten</span>
+          {hasCustomerFilters && (
+            <Button variant="ghost" size="sm" onClick={() => setCustomerFilters({ name: "", users: "", companies: "" })} className="h-8 text-xs">
+              <X className="mr-2 h-3 w-3" /> Filters wissen
+            </Button>
+          )}
+        </div>
+        <ScrollArea className="h-[500px]">
+          <Table>
+            <TableHeader className="bg-muted/30 sticky top-0 z-10">
+              <TableRow>
+                <TableHead className="py-3">
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider">Klant / Groepsnaam</span>
+                    <Input 
+                      placeholder="Filter naam..." 
+                      value={customerFilters.name} 
+                      onChange={(e) => setCustomerFilters(prev => ({ ...prev, name: e.target.value }))}
+                      className="h-7 text-xs bg-background"
+                    />
+                  </div>
+                </TableHead>
+                <TableHead className="py-3">
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider">Gebruikers</span>
+                    <Input 
+                      placeholder="#" 
+                      value={customerFilters.users} 
+                      onChange={(e) => setCustomerFilters(prev => ({ ...prev, users: e.target.value }))}
+                      className="h-7 text-xs bg-background"
+                    />
+                  </div>
+                </TableHead>
+                <TableHead className="py-3">
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider">Bedrijven</span>
+                    <Input 
+                      placeholder="#" 
+                      value={customerFilters.companies} 
+                      onChange={(e) => setCustomerFilters(prev => ({ ...prev, companies: e.target.value }))}
+                      className="h-7 text-xs bg-background"
+                    />
+                  </div>
+                </TableHead>
+                <TableHead className="text-right py-3">
+                  <div className="h-7" />
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredCustomers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Geen klanten gevonden.</TableCell>
+                </TableRow>
+              ) : (
+                filteredCustomers.map((g) => (
+                  <TableRow key={g.id}>
+                    <TableCell className="font-medium">
+                      {g.name}
+                      <div className="text-[10px] text-muted-foreground font-mono">ID: {g.id}</div>
+                    </TableCell>
+                    <TableCell>{g.userCount}</TableCell>
+                    <TableCell>{g.companyCount}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenRenameGroupDialog(g.id, g.name)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </div>
     );
   };
 
@@ -490,9 +676,12 @@ export default function AdminPage() {
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+            <TabsList className="grid w-full grid-cols-3 max-w-[500px]">
                 <TabsTrigger value="users" className="flex items-center gap-2">
                     <Users className="h-4 w-4" /> Gebruikers
+                </TabsTrigger>
+                <TabsTrigger value="customers" className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" /> Klanten
                 </TabsTrigger>
                 <TabsTrigger value="companies" className="flex items-center gap-2">
                     <Building2 className="h-4 w-4" /> Bedrijven
@@ -507,6 +696,18 @@ export default function AdminPage() {
                     </CardHeader>
                     <CardContent>
                         {renderUsersTable()}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="customers" className="mt-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Klantgroepen</CardTitle>
+                        <CardDescription>Beheer en groepeer gebruikers onder één klantnaam.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {renderCustomersTable()}
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -551,6 +752,114 @@ export default function AdminPage() {
                     {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Opslaan
                 </Button>
             </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isRenameGroupDialogOpen} onOpenChange={setIsRenameGroupDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Groep Hernoemen</DialogTitle>
+                <DialogDescription>
+                    Pas de naam aan voor de volledige groep.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="rename-group" className="text-right">Nieuwe Naam</Label>
+                    <Input
+                        id="rename-group"
+                        value={newGroupName}
+                        onChange={(e) => setNewGroupName(e.target.value)}
+                        className="col-span-3"
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="secondary" onClick={() => setIsRenameGroupDialogOpen(false)}>Annuleren</Button>
+                <Button onClick={handleRenameGroup} disabled={isUpdating}>
+                    {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Hernoemen
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* KVK Search Dialog */}
+      <Dialog open={isKvkDialogOpen} onOpenChange={setIsKvkDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Nieuw Bedrijf Toevoegen (KVK)</DialogTitle>
+            <DialogDescription>
+              Zoek bedrijfsgegevens op via het KVK register en koppel deze aan een klantgroep.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="flex gap-2">
+              <div className="flex-grow relative">
+                <Input 
+                  placeholder="KVK nummer of bedrijfsnaam..." 
+                  value={kvkQuery}
+                  onChange={(e) => setKvkQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleKvkSearch()}
+                />
+              </div>
+              <Button onClick={handleKvkSearch} disabled={isSearchingKvk || !kvkQuery.trim()}>
+                {isSearchingKvk ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                <span className="ml-2">Zoek</span>
+              </Button>
+            </div>
+
+            {kvkResults.length > 0 && (
+              <div className="space-y-4">
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Zoekresultaten</Label>
+                <ScrollArea className="h-[200px] border rounded-md p-2">
+                  <div className="space-y-2">
+                    {kvkResults.map((result, idx) => (
+                      <div 
+                        key={idx} 
+                        onClick={() => setSelectedKvkResult(result)}
+                        className={`p-3 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${selectedKvkResult === result ? 'border-primary bg-primary/5 ring-1 ring-primary' : ''}`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="font-bold">{result.name}</div>
+                          <Badge variant="outline" className="font-mono">{result.kvkNumber}</Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <MapPin className="h-3 w-3" /> {result.address}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+
+            {selectedKvkResult && (
+              <div className="space-y-4 pt-4 border-t">
+                <div className="space-y-2">
+                  <Label>Koppel aan Klantgroep</Label>
+                  <select 
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    value={targetCustomerId}
+                    onChange={(e) => setTargetCustomerId(e.target.value)}
+                  >
+                    <option value="">Selecteer een groep...</option>
+                    {customerGroups.map(g => (
+                      <option key={g.id} value={g.id}>{g.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setIsKvkDialogOpen(false)}>Annuleren</Button>
+            <Button 
+              onClick={handleAddCompanyFromKvk} 
+              disabled={!selectedKvkResult || !targetCustomerId || isUpdating}
+            >
+              {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Bedrijf Toevoegen
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       

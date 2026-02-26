@@ -1,5 +1,5 @@
-import type { Firestore, UserProfile } from '@/lib/types';
-import { collection, doc, getDocs, query, updateDoc, where, writeBatch, deleteDoc } from 'firebase/firestore';
+import type { Firestore, UserProfile, Company } from '@/lib/types';
+import { collection, doc, getDocs, query, updateDoc, where, writeBatch, deleteDoc, Timestamp, addDoc } from 'firebase/firestore';
 
 /**
  * Toggles the disabled status of a user in Firestore.
@@ -48,7 +48,6 @@ export const updateUserGroup = async (db: Firestore, userToUpdate: UserProfile, 
     });
 
     // 3. Find all companies owned by this user and update their customerId.
-    // NEW STRATEGY: Query by the old customerId (which is allowed) and then filter by userId on the client.
     if (userToUpdate.customerId) {
         const userCompaniesQuery = query(companiesRef, where('customerId', '==', userToUpdate.customerId));
         const companiesSnapshot = await getDocs(userCompaniesQuery);
@@ -96,5 +95,37 @@ export const deleteUserAndData = async (db: Firestore, userToDelete: UserProfile
     batch.delete(userDocRef);
     
     // 4. Commit all deletions.
+    await batch.commit();
+};
+
+/**
+ * Creates a new company record from an Admin context (e.g. via KVK search).
+ */
+export const createCompanyFromKvk = async (db: Firestore, adminUid: string, customerId: string, companyInfo: { name: string, address: string }): Promise<void> => {
+    const companiesColRef = collection(db, 'companies');
+    await addDoc(companiesColRef, {
+        userId: adminUid, // Admin is the creator/owner initially
+        customerId: customerId,
+        name: companyInfo.name,
+        address: companyInfo.address,
+        createdAt: Timestamp.now(),
+    });
+};
+
+/**
+ * Renames a customer group for all entities associated with it.
+ */
+export const renameCustomerGroup = async (db: Firestore, customerId: string, newName: string): Promise<void> => {
+    const batch = writeBatch(db);
+    
+    // 1. Update all users in this customer group
+    const usersRef = collection(db, 'users');
+    const usersQuery = query(usersRef, where('customerId', '==', customerId));
+    const usersSnapshot = await getDocs(usersQuery);
+    usersSnapshot.forEach(userDoc => {
+        batch.update(userDoc.ref, { customerName: newName });
+    });
+    
+    // 2. Commit the changes
     await batch.commit();
 };
