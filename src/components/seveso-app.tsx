@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import CompanySelector from './company-selector';
+import CompanyDetails from './company-details';
 import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES, classifySubstance } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
 import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc, useAuth } from '@/firebase';
@@ -23,6 +23,7 @@ import { Loader2, UserX, LogOut, LayoutDashboard, Building2 } from 'lucide-react
 import { Button } from './ui/button';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from './ui/card';
+import CompanySelector from './company-selector';
 
 
 export default function SevesoApp() {
@@ -271,7 +272,7 @@ export default function SevesoApp() {
         let invY = 20; doc.setFontSize(16); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("Volledige Inventaris", margin, invY); invY += 8;
         
         const tableHead = includeArie ? [['Product / CAS', 'Seveso', 'ARIE', 'Voorraad']] : [['Product / CAS', 'Seveso', 'Voorraad']];
-        const tableData = localInventory.map(sub => {
+        const tableData = (localInventory || []).map(sub => {
             const sevesoCats = sub.sevesoCategoryIds.map(id => (ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))?.displayId || id).join(", ");
             let rowData: any[] = [
                 { content: sub.productName + (sub.casNumber ? `\n(${sub.casNumber})` : ''), styles: { fontStyle: 'bold' } },
@@ -395,7 +396,7 @@ export default function SevesoApp() {
             ["Productnaam", "CAS Nummer", "Seveso Categorieën", "ARIE Categorieën", "Voorraad (ton)", "H-zinnen"]
         ];
 
-        localInventory.forEach(sub => {
+        (localInventory || []).forEach(sub => {
             const sevesoCats = sub.sevesoCategoryIds.map(id => (ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))?.displayId || id).join(", ");
             const arieCats = sub.arieCategoryIds.map(id => ALL_CATEGORIES[id]?.displayId || id).join(", ");
             wsData.push([

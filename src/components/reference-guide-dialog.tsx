@@ -16,7 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from './ui/scroll-area';
-import { REFERENCE_GUIDE_DATA, ARIE_REFERENCE_GUIDE_DATA } from '@/lib/seveso';
+import { SEVESO_CATEGORY_REFERENCE, SEVESO_NAMED_REFERENCE, ARIE_REFERENCE_GUIDE_DATA } from '@/lib/seveso';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ReferenceGuideDialogProps {
@@ -37,12 +37,14 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
         <div className="text-sm text-muted-foreground mt-4 space-y-2">
             <p>De beoordeling is gebaseerd op de Seveso III-richtlijn (2012/18/EU) en de ARIE-regeling. Elke gevarenaanduiding (H-zin) wordt gekoppeld aan een specifieke gevarencategorie. De totale hoeveelheid van stoffen binnen dezelfde categorie wordt opgeteld en vergeleken met de wettelijke drempelwaarden.</p>
         </div>
-        <Tabs defaultValue="seveso" className="mt-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="seveso">Seveso Koppelingen</TabsTrigger>
+        <Tabs defaultValue="seveso-cats" className="mt-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="seveso-cats">Seveso Categorieën</TabsTrigger>
+            <TabsTrigger value="seveso-named">Seveso Benoemd</TabsTrigger>
             <TabsTrigger value="arie">ARIE Koppelingen</TabsTrigger>
           </TabsList>
-          <TabsContent value="seveso">
+          
+          <TabsContent value="seveso-cats">
             <ScrollArea className="h-[50vh] mt-2">
                 <Table>
                 <TableHeader className="sticky top-0 bg-background">
@@ -55,7 +57,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {REFERENCE_GUIDE_DATA.map(({ categoryId, categoryName, hPhrase, low, high }) => (
+                    {(SEVESO_CATEGORY_REFERENCE || []).map(({ categoryId, categoryName, hPhrase, low, high }) => (
                     <TableRow key={categoryId}>
                         <TableCell className="font-medium">{categoryId}</TableCell>
                         <TableCell>{categoryName}</TableCell>
@@ -68,6 +70,34 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                 </Table>
             </ScrollArea>
           </TabsContent>
+
+          <TabsContent value="seveso-named">
+            <ScrollArea className="h-[50vh] mt-2">
+                <Table>
+                <TableHeader className="sticky top-0 bg-background">
+                    <TableRow>
+                    <TableHead>Stofnaam</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>CAS Nummer</TableHead>
+                    <TableHead className="text-right">Lage Drempel (ton)</TableHead>
+                    <TableHead className="text-right">Hoge Drempel (ton)</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {(SEVESO_NAMED_REFERENCE || []).map(({ categoryId, categoryName, hPhrase, low, high }) => (
+                    <TableRow key={categoryId}>
+                        <TableCell className="font-medium">{categoryId}</TableCell>
+                        <TableCell>{categoryName}</TableCell>
+                        <TableCell className="text-muted-foreground">{hPhrase}</TableCell>
+                        <TableCell className="text-right font-mono">{low.toLocaleString('nl-NL')}</TableCell>
+                        <TableCell className="text-right font-mono">{high.toLocaleString('nl-NL')}</TableCell>
+                    </TableRow>
+                    ))}
+                </TableBody>
+                </Table>
+            </ScrollArea>
+          </TabsContent>
+
           <TabsContent value="arie">
              <ScrollArea className="h-[50vh] mt-2">
                 <Table>
@@ -80,7 +110,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {ARIE_REFERENCE_GUIDE_DATA.map(({ categoryId, categoryName, hPhrase, threshold }) => (
+                    {(ARIE_REFERENCE_GUIDE_DATA || []).map(({ categoryId, categoryName, hPhrase, threshold }) => (
                     <TableRow key={categoryId}>
                         <TableCell className="font-medium">{categoryId}</TableCell>
                         <TableCell>{categoryName}</TableCell>

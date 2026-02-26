@@ -36,6 +36,12 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { toggleUserDisabledStatus, updateUserGroup, deleteUserAndData } from '@/lib/admin';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export default function AdminPage() {
   const router = useRouter();
@@ -194,17 +200,46 @@ export default function AdminPage() {
                             </TableCell>
                             <TableCell className="text-right">
                               {u.email !== 'post@wastelcompany.eu' && (
-                                <>
-                                  <Button variant="ghost" size="icon" onClick={() => handleOpenGroupDialog(u)} disabled={isUpdating} title="Groep aanpassen">
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" onClick={() => handleToggleDisable(u)} disabled={isUpdating} title={u.disabled ? 'Activeren' : 'Deactiveren'}>
-                                      {u.disabled ? <UserCheck className="h-4 w-4 text-green-600" /> : <UserX className="h-4 w-4 text-destructive" />}
-                                  </Button>
-                                   <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(u)} disabled={isUpdating} title="Gebruikersdata verwijderen">
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </>
+                                <div className="flex justify-end gap-1">
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenGroupDialog(u)} disabled={isUpdating}>
+                                          <Pencil className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Groep aanpassen</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" onClick={() => handleToggleDisable(u)} disabled={isUpdating}>
+                                            {u.disabled ? <UserCheck className="h-4 w-4 text-green-600" /> : <UserX className="h-4 w-4 text-destructive" />}
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>{u.disabled ? 'Gebruiker activeren' : 'Gebruiker deactiveren'}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(u)} disabled={isUpdating}>
+                                          <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Gebruikersdata verwijderen</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
                               )}
                             </TableCell>
                         </TableRow>
