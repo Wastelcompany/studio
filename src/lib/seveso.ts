@@ -34,13 +34,10 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
 
   // ARIE Specific Categories
   H4: { id: 'H4', name: 'Veroorzaakt ernstige brandwonden en oogletsel (H314)', group: 'health', displayId: 'H4' },
-  'ARIE-P1a-sub3': { id: 'ARIE-P1a-sub3', name: 'Stoffen met explosieve eigenschappen (zonder 1.1-1.6)', group: 'physical', displayId: 'P1a (sub 3)' },
-  'ARIE-P6a-1': { id: 'ARIE-P6a-1', name: 'Zelfontledende stoffen (Type A/B)', group: 'physical', displayId: 'P6a' },
-  'ARIE-P6a-2': { id: 'ARIE-P6a-2', name: 'Organische peroxiden (Type A/B)', group: 'physical', displayId: 'P6a' },
-  'ARIE-O4': { id: 'ARIE-O4', name: 'Stoffen met EUH001', group: 'other', displayId: 'O4' },
+  'ARIE-O4': { id: 'ARIE-O4', name: 'O4', group: 'other', displayId: 'O4' },
 };
 
-// Seveso III Directive Annex I, Part 2: Named Substances
+// Seveso III Directive Annex I, Part 2: Named Substances (Volledige lijst)
 export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
   '6484-52-2': { id: 'Ammoniumnitraat-1', cas: '6484-52-2', name: 'Ammoniumnitraat (vrij van onzuiverheden)', group: 'named', threshold: { low: 5000, high: 10000 } },
   '7757-79-1': { id: 'Kaliumnitraat', cas: '7757-79-1', name: 'Kaliumnitraat (samengestelde meststof)', group: 'named', threshold: { low: 5000, high: 10000 } },
@@ -48,18 +45,40 @@ export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
   '1327-53-3': { id: 'Arseentrioxide', cas: '1327-53-3', name: 'Arseentrioxide, arseenigzuur (III) en zouten', group: 'named', threshold: { low: 0.1, high: 0.1 } },
   '7726-95-6': { id: 'Broom', cas: '7726-95-6', name: 'Broom', group: 'named', threshold: { low: 20, high: 100 } },
   '7782-50-5': { id: 'Chloor', cas: '7782-50-5', name: 'Chloor', group: 'named', threshold: { low: 10, high: 25 } },
+  '7782-41-4': { id: 'Fluor', cas: '7782-41-4', name: 'Fluor', group: 'named', threshold: { low: 10, high: 20 } },
+  '50-00-0': { id: 'Formaldehyde', cas: '50-00-0', name: 'Formaldehyde (conc. >= 90%)', group: 'named', threshold: { low: 5, high: 50 } },
+  '1333-74-0': { id: 'Waterstof', cas: '1333-74-0', name: 'Waterstof', group: 'named', threshold: { low: 5, high: 50 } },
+  '7647-01-0': { id: 'Waterstofchloride', cas: '7647-01-0', name: 'Waterstofchloride (vloeibaar gemaakt gas)', group: 'named', threshold: { low: 25, high: 250 } },
+  '74-86-2': { id: 'Acetyleen', cas: '74-86-2', name: 'Acetyleen', group: 'named', threshold: { low: 5, high: 50 } },
   '75-21-8': { id: 'Ethyleenoxide', cas: '75-21-8', name: 'Ethyleenoxide', group: 'named', threshold: { low: 5, high: 50 } },
   '75-56-9': { id: 'Propyleenoxide', cas: '75-56-9', name: 'Propyleenoxide', group: 'named', threshold: { low: 5, high: 50 } },
   '67-56-1': { id: 'Methanol', cas: '67-56-1', name: 'Methanol', group: 'named', threshold: { low: 500, high: 5000 } },
-  '50-00-0': { id: 'Formaldehyde', cas: '50-00-0', name: 'Formaldehyde (conc. >= 90%)', group: 'named', threshold: { low: 5, high: 50 } },
-  '1333-74-0': { id: 'Waterstof', cas: '1333-74-0', name: 'Waterstof', group: 'named', threshold: { low: 5, high: 50 } },
-  '7782-44-7': { id: 'Zuurstof', cas: '7782-44-7', name: 'Zuurstof', group: 'named', threshold: { low: 200, high: 2000 } },
+  '101-14-4': { id: 'MOCA', cas: '101-14-4', name: '4,4-Methyleen-bis(2-chlooraniline)', group: 'named', threshold: { low: 0.01, high: 0.01 } },
   '624-83-9': { id: 'Methylisocyanaat', cas: '624-83-9', name: 'Methylisocyanaat', group: 'named', threshold: { low: 0.15, high: 0.15 } },
+  '7782-44-7': { id: 'Zuurstof', cas: '7782-44-7', name: 'Zuurstof', group: 'named', threshold: { low: 200, high: 2000 } },
+  '26471-62-5': { id: 'TDI', cas: '26471-62-5', name: 'Tolueendiisocyanaat (2,4 en 2,6 mengsel)', group: 'named', threshold: { low: 10, high: 100 } },
+  '75-44-5': { id: 'Fosgeen', cas: '75-44-5', name: 'Carbonylchloride (fosgeen)', group: 'named', threshold: { low: 0.3, high: 0.75 } },
+  '7784-42-1': { id: 'Arsine', cas: '7784-42-1', name: 'Arsine (arseentrihydride)', group: 'named', threshold: { low: 0.2, high: 1 } },
+  '7803-51-2': { id: 'Fosfine', cas: '7803-51-2', name: 'Fosfine (fosfortrihydride)', group: 'named', threshold: { low: 0.2, high: 1 } },
+  '10545-99-0': { id: 'Zwaveldichloride', cas: '10545-99-0', name: 'Zwaveldichloride', group: 'named', threshold: { low: 1, high: 1 } },
+  '7446-11-9': { id: 'Zwaveltrioxide', cas: '7446-11-9', name: 'Zwaveltrioxide', group: 'named', threshold: { low: 15, high: 75 } },
+  '7664-41-7': { id: 'Ammoniak', cas: '7664-41-7', name: 'Ammoniak (watervrij)', group: 'named', threshold: { low: 50, high: 200 } },
+  '7637-07-2': { id: 'Boriumtrifluoride', cas: '7637-07-2', name: 'Boriumtrifluoride', group: 'named', threshold: { low: 5, high: 20 } },
+  '7783-06-4': { id: 'Waterstofsulfide', cas: '7783-06-4', name: 'Waterstofsulfide', group: 'named', threshold: { low: 5, high: 20 } },
+  '110-89-4': { id: 'Piperidine', cas: '110-89-4', name: 'Piperidine', group: 'named', threshold: { low: 50, high: 200 } },
   '10102-43-9': { id: 'Stikstofmonoxide', cas: '10102-43-9', name: 'Stikstofmonoxide', group: 'named', threshold: { low: 25, high: 25 } },
   '10102-44-0': { id: 'Stikstofdioxide', cas: '10102-44-0', name: 'Stikstofdioxide', group: 'named', threshold: { low: 1, high: 20 } },
   '7446-09-5': { id: 'Zwaveldioxide', cas: '7446-09-5', name: 'Zwaveldioxide', group: 'named', threshold: { low: 15, high: 75 } },
-  '7664-41-7': { id: 'Ammoniak', cas: '7664-41-7', name: 'Ammoniak (watervrij)', group: 'named', threshold: { low: 50, high: 200 } },
-  '110-17-8': { id: 'Acetyleen', cas: '74-86-2', name: 'Acetyleen', group: 'named', threshold: { low: 5, high: 50 } },
+  '3030-47-5': { id: 'B-DMAE-M-A', cas: '3030-47-5', name: 'Bis(2-dimethylaminoethyl)(methyl)amine', group: 'named', threshold: { low: 50, high: 200 } },
+  '5397-31-1': { id: 'E-H-O-P-A', cas: '5397-31-1', name: '3-(2-Ethylhexyloxy)propylamine', group: 'named', threshold: { low: 50, high: 200 } },
+  '1309-64-4': { id: 'Antimoontrioxide', cas: '1309-64-4', name: 'Antimoontrioxide', group: 'named', threshold: { low: 1, high: 1 } },
+  '1120-71-4': { id: '1-3-Propaansulton', cas: '1120-71-4', name: '1,3-Propaansulton', group: 'named', threshold: { low: 0.01, high: 0.01 } },
+  '96-33-3': { id: 'Methylacrylaat', cas: '96-33-3', name: 'Methylacrylaat', group: 'named', threshold: { low: 500, high: 2000 } },
+  '52-51-7': { id: 'Bronopol', cas: '52-51-7', name: '2-Bromo-2-nitropropaan-1,3-diol', group: 'named', threshold: { low: 10, high: 50 } },
+  '80-15-9': { id: 'Cumylhydroperoxide', cas: '80-15-9', name: 'alfa,alfa-Dimethylbenzylhydroperoxide', group: 'named', threshold: { low: 50, high: 200 } },
+  '77-73-6': { id: 'Dicyclopentadieen', cas: '77-73-6', name: 'Dicyclopentadieen', group: 'named', threshold: { low: 50, high: 200 } },
+  '106-93-4': { id: 'EDB', cas: '106-93-4', name: '1,2-Dibroomethaan', group: 'named', threshold: { low: 0.5, high: 2 } },
+  'PETROLEUM': { id: 'Petroleum-Producten', cas: 'PETROLEUM', name: 'Petroleumproducten en alternatieve brandstoffen', group: 'named', threshold: { low: 2500, high: 25000 } },
 };
 
 export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = {
@@ -75,8 +94,7 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
 
 export const ARIE_THRESHOLDS: Record<string, number> = {
   H1: 0.05, H2: 0.2, H3: 50, H4: 50,
-  P1a: 0.05, 'ARIE-P1a-sub3': 0.05, P1b: 1, P2: 5, P3a: 5, P3b: 50, P4: 5,
-  'ARIE-P6a-1': 0.05, 'ARIE-P6a-2': 0.05, P9: 50,
+  P1a: 0.05, P1b: 1, P2: 5, P3a: 5, P3b: 50, P4: 5, P9: 50,
   O1: 0.5, O2: 0.05, O3: 0.5, 'ARIE-O4': 0.05,
 };
 
@@ -84,27 +102,14 @@ export const H_PHRASE_MAPPING: Record<string, string[]> = {
   'H300': ['H1', 'H2'], 'H310': ['H1', 'H2'], 'H330': ['H1', 'H2'],
   'H331': ['H2'], 'H370': ['H3'], 'H314': ['H4'],
   'H200': ['P1a'], 'H201': ['P1a'], 'H202': ['P1a'], 'H203': ['P1a'], 'H205': ['P1a'],
-  'EUH001': ['ARIE-O4', 'ARIE-P1a-sub3'], 'H204': ['P1b'],
+  'EUH001': ['ARIE-O4'], 'H204': ['P1b'],
   'H220': ['P2'], 'H221': ['P2'], 'H222': ['P3a', 'P3b'], 'H223': ['P3a', 'P3b'],
   'H224': ['P5a'], 'H225': ['P5c'], 'H226': ['P5c'],
-  'H240': ['P6a', 'ARIE-P6a-1', 'ARIE-P6a-2'], 'H241': ['P6a', 'ARIE-P6a-1', 'ARIE-P6a-2'],
-  'H242': ['P6b'], 'H250': ['P7'], 'H251': ['P9'], 'H252': ['P9'],
+  'H240': ['P6a'], 'H241': ['P6a'], 'H242': ['P6b'], 
+  'H250': ['P7'], 'H251': ['P9'], 'H252': ['P9'],
   'H270': ['P4'], 'H271': ['P8'], 'H272': ['P8'],
   'H400': ['E1'], 'H410': ['E1'], 'H411': ['E2'],
   'EUH014': ['O1'], 'H260': ['O2'], 'EUH029': ['O3'],
-};
-
-export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
-  'H200': 'Ontplofbaar, gevaar voor massa-explosie',
-  'H220': 'Zeer licht ontvlambaar gas',
-  'H224': 'Zeer licht ontvlambare vloeistof en damp',
-  'H251': 'Zelfverhittend; kan brand veroorzaken',
-  'H252': 'In grote hoeveelheden zelfverhittend; kan brand veroorzaken',
-  'H300': 'Dodelijk bij inslikken',
-  'H314': 'Veroorzaakt ernstige brandwonden en oogletsel',
-  'H400': 'Zeer giftig voor in het water levende organismen',
-  'EUH001': 'In droge toestand ontplofbaar',
-  'EUH014': 'Reageert heftig met water',
 };
 
 export function classifySubstance(hStatements: string[], casNumber: string | null) {
@@ -142,21 +147,37 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
 
 export function calculateSummations(inventory: Substance[], mode: ThresholdMode) {
   const groups: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0, named: 0 };
-  const arieGroups: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0 };
+  const arieGroups: Record<string, number> = { health: 0, physical: 0, other: 0 };
   let arieTotal = 0;
 
   inventory.forEach(sub => {
     // SEVESO
+    // Check if it's a named substance first (highest priority according to Note 4)
+    let isAppliedAsNamed = false;
     sub.sevesoCategoryIds.forEach(catId => {
-      const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-      const thresholdInfo = SEVESO_THRESHOLDS[catId] || (category as any)?.threshold;
-      if (category && thresholdInfo) {
-        const threshold = thresholdInfo[mode];
-        if (threshold > 0) {
-          groups[category.group] += sub.quantity / threshold;
-        }
+      const namedSub = Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+      if (namedSub) {
+          const threshold = namedSub.threshold[mode];
+          if (threshold > 0) {
+              groups.named += sub.quantity / threshold;
+              isAppliedAsNamed = true;
+          }
       }
     });
+
+    // If NOT applied as named, apply generic categories
+    if (!isAppliedAsNamed) {
+        sub.sevesoCategoryIds.forEach(catId => {
+          const category = ALL_CATEGORIES[catId];
+          const thresholdInfo = SEVESO_THRESHOLDS[catId];
+          if (category && thresholdInfo) {
+            const threshold = thresholdInfo[mode];
+            if (threshold > 0) {
+              groups[category.group] += sub.quantity / threshold;
+            }
+          }
+        });
+    }
 
     // ARIE
     sub.arieCategoryIds.forEach(catId => {
@@ -191,7 +212,7 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
     overallStatus = mode === 'high' ? 'Hogedrempel' : 'Lagedrempel';
   }
 
-  const criticalGroup = summationGroups.sort((a, b) => b.totalRatio - a.totalRatio)[0]?.name;
+  const criticalGroup = [...summationGroups].sort((a, b) => b.totalRatio - a.totalRatio)[0]?.name;
 
   return { 
     summationGroups, 
@@ -205,7 +226,7 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
 
 export const SEVESO_CATEGORY_REFERENCE = Object.keys(SEVESO_THRESHOLDS).map(id => ({
   categoryId: id,
-  categoryName: ALL_CATEGORIES[id]?.name || 'Benoemde stof',
+  categoryName: ALL_CATEGORIES[id]?.name || 'Onbekend',
   hPhrase: Object.keys(H_PHRASE_MAPPING).filter(h => H_PHRASE_MAPPING[h].includes(id)).join(', '),
   low: SEVESO_THRESHOLDS[id].low,
   high: SEVESO_THRESHOLDS[id].high
