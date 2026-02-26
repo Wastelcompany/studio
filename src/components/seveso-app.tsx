@@ -244,9 +244,12 @@ export default function SevesoApp() {
         addSubHeader("1.1 De Seveso-richtlijn");
         addBodyText("De Seveso-III richtlijn is gericht op het voorkomen van zware ongevallen waarbij gevaarlijke stoffen betrokken zijn en het beperken van de gevolgen daarvan voor de mens en het milieu. De richtlijn onderscheidt lagedrempel- en hogedrempelinrichtingen.");
 
-        addSubHeader("1.2 De ARIE-regeling");
-        addBodyText("De regeling Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE) is verankerd in het Arbeidsomstandighedenbesluit en richt zich op de interne veiligheid en de bescherming van werknemers op de werkvloer tegen de gevolgen van zware ongevallen.");
+        if (includeArie) {
+          addSubHeader("1.2 De ARIE-regeling");
+          addBodyText("De regeling Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE) is verankerd in het Arbeidsomstandighedenbesluit en richt zich op de interne veiligheid en de bescherming van werknemers op de werkvloer tegen de gevolgen van zware ongevallen.");
+        }
 
+        finalY += 2;
         // --- 2. Beoordelingssystematiek ---
         addMainHeader("2. De Beoordelingssystematiek");
         addSubHeader("2.1 Indeling op basis van H-zinnen");
@@ -341,22 +344,26 @@ export default function SevesoApp() {
         const marginValue = Math.max(0, 100 - Math.round(sevesoMaxRatio * 100));
         
         if (!isSevesoExceeded) {
-            addBodyText(`Op basis van de inventarisatie kan worden geconcludeerd dat de inrichting niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is.`);
+            addBodyText(`Op basis van de inventarisatie kan worden geconcludeerd dat de inrichting momenteel niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is ten opzichte van de wettelijke drempelwaarden.`);
         } else {
-            addBodyText(`De inrichting wordt aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. De wettelijke drempelwaarde voor de gevarengroep ${stats.criticalGroup} wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%). Dit impliceert een verhoogd risicoprofiel en strikte wettelijke verplichtingen.`);
+            addBodyText(`De inrichting wordt aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. De wettelijke drempelwaarde voor de gevarengroep ${stats.criticalGroup} wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%). Dit impliceert een verhoogd risicoprofiel en brengt strikte wettelijke verplichtingen met zich mee voor de exploitant.`);
         }
 
-        finalY += 1;
-        addSubHeader("4.2 ARIE");
-        if (!stats.arieExceeded) {
-            addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving niet aangemerkt als ARIE-plichtig. De hoogste fractie binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%.`);
-        } else {
-            addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Met een gecumuleerde fractie van ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%) in de groep ${stats.criticalArieGroup} wordt de wettelijke drempelwaarde overschreden.`);
-            addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen de gevolgen van zware ongevallen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen en organisatorische acties wettelijk verplicht zijn.`);
+        if (includeArie) {
+          finalY += 1;
+          addSubHeader("4.2 ARIE");
+          if (!stats.arieExceeded) {
+              addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving momenteel niet aangemerkt als ARIE-plichtig. De hoogste fractie binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%.`);
+          } else {
+              addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Met een gecumuleerde fractie van ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%) in de groep ${stats.criticalArieGroup} wordt de wettelijke drempelwaarde overschreden.`);
+              addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen de gevolgen van zware ongevallen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen en organisatorische acties wettelijk verplicht zijn om de arbeidsveiligheid te borgen.`);
+          }
         }
 
         // --- 5. Wettelijke Vervolgstappen ---
-        if (isSevesoExceeded || stats.arieExceeded) {
+        if (isSevesoExceeded || (includeArie && stats.arieExceeded)) {
+            doc.addPage();
+            finalY = 20;
             addMainHeader(`5. Wettelijke Vervolgstappen`);
             
             let currentStepIdx = 1;
@@ -365,7 +372,7 @@ export default function SevesoApp() {
                 addSubHeader(`5.${currentStepIdx} Seveso: Verplichtingen`);
                 const steps = [
                     "Kennisgeving: De inrichting moet een formele kennisgeving indienen bij de relevante overheidinstanties.",
-                    "Veiligheidsbeheerssysteem (VBS): De exploitant dient een integraal VBS te implementeren.",
+                    "Veiligheidsbeheerssysteem (VBS): De exploitant dient een integraal VBS te implementeren conform de richtlijn.",
                     "Dominosituatie-onderzoek: Onderzoek of de inrichting deel uitmaakt van een dominosituatie met buurbedrijven.",
                     stats.overallStatus === 'Hogedrempel' 
                         ? "Veiligheidsrapport: Bij overschrijding van de hogedrempelwaarde is een uitgebreid Veiligheidsrapport (VR) verplicht." 
@@ -383,7 +390,7 @@ export default function SevesoApp() {
                 currentStepIdx++;
             }
 
-            if (stats.arieExceeded) {
+            if (includeArie && stats.arieExceeded) {
                 addSubHeader(`5.${currentStepIdx} ARIE-plicht: Actiepunten`);
                 const arieSteps = [
                     "Melding NLA: De inrichting moet de status als ARIE-bedrijf melden bij de Nederlandse Arbeidsinspectie.",
