@@ -33,20 +33,33 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   O3: { id: 'O3', name: 'Stoffen met gevarenaanduiding EUH029', group: 'other' },
 
   // ARIE Specific Categories
-  H4: { id: 'H4', name: 'Huidcorrosie, categorie 1A, 1B of 1C (H314)', group: 'health', displayId: 'H4' },
+  H4: { id: 'H4', name: 'Veroorzaakt ernstige brandwonden en oogletsel (H314)', group: 'health', displayId: 'H4' },
   'ARIE-P1a-sub3': { id: 'ARIE-P1a-sub3', name: 'Stoffen met explosieve eigenschappen (zonder 1.1-1.6)', group: 'physical', displayId: 'P1a (sub 3)' },
   'ARIE-P6a-1': { id: 'ARIE-P6a-1', name: 'Zelfontledende stoffen (Type A/B)', group: 'physical', displayId: 'P6a' },
   'ARIE-P6a-2': { id: 'ARIE-P6a-2', name: 'Organische peroxiden (Type A/B)', group: 'physical', displayId: 'P6a' },
   'ARIE-O4': { id: 'ARIE-O4', name: 'Stoffen met EUH001', group: 'other', displayId: 'O4' },
 };
 
+// Seveso III Directive Annex I, Part 2: Named Substances
 export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
-  '67-56-1': { id: 'Methanol', cas: '67-56-1', name: 'Methanol', group: 'named', threshold: { low: 500, high: 5000 } },
-  '1333-74-0': { id: 'Waterstof', cas: '1333-74-0', name: 'Waterstof', group: 'named', threshold: { low: 5, high: 50 } },
-  '7782-44-7': { id: 'Zuurstof', cas: '7782-44-7', name: 'Zuurstof', group: 'named', threshold: { low: 200, high: 2000 } },
+  '6484-52-2': { id: 'Ammoniumnitraat-1', cas: '6484-52-2', name: 'Ammoniumnitraat (vrij van onzuiverheden)', group: 'named', threshold: { low: 5000, high: 10000 } },
+  '7757-79-1': { id: 'Kaliumnitraat', cas: '7757-79-1', name: 'Kaliumnitraat (samengestelde meststof)', group: 'named', threshold: { low: 5000, high: 10000 } },
+  '1303-28-2': { id: 'Arseenpentoxide', cas: '1303-28-2', name: 'Arseenpentoxide, arseenzuur (V) en zouten', group: 'named', threshold: { low: 1, high: 2 } },
+  '1327-53-3': { id: 'Arseentrioxide', cas: '1327-53-3', name: 'Arseentrioxide, arseenigzuur (III) en zouten', group: 'named', threshold: { low: 0.1, high: 0.1 } },
+  '7726-95-6': { id: 'Broom', cas: '7726-95-6', name: 'Broom', group: 'named', threshold: { low: 20, high: 100 } },
   '7782-50-5': { id: 'Chloor', cas: '7782-50-5', name: 'Chloor', group: 'named', threshold: { low: 10, high: 25 } },
   '75-21-8': { id: 'Ethyleenoxide', cas: '75-21-8', name: 'Ethyleenoxide', group: 'named', threshold: { low: 5, high: 50 } },
   '75-56-9': { id: 'Propyleenoxide', cas: '75-56-9', name: 'Propyleenoxide', group: 'named', threshold: { low: 5, high: 50 } },
+  '67-56-1': { id: 'Methanol', cas: '67-56-1', name: 'Methanol', group: 'named', threshold: { low: 500, high: 5000 } },
+  '50-00-0': { id: 'Formaldehyde', cas: '50-00-0', name: 'Formaldehyde (conc. >= 90%)', group: 'named', threshold: { low: 5, high: 50 } },
+  '1333-74-0': { id: 'Waterstof', cas: '1333-74-0', name: 'Waterstof', group: 'named', threshold: { low: 5, high: 50 } },
+  '7782-44-7': { id: 'Zuurstof', cas: '7782-44-7', name: 'Zuurstof', group: 'named', threshold: { low: 200, high: 2000 } },
+  '624-83-9': { id: 'Methylisocyanaat', cas: '624-83-9', name: 'Methylisocyanaat', group: 'named', threshold: { low: 0.15, high: 0.15 } },
+  '10102-43-9': { id: 'Stikstofmonoxide', cas: '10102-43-9', name: 'Stikstofmonoxide', group: 'named', threshold: { low: 25, high: 25 } },
+  '10102-44-0': { id: 'Stikstofdioxide', cas: '10102-44-0', name: 'Stikstofdioxide', group: 'named', threshold: { low: 1, high: 20 } },
+  '7446-09-5': { id: 'Zwaveldioxide', cas: '7446-09-5', name: 'Zwaveldioxide', group: 'named', threshold: { low: 15, high: 75 } },
+  '7664-41-7': { id: 'Ammoniak', cas: '7664-41-7', name: 'Ammoniak (watervrij)', group: 'named', threshold: { low: 50, high: 200 } },
+  '110-17-8': { id: 'Acetyleen', cas: '74-86-2', name: 'Acetyleen', group: 'named', threshold: { low: 5, high: 50 } },
 };
 
 export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = {
@@ -57,11 +70,11 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   P6a: { low: 10, high: 50 }, P6b: { low: 50, high: 200 }, P7: { low: 50, high: 200 }, P8: { low: 50, high: 200 },
   P9: { low: 50, high: 200 },
   E1: { low: 100, high: 200 }, E2: { low: 200, high: 500 },
-  O1: { low: 100, high: 500 }, O2: { low: 100, high: 500 }, O3: { low: 50, high: 200 },
+  O1: { low: 100, high: 500 }, O2: { low: 10, high: 50 }, O3: { low: 50, high: 200 },
 };
 
 export const ARIE_THRESHOLDS: Record<string, number> = {
-  H1: 0.05, H2: 0.2, H3: 1, H4: 50,
+  H1: 0.05, H2: 0.2, H3: 50, H4: 50,
   P1a: 0.05, 'ARIE-P1a-sub3': 0.05, P1b: 1, P2: 5, P3a: 5, P3b: 50, P4: 5,
   'ARIE-P6a-1': 0.05, 'ARIE-P6a-2': 0.05, P9: 50,
   O1: 0.5, O2: 0.05, O3: 0.5, 'ARIE-O4': 0.05,
@@ -89,7 +102,6 @@ export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
   'H252': 'In grote hoeveelheden zelfverhittend; kan brand veroorzaken',
   'H300': 'Dodelijk bij inslikken',
   'H314': 'Veroorzaakt ernstige brandwonden en oogletsel',
-  'H350': 'Kan kanker veroorzaken',
   'H400': 'Zeer giftig voor in het water levende organismen',
   'EUH001': 'In droge toestand ontplofbaar',
   'EUH014': 'Reageert heftig met water',
@@ -115,7 +127,6 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
         arieCategoryIds.add(catId);
       } else {
         sevesoCategoryIds.add(catId);
-        // Map Seveso categories to ARIE equivalent if exists
         if (ARIE_THRESHOLDS[catId]) arieCategoryIds.add(catId);
       }
     });
@@ -131,25 +142,31 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
 
 export function calculateSummations(inventory: Substance[], mode: ThresholdMode) {
   const groups: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0, named: 0 };
-  const arieGroups: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0, named: 0 };
+  const arieGroups: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0 };
   let arieTotal = 0;
 
   inventory.forEach(sub => {
+    // SEVESO
     sub.sevesoCategoryIds.forEach(catId => {
       const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
       const thresholdInfo = SEVESO_THRESHOLDS[catId] || (category as any)?.threshold;
       if (category && thresholdInfo) {
         const threshold = thresholdInfo[mode];
-        if (threshold > 0) groups[category.group] += sub.quantity / threshold;
+        if (threshold > 0) {
+          groups[category.group] += sub.quantity / threshold;
+        }
       }
     });
 
+    // ARIE
     sub.arieCategoryIds.forEach(catId => {
       const category = ALL_CATEGORIES[catId];
       const threshold = ARIE_THRESHOLDS[catId];
       if (category && threshold > 0) {
         const ratio = sub.quantity / threshold;
-        arieGroups[category.group] += ratio;
+        if (arieGroups[category.group] !== undefined) {
+          arieGroups[category.group] += ratio;
+        }
         arieTotal += ratio;
       }
     });
@@ -200,7 +217,7 @@ export const SEVESO_NAMED_REFERENCE = Object.values(NAMED_SUBSTANCES).map(sub =>
   hPhrase: `CAS: ${sub.cas}`,
   low: sub.threshold.low,
   high: sub.threshold.high
-}));
+})).sort((a, b) => a.categoryId.localeCompare(b.categoryId));
 
 export const ARIE_REFERENCE_GUIDE_DATA = Object.keys(ARIE_THRESHOLDS).map(id => ({
   categoryId: ALL_CATEGORIES[id]?.displayId || id,
