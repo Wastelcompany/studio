@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { Button } from "@/components/ui/button";
-import { Upload, FileDown, Trash2, Info, FileUp, Loader2, ChevronDown, LogOut } from 'lucide-react';
+import { Upload, FileDown, Trash2, Info, FileUp, Loader2, ChevronDown, LogOut, FileText } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,7 @@ interface SevesoHeaderProps {
   onShowReference: () => void;
   onImport: (type: 'json' | 'excel') => void;
   onExport: (type: 'json' | 'excel') => void;
-  onSaveAsPdf: () => void;
+  onSaveAsPdf: (type: 'full' | 'seveso') => void;
   isSavingPdf: boolean;
   disabled: boolean;
 }
@@ -74,15 +74,29 @@ export default function SevesoHeader({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button 
-          variant="outline" 
-          onClick={onSaveAsPdf} 
-          disabled={disabled || isSavingPdf}
-          className="gap-2"
-        >
-          {isSavingPdf ? <Loader2 className="animate-spin h-4 w-4" /> : <FileDown className="h-4 w-4" />}
-          Opslaan rapportage
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="outline" 
+              disabled={disabled || isSavingPdf}
+              className="gap-2"
+            >
+              {isSavingPdf ? <Loader2 className="animate-spin h-4 w-4" /> : <FileDown className="h-4 w-4" />}
+              Opslaan rapportage
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem onClick={() => onSaveAsPdf('full')} className="gap-2">
+              <FileText className="h-4 w-4" />
+              <span>Volledig rapport (SERIE)</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onSaveAsPdf('seveso')} className="gap-2">
+              <FileText className="h-4 w-4" />
+              <span>Seveso rapport (SEV)</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <Button variant="outline" size="icon" onClick={onShowReference} aria-label="Referentiegids" type="button" disabled={disabled}>
           <Info />

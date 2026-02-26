@@ -108,17 +108,21 @@ export default function SevesoApp() {
     }
   };
 
-  const generateFileName = (extension: string) => {
+  const generateFileName = (extension: string, type: string) => {
     const date = new Date();
     const YYYYMMDD = date.getFullYear() + String(date.getMonth() + 1).padStart(2, '0') + String(date.getDate()).padStart(2, '0');
     const sanitizedName = (selectedCompany?.name || 'Naamloos').replace(/[^a-z0-9]/gi, '_');
-    return `${sanitizedName}.${YYYYMMDD}.${extension}`;
+    const code = type === 'seveso' ? 'SEV' : 'SERIE';
+    return `${sanitizedName}.${code}.${YYYYMMDD}.${extension}`;
   };
 
-  const handleSaveAsPdf = async () => {
+  const handleSaveAsPdf = async (reportType: 'full' | 'seveso' = 'full') => {
     if (!selectedCompany) return;
     setIsSavingPdf(true);
-    const { id: toastId } = toast({ title: "PDF rapport genereren...", description: "Volledig rapport wordt samengesteld." });
+    const { id: toastId } = toast({ 
+      title: reportType === 'full' ? "Volledig rapport genereren..." : "Seveso rapport genereren...", 
+      description: "Document wordt samengesteld." 
+    });
 
     try {
         const doc = new jsPDF('p', 'mm', 'a4');
@@ -128,24 +132,27 @@ export default function SevesoApp() {
         const fullContentWidth = pageWidth - (margin * 2);
         let finalY = 20;
 
-        const colors = { primary: [22, 80, 91], foreground: [58, 66, 78], destructive: [239, 68, 68], muted: [100, 116, 139], border: [226, 232, 240] };
+        const colors = { 
+          primary: [22, 80, 91], 
+          foreground: [58, 66, 78], 
+          destructive: [239, 68, 68], 
+          muted: [100, 116, 139], 
+          border: [226, 232, 240] 
+        };
         const now = new Date();
         const YYYYMMDD = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
-        
-        const reportNumber = `${getShortId(selectedCompany.id)}.SERIE.${YYYYMMDD}`;
+        const code = reportType === 'seveso' ? 'SEV' : 'SERIE';
+        const reportNumber = `${getShortId(selectedCompany.id)}.${code}.${YYYYMMDD}`;
 
         const addHeaderAndFooter = (pdfDoc: jsPDF) => {
             const totalPages = (pdfDoc as any).internal.getNumberOfPages();
             for (let i = 2; i <= totalPages; i++) {
                 pdfDoc.setPage(i);
-                
                 pdfDoc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
                 pdfDoc.line(margin, 15, pageWidth - margin, 15);
-                
                 pdfDoc.setFontSize(8);
                 pdfDoc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
                 pdfDoc.text(`Rapportnummer: ${reportNumber}`, pageWidth - margin, 11, { align: 'right' });
-                
                 pdfDoc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
                 pdfDoc.text(`Pagina ${i} van ${totalPages}`, margin, pageHeight - 12);
                 pdfDoc.setFont('helvetica', 'bold');
@@ -181,7 +188,7 @@ export default function SevesoApp() {
             finalY += (splitText.length * 4.5) + 4;
         };
 
-        // TITLE PAGE
+        // --- TITLE PAGE ---
         doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.rect(0, 0, pageWidth, 60, 'F');
         doc.setTextColor(255, 255, 255);
@@ -195,7 +202,8 @@ export default function SevesoApp() {
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.setFontSize(28);
         doc.setFont('helvetica', 'bold');
-        doc.text("Seveso III & ARIE\nRapportage", margin, 100);
+        const mainTitle = reportType === 'seveso' ? "Seveso III\nRapportage" : "Seveso III & ARIE\nRapportage";
+        doc.text(mainTitle, margin, 100);
         
         doc.setFontSize(14);
         doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
@@ -206,16 +214,22 @@ export default function SevesoApp() {
         doc.text(`Datum: ${now.toLocaleDateString('nl-NL')}`, margin, 160);
         doc.text(`Rapportnummer: ${reportNumber}`, margin, 166);
 
-        // PAGE 2: Introduction
+        // --- PAGE 2: Introduction ---
         doc.addPage();
         finalY = 35;
         addMainHeader("1. Inleiding en Kaderstelling");
-        addBodyText(`Binnen de bedrijfsvoering van ${selectedCompany.name} wordt gewerkt met diverse gevaarlijke stoffen. De drempelwaardecheck in deze module toetst of de sommatie van stoffen binnen een gevarencategorie de kritieke grens van 1,0 overschrijdt.`);
+        const introText = reportType === 'full' 
+          ? `Binnen de bedrijfsvoering van ${selectedCompany.name} wordt gewerkt met diverse gevaarlijke stoffen. De drempelwaardecheck in deze module toetst of de sommatie van stoffen binnen een gevarencategorie de kritieke grens van 1,0 overschrijdt.`
+          : `Binnen de bedrijfsvoering van ${selectedCompany.name} wordt gewerkt met diverse gevaarlijke stoffen. Dit rapport toetst specifiek de drempelwaarden conform de Seveso III-richtlijn.`;
+        addBodyText(introText);
         
         addMainHeader("2. Wettelijk Kader");
-        addBodyText(`De Seveso III-richtlijn (2012/18/EU) is gericht op de preventie van zware ongevallen waarbij gevaarlijke stoffen zijn betrokken. De ARIE-regeling (Aanvullende Risico-Inventarisatie en -Evaluatie) is de Nederlandse vertaling van deze richtlijn voor situaties die onder de drempelwaarden van Seveso vallen.`);
+        const kaderText = reportType === 'full'
+          ? `De Seveso III-richtlijn (2012/18/EU) is gericht op de preventie van zware ongevallen waarbij gevaarlijke stoffen zijn betrokken. De ARIE-regeling (Aanvullende Risico-Inventarisatie en -Evaluatie) is de Nederlandse vertaling van deze richtlijn voor situaties die onder de drempelwaarden van Seveso vallen.`
+          : `De Seveso III-richtlijn (2012/18/EU) is de Europese richtlijn gericht op de preventie van zware ongevallen waarbij gevaarlijke stoffen zijn betrokken en de beperking van de gevolgen daarvan voor de menselijke gezondheid en het milieu.`;
+        addBodyText(kaderText);
 
-        // PAGE 3: Results
+        // --- PAGE 3: Results ---
         doc.addPage();
         finalY = 25;
         addMainHeader("3. Resultaten van de Sommatie");
@@ -235,33 +249,37 @@ export default function SevesoApp() {
         
         finalY = (doc as any).lastAutoTable.finalY + 15;
 
-        checkPageBreak(50);
-        addMainHeader("3.2 ARIE Resultaten");
-        autoTable(doc, {
-          startY: finalY,
-          head: [['Gevarengroep (ARIE)', 'Resultaat Sommatie', 'Status']],
-          body: stats.arieSummationGroups.map(g => [
-            g.name,
-            `${(g.totalRatio).toFixed(2)}`,
-            g.isExceeded ? 'OVERSCHREDEN' : 'Voldoet'
-          ]),
-          theme: 'striped',
-          headStyles: { fillColor: colors.foreground as [number, number, number] },
-        });
-        finalY = (doc as any).lastAutoTable.finalY + 15;
+        if (reportType === 'full') {
+          checkPageBreak(50);
+          addMainHeader("3.2 ARIE Resultaten");
+          autoTable(doc, {
+            startY: finalY,
+            head: [['Gevarengroep (ARIE)', 'Resultaat Sommatie', 'Status']],
+            body: stats.arieSummationGroups.map(g => [
+              g.name,
+              `${(g.totalRatio).toFixed(2)}`,
+              g.isExceeded ? 'OVERSCHREDEN' : 'Voldoet'
+            ]),
+            theme: 'striped',
+            headStyles: { fillColor: colors.foreground as [number, number, number] },
+          });
+          finalY = (doc as any).lastAutoTable.finalY + 15;
+        }
 
-        // PAGE 4: Conclusion
+        // --- PAGE 4: Conclusion ---
         checkPageBreak(40);
         addMainHeader("4. Conclusie");
         const statusText = stats.overallStatus === 'Geen' ? 'niet' : 'wel';
         addBodyText(`Op basis van de ingevoerde inventaris is geconstateerd dat de inrichting ${statusText} voldoet aan de criteria voor een Seveso-inrichting (${thresholdMode === 'low' ? 'Lagedrempel' : 'Hogedrempel'}). De meest kritieke gevarengroep is ${stats.criticalGroup} met een sommatiewaarde van ${stats.summationGroups.find(g => g.name === stats.criticalGroup)?.totalRatio.toFixed(2)}.`);
 
-        addMainHeader("4.2 ARIE Conclusie");
-        const arieStatus = stats.arieExceeded ? 'wel' : 'niet';
-        const arieText = `De inrichting wordt op basis van de vigerende Arbo-wetgeving beoordeeld op de ARIE-gevarengroepen. De inrichting is op basis van deze berekening ${arieStatus} ARIE-plichtig. Voor de meest kritieke groep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${stats.arieTotal.toFixed(2)}.`;
-        addBodyText(arieText);
+        if (reportType === 'full') {
+          addMainHeader("4.2 ARIE Conclusie");
+          const arieStatus = stats.arieExceeded ? 'wel' : 'niet';
+          const arieText = `De inrichting wordt op basis van de vigerende Arbo-wetgeving beoordeeld op de ARIE-gevarengroepen. De inrichting is op basis van deze berekening ${arieStatus} ARIE-plichtig. Voor de meest kritieke groep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${stats.arieTotal.toFixed(2)}.`;
+          addBodyText(arieText);
+        }
 
-        // APPENDIX: Inventory
+        // --- APPENDIX: Inventory ---
         doc.addPage();
         finalY = 25;
         doc.setFont('helvetica', 'bold');
@@ -285,7 +303,7 @@ export default function SevesoApp() {
         });
 
         addHeaderAndFooter(doc);
-        doc.save(generateFileName('pdf'));
+        doc.save(generateFileName('pdf', reportType));
         dismiss(toastId);
         toast({ title: "PDF opgeslagen" });
     } catch (error) {
@@ -336,13 +354,13 @@ export default function SevesoApp() {
         const url = URL.createObjectURL(new Blob([dataStr], { type: 'application/json' }));
         const link = document.createElement('a');
         link.href = url;
-        link.download = generateFileName('json');
+        link.download = generateFileName('json', 'full');
         link.click();
     } else {
         const ws = XLSX.utils.json_to_sheet(localInventory);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Inventaris");
-        XLSX.writeFile(wb, generateFileName('xlsx'));
+        XLSX.writeFile(wb, generateFileName('xlsx', 'full'));
     }
   };
 
