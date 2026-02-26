@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useCollection, useMemoFirebase, useFirestore, useAuth } from '@/firebase';
 import { collection } from 'firebase/firestore';
@@ -83,22 +83,24 @@ export default function AdminPage() {
   const [companyFilters, setCompanyFilters] = useState({ name: "", group: "", owner: "" });
   const [customerFilters, setCustomerFilters] = useState({ name: "", users: "", companies: "" });
 
+  // Use a derived state for admin check to avoid flashes of unauthorized
   const isAdmin = user?.email === 'post@wastelcompany.eu';
 
+  // Memoize queries only when we are sure the user is an admin
   const usersQuery = useMemoFirebase(() => {
-    if (!isAdmin) return null;
+    if (!user || !isAdmin) return null;
     return collection(db, 'users');
-  }, [isAdmin, db]);
+  }, [user, isAdmin, db]);
 
   const companiesQuery = useMemoFirebase(() => {
-    if (!isAdmin) return null;
+    if (!user || !isAdmin) return null;
     return collection(db, 'companies');
-  }, [isAdmin, db]);
+  }, [user, isAdmin, db]);
 
   const customersQuery = useMemoFirebase(() => {
-    if (!isAdmin) return null;
+    if (!user || !isAdmin) return null;
     return collection(db, 'customers');
-  }, [isAdmin, db]);
+  }, [user, isAdmin, db]);
 
   const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
   const { data: companies, isLoading: isLoadingCompanies } = useCollection<Company>(companiesQuery);

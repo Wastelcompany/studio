@@ -28,16 +28,19 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      // Robust admin check based on the dedicated admin email
       return isSignedIn() && request.auth.token.email == 'post@wastelcompany.eu';
     }
 
     function isNotDisabled(uid) {
-      let userProfile = get(/databases/$(database)/documents/users/$(uid));
-      return userProfile.data.disabled == false;
+      // Check if user document exists and if disabled is false
+      let userPath = /databases/$(database)/documents/users/$(uid);
+      return !exists(userPath) || get(userPath).data.disabled == false;
     }
     
     function getUserCustomerId(uid) {
-        return get(/databases/$(database)/documents/users/$(uid)).data.customerId;
+        let userPath = /databases/$(database)/documents/users/$(uid);
+        return exists(userPath) ? get(userPath).data.customerId : null;
     }
 
     // ------------------------------------------------------------------------
@@ -51,13 +54,16 @@ service cloud.firestore {
     }
 
     match /customers/{customerId} {
+      // Admins have full access to the customers collection
       allow read, write: if isAdmin();
-      allow read: if isSignedIn() && getUserCustomerId(request.auth.uid) == customerId;
+      // Users can only read their own customer data
+      allow get: if isSignedIn() && getUserCustomerId(request.auth.uid) == customerId;
     }
 
     match /companies/{companyId} {
       allow read, write: if isAdmin();
-      allow list: if !isAdmin() && isSignedIn();
+      // List is allowed if signed in; individual get is restricted by customerId
+      allow list: if isSignedIn() && isNotDisabled(request.auth.uid);
       allow get: if !isAdmin() && isSignedIn() && isNotDisabled(request.auth.uid) && 
                     resource.data.customerId == getUserCustomerId(request.auth.uid);
 
