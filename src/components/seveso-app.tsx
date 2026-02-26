@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -116,11 +115,10 @@ export default function SevesoApp() {
     return `${sanitizedName}.${YYYYMMDD}.${extension}`;
   };
 
-  const handleSaveAsPdf = async (reportType: 'full' | 'seveso_only') => {
+  const handleSaveAsPdf = async () => {
     if (!selectedCompany) return;
-    const includeArie = reportType === 'full';
     setIsSavingPdf(true);
-    const { id: toastId } = toast({ title: "PDF rapport genereren...", description: "Rapport wordt samengesteld." });
+    const { id: toastId } = toast({ title: "PDF rapport genereren...", description: "Volledig rapport wordt samengesteld." });
 
     try {
         const doc = new jsPDF('p', 'mm', 'a4');
@@ -134,8 +132,7 @@ export default function SevesoApp() {
         const now = new Date();
         const YYYYMMDD = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
         
-        const middlePart = reportType === 'full' ? 'SERIE' : 'SEV';
-        const reportNumber = `${getShortId(selectedCompany.id)}.${middlePart}.${YYYYMMDD}`;
+        const reportNumber = `${getShortId(selectedCompany.id)}.SERIE.${YYYYMMDD}`;
 
         const addHeaderAndFooter = (pdfDoc: jsPDF) => {
             const totalPages = (pdfDoc as any).internal.getNumberOfPages();
@@ -198,7 +195,7 @@ export default function SevesoApp() {
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.setFontSize(28);
         doc.setFont('helvetica', 'bold');
-        doc.text(includeArie ? "Seveso III & ARIE\nRapportage" : "Seveso III\nRapportage", margin, 100);
+        doc.text("Seveso III & ARIE\nRapportage", margin, 100);
         
         doc.setFontSize(14);
         doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
@@ -216,7 +213,7 @@ export default function SevesoApp() {
         addBodyText(`Binnen de bedrijfsvoering van ${selectedCompany.name} wordt gewerkt met diverse gevaarlijke stoffen. De drempelwaardecheck in deze module toetst of de sommatie van stoffen binnen een gevarencategorie de kritieke grens van 1,0 overschrijdt.`);
         
         addMainHeader("2. Wettelijk Kader");
-        addBodyText(`De Seveso III-richtlijn (2012/18/EU) is gericht op de preventie van zware ongevallen waarbij gevaarlijke stoffen zijn betrokken. ${includeArie ? 'De ARIE-regeling (Aanvullende Risico-Inventarisatie en -Evaluatie) is de Nederlandse vertaling van deze richtlijn voor situaties die onder de drempelwaarden van Seveso vallen.' : ''}`);
+        addBodyText(`De Seveso III-richtlijn (2012/18/EU) is gericht op de preventie van zware ongevallen waarbij gevaarlijke stoffen zijn betrokken. De ARIE-regeling (Aanvullende Risico-Inventarisatie en -Evaluatie) is de Nederlandse vertaling van deze richtlijn voor situaties die onder de drempelwaarden van Seveso vallen.`);
 
         // PAGE 3: Results
         doc.addPage();
@@ -224,7 +221,6 @@ export default function SevesoApp() {
         addMainHeader("3. Resultaten van de Sommatie");
         const stats = calculateSummations(localInventory, thresholdMode);
         
-        // Seveso Results Table
         autoTable(doc, {
           startY: finalY,
           head: [['Gevarengroep (Seveso)', 'Resultaat Sommatie', 'Status']],
@@ -239,22 +235,20 @@ export default function SevesoApp() {
         
         finalY = (doc as any).lastAutoTable.finalY + 15;
 
-        if (includeArie) {
-          checkPageBreak(50);
-          addMainHeader("3.2 ARIE Resultaten");
-          autoTable(doc, {
-            startY: finalY,
-            head: [['Gevarengroep (ARIE)', 'Resultaat Sommatie', 'Status']],
-            body: stats.arieSummationGroups.map(g => [
-              g.name,
-              `${(g.totalRatio).toFixed(2)}`,
-              g.isExceeded ? 'OVERSCHREDEN' : 'Voldoet'
-            ]),
-            theme: 'striped',
-            headStyles: { fillColor: colors.foreground as [number, number, number] },
-          });
-          finalY = (doc as any).lastAutoTable.finalY + 15;
-        }
+        checkPageBreak(50);
+        addMainHeader("3.2 ARIE Resultaten");
+        autoTable(doc, {
+          startY: finalY,
+          head: [['Gevarengroep (ARIE)', 'Resultaat Sommatie', 'Status']],
+          body: stats.arieSummationGroups.map(g => [
+            g.name,
+            `${(g.totalRatio).toFixed(2)}`,
+            g.isExceeded ? 'OVERSCHREDEN' : 'Voldoet'
+          ]),
+          theme: 'striped',
+          headStyles: { fillColor: colors.foreground as [number, number, number] },
+        });
+        finalY = (doc as any).lastAutoTable.finalY + 15;
 
         // PAGE 4: Conclusion
         checkPageBreak(40);
@@ -262,12 +256,10 @@ export default function SevesoApp() {
         const statusText = stats.overallStatus === 'Geen' ? 'niet' : 'wel';
         addBodyText(`Op basis van de ingevoerde inventaris is geconstateerd dat de inrichting ${statusText} voldoet aan de criteria voor een Seveso-inrichting (${thresholdMode === 'low' ? 'Lagedrempel' : 'Hogedrempel'}). De meest kritieke gevarengroep is ${stats.criticalGroup} met een sommatiewaarde van ${stats.summationGroups.find(g => g.name === stats.criticalGroup)?.totalRatio.toFixed(2)}.`);
 
-        if (includeArie) {
-            addMainHeader("4.2 ARIE Conclusie");
-            const arieStatus = stats.arieExceeded ? 'wel' : 'niet';
-            const arieText = `De inrichting wordt op basis van de vigerende Arbo-wetgeving beoordeeld op de ARIE-gevarengroepen. De inrichting is op basis van deze berekening ${arieStatus} ARIE-plichtig. Voor de meest kritieke groep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${stats.arieTotal.toFixed(2)}.`;
-            addBodyText(arieText);
-        }
+        addMainHeader("4.2 ARIE Conclusie");
+        const arieStatus = stats.arieExceeded ? 'wel' : 'niet';
+        const arieText = `De inrichting wordt op basis van de vigerende Arbo-wetgeving beoordeeld op de ARIE-gevarengroepen. De inrichting is op basis van deze berekening ${arieStatus} ARIE-plichtig. Voor de meest kritieke groep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${stats.arieTotal.toFixed(2)}.`;
+        addBodyText(arieText);
 
         // APPENDIX: Inventory
         doc.addPage();

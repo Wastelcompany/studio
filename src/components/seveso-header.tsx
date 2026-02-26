@@ -18,7 +18,7 @@ interface SevesoHeaderProps {
   onShowReference: () => void;
   onImport: (type: 'json' | 'excel') => void;
   onExport: (type: 'json' | 'excel') => void;
-  onSaveAsPdf: (reportType: 'full' | 'seveso_only') => void;
+  onSaveAsPdf: () => void;
   isSavingPdf: boolean;
   disabled: boolean;
 }
@@ -74,23 +74,15 @@ export default function SevesoHeader({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" disabled={disabled || isSavingPdf}>
-              {isSavingPdf ? <Loader2 className="animate-spin" /> : <FileDown />}
-              Opslaan rapportage
-              <ChevronDown className="ml-1 h-4 w-4 opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onSaveAsPdf('full')} disabled={isSavingPdf}>
-              Volledig Rapport (Seveso &amp; ARIE)
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onSaveAsPdf('seveso_only')} disabled={isSavingPdf}>
-              Alleen Seveso Rapport
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button 
+          variant="outline" 
+          onClick={onSaveAsPdf} 
+          disabled={disabled || isSavingPdf}
+          className="gap-2"
+        >
+          {isSavingPdf ? <Loader2 className="animate-spin h-4 w-4" /> : <FileDown className="h-4 w-4" />}
+          Opslaan rapportage
+        </Button>
 
         <Button variant="outline" size="icon" onClick={onShowReference} aria-label="Referentiegids" type="button" disabled={disabled}>
           <Info />
