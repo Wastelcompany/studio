@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -170,11 +171,12 @@ export default function SevesoApp() {
         };
 
         const addSubHeader = (text: string) => {
+            checkPageBreak(15);
             doc.setFontSize(10);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
             doc.text(text, margin, finalY);
-            finalY += 6;
+            finalY += 7;
         };
 
         // Header
@@ -215,6 +217,7 @@ export default function SevesoApp() {
         const stats = calculateSummations(localInventory, thresholdMode);
 
         // --- 1. Inleiding en Kaderstelling ---
+        checkPageBreak(50);
         doc.setFontSize(11); 
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); 
         doc.setFont('helvetica', 'bold'); 
@@ -235,7 +238,7 @@ export default function SevesoApp() {
         const sevesoDesc = "De Seveso-III richtlijn is gericht op het voorkomen van zware ongevallen waarbij gevaarlijke stoffen betrokken zijn en het beperken van de gevolgen daarvan voor de menselijke gezondheid en het milieu. In de Nederlandse wetgeving is dit sinds de invoering van de Omgevingswet ondergebracht in het Besluit activiteiten leefomgeving (Bal). De focus ligt hierbij primair op de externe veiligheid: het risico voor de omgeving buiten de inrichtingsgrenzen.";
         const splitSevesoDesc = doc.splitTextToSize(sevesoDesc, pageWidth - (margin * 2));
         doc.text(splitSevesoDesc, margin, finalY);
-        finalY += (splitSevesoDesc.length * 5) + 6;
+        finalY += (splitSevesoDesc.length * 5) + 12;
 
         addSubHeader("1.2 De ARIE-regeling (Arbo-wetgeving)");
         doc.setFontSize(9.5);
@@ -267,7 +270,7 @@ export default function SevesoApp() {
         const hZinDesc = "De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS) van elk product. Deze gegevens bepalen in welke 'gevarengroep' (Gezondheid, Fysisch of Milieu) een stof wordt ingedeeld.";
         const splitHZinDesc = doc.splitTextToSize(hZinDesc, pageWidth - (margin * 2));
         doc.text(splitHZinDesc, margin, finalY);
-        finalY += (splitHZinDesc.length * 5) + 6;
+        finalY += (splitHZinDesc.length * 5) + 12;
 
         addSubHeader("2.2 De Sommatieregeling");
         doc.setFontSize(9.5);
@@ -378,11 +381,11 @@ export default function SevesoApp() {
         if (!isSevesoExceeded) {
             sevesoConclusieText = `Op basis van de uitgevoerde inventarisatie en sommatie kan worden geconcludeerd dat de inrichting niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting binnen de gevarengroepen bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is voordat de ondergrens van de Seveso-richtlijn in beeld komt.\n\nVanuit het perspectief van de externe veiligheid wordt de locatie beschouwd als een reguliere inrichting. Er zijn geen aanvullende publiekrechtelijke verplichtingen van kracht met betrekking tot het voorkomen van zware ongevallen richting de omgeving. Deze status is echter een momentopname; bij structurele wijzigingen in de procesvoering of een significante toename van de opslagcapaciteit van toxische of ontvlambare stoffen is een herberekening strikt noodzakelijk.`;
         } else {
-            sevesoConclusieText = `Op basis van de huidige inventarisatie wordt de inrichting aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. De wettelijke drempelwaarde voor de categorie ${stats.criticalGroup.toLowerCase()} wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%).\n\nDit betekent dat de inrichting onderworpen is aan de verplichtingen van de Seveso-richtlijn gericht op het beheersen van de risico's van zware ongevallen met gevaarlijke stoffen. De overschrijding brengt specifieke administratieve en organisatorische verplichtingen met zich mee om de externe veiligheid te waarborgen. Zie hoofdstuk 5 voor de wettelijke vervolgstappen.`;
+            sevesoConclusieText = `Op basis van de huidige inventarisatie wordt de inrichting aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. De wettelijke drempelwaarde voor de categorie ${stats.criticalGroup} wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%).\n\nDit betekent dat de inrichting onderworpen is aan de verplichtingen van de Seveso-richtlijn gericht op het beheersen van de risico's van zware ongevallen met gevaarlijke stoffen. De overschrijding brengt specifieke administratieve en organisatorische verplichtingen met zich mee om de externe veiligheid te waarborgen. Zie hoofdstuk 5 voor de wettelijke vervolgstappen.`;
         }
         const splitSevesoConclusie = doc.splitTextToSize(sevesoConclusieText, pageWidth - (margin * 2));
         doc.text(splitSevesoConclusie, margin, finalY);
-        finalY += (splitSevesoConclusie.length * 5) + 4;
+        finalY += (splitSevesoConclusie.length * 5) + 6;
 
         if (includeArie) {
             checkPageBreak(60);
@@ -409,7 +412,7 @@ export default function SevesoApp() {
             doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); 
             doc.setFont('helvetica', 'bold'); 
             doc.text(`5. Wettelijke Vervolgstappen`, margin, finalY); 
-            finalY += 8;
+            finalY += 10;
             
             doc.setFontSize(9.5); 
             doc.setFont('helvetica', 'normal'); 
