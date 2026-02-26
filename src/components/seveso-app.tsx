@@ -212,6 +212,13 @@ export default function SevesoApp() {
         doc.setFont('helvetica', 'bold'); 
         doc.text("1. Inleiding en Kaderstelling", margin, finalY); 
         finalY += 8;
+
+        const introText = `Binnen de bedrijfsvoering van ${selectedCompany.name || 'het bedrijf'} op de aangegeven locatie wordt gewerkt met diverse gevaarlijke stoffen. Om de veiligheidsrisico's voor zowel de omgeving als de eigen medewerkers te beheersen en te minimaliseren, is de inrichting onderworpen aan specifieke wettelijke kaders. Deze rapportage heeft tot doel de actuele status van de locatie te toetsen aan de hand van de volgende twee regelgevingen:`;
+        const splitIntro = doc.splitTextToSize(introText, pageWidth - (margin * 2));
+        doc.setFontSize(9.5);
+        doc.setFont('helvetica', 'normal');
+        doc.text(splitIntro, margin, finalY);
+        finalY += (splitIntro.length * 5) + 6;
         
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
@@ -243,6 +250,13 @@ export default function SevesoApp() {
         doc.setFont('helvetica', 'bold'); 
         doc.text("2. De Beoordelingssystematiek", margin, finalY); 
         finalY += 8;
+
+        const systematiekIntro = "Om te bepalen of een inrichting onder een van deze kaders valt, wordt een vaste systematiek gevolgd waarbij de intrinsieke eigenschappen van stoffen worden vertaald naar risicocategorieën.";
+        const splitSysIntro = doc.splitTextToSize(systematiekIntro, pageWidth - (margin * 2));
+        doc.setFontSize(9.5);
+        doc.setFont('helvetica', 'normal');
+        doc.text(splitSysIntro, margin, finalY);
+        finalY += (splitSysIntro.length * 5) + 6;
 
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
@@ -369,19 +383,19 @@ export default function SevesoApp() {
         
         let sevesoConclusieText = "";
         if (!isSevesoExceeded) {
-            sevesoConclusieText = `Op basis van de uitgevoerde inventarisatie en sommatie kan worden geconcludeerd dat ${selectedCompany.name || 'het bedrijf'} niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting binnen de categorie ${stats.criticalGroup} bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is voordat de ondergrens van het Besluit activiteiten leefomgeving (Bal) in beeld komt.\n\nVanuit het perspectief van de Omgevingswet wordt de locatie beschouwd als een reguliere inrichting. Er zijn geen aanvullende publiekrechtelijke verplichtingen van kracht met betrekking tot het voorkomen van zware ongevallen richting de omgeving. Deze status is echter een momentopname; bij structurele wijzigingen in de procesvoering of een significante toename van de opslagcapaciteit van toxische of ontvlambare stoffen is een herberekening strikt noodzakelijk.`;
+            sevesoConclusieText = `Op basis van de uitgevoerde inventarisatie en sommatie kan worden geconcludeerd dat de inrichting niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting binnen de gevarengroepen bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is voordat de ondergrens van het Besluit activiteiten leefomgeving (Bal) in beeld komt.\n\nVanuit het perspectief van de Omgevingswet wordt de locatie beschouwd als een reguliere inrichting. Er zijn geen aanvullende publiekrechtelijke verplichtingen van kracht met betrekking tot het voorkomen van zware ongevallen richting de omgeving. Deze status is echter een momentopname; bij structurele wijzigingen in de procesvoering of een significante toename van de opslagcapaciteit van toxische of ontvlambare stoffen is een herberekening strikt noodzakelijk.`;
         } else {
-            sevesoConclusieText = `Op basis van de huidige inventarisatie wordt de inrichting aangemerkt als een ${stats.overallStatus}-inrichting onder het Besluit activiteiten leefomgeving (Bal). De wettelijke drempelwaarde wordt in de gevarengroep ${stats.criticalGroup} overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%).\n\nDit betekent dat de inrichting onderworpen is aan de Seveso-III richtlijn. Zie hoofdstuk 5 voor de vervolgstappen.`;
+            sevesoConclusieText = `Op basis van de huidige inventarisatie wordt de inrichting aangemerkt als een ${stats.overallStatus}-inrichting onder het Besluit activiteiten leefomgeving (Bal). De wettelijke drempelwaarde wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%).\n\nDit betekent dat de inrichting onderworpen is aan de Seveso-III richtlijn. Zie hoofdstuk 5 voor de vervolgstappen.`;
         }
         const splitSevesoConclusie = doc.splitTextToSize(sevesoConclusieText, pageWidth - (margin * 2));
         doc.text(splitSevesoConclusie, margin, finalY);
-        finalY += (splitSevesoConclusie.length * 5) + 4; // Minimal margin after 4.1
+        finalY += (splitSevesoConclusie.length * 5) + 4;
 
         if (includeArie) {
             checkPageBreak(60);
             doc.setFontSize(10); 
             doc.setFont('helvetica', 'bold'); 
-            doc.text("4.2 ARIE (Arbo-wetgeving)", margin, finalY); 
+            doc.text("4.2 ARIE", margin, finalY); 
             finalY += 6;
             
             doc.setFontSize(9.5); 
@@ -392,10 +406,7 @@ export default function SevesoApp() {
             if (!stats.arieExceeded) {
                 arieConclusieText = `De inrichting wordt op basis van de vigerende Arbo-wetgeving niet aangemerkt als ARIE-plichtig. De hoogste fractie binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%. De inrichting kan voor de arbeidsveiligheid volstaan met de reguliere Risico-Inventarisatie en -Evaluatie (RI&E).`;
             } else {
-                const contribSub = [...localInventory].sort((a, b) => b.quantity - a.quantity)[0];
-                const subName = contribSub?.productName || 'gevaarlijke stoffen';
-
-                arieConclusieText = `De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Met een gecumuleerde fractie van ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%) in de gevarengroep ${stats.criticalArieGroup} wordt de wettelijke drempelwaarde overschreden. De analyse wijst uit dat deze status direct herleidbaar is naar de aanwezigheid van stoffen zoals ${subName}.\n\nOmdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen acute gevaren op de werkvloer, weegt de wetgever bijtende eigenschappen (H314) vele malen zwaarder dan in de Seveso-systematiek voor externe veiligheid. Deze overschrijding impliceert dat de standaard Arbo-RI&E niet langer volstaat en dat ${selectedCompany.name || 'het bedrijf'} wettelijk verplicht is aanvullende beheersmaatregelen te implementeren om de risico's op zware ongevallen intern te minimaliseren.`;
+                arieConclusieText = `De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Met een gecumuleerde fractie van ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%) in de gevarengroep ${stats.criticalArieGroup} wordt de wettelijke drempelwaarde overschreden.\n\nDeze overschrijding impliceert dat de standaard Arbo-RI&E niet langer volstaat en dat de inrichting wettelijk verplicht is aanvullende beheersmaatregelen te implementeren om de risico's op zware ongevallen intern te minimaliseren.`;
             }
             const splitArieConclusie = doc.splitTextToSize(arieConclusieText, pageWidth - (margin * 2));
             doc.text(splitArieConclusie, margin, finalY);
@@ -468,7 +479,7 @@ export default function SevesoApp() {
             }
         }
 
-        // Add page for inventory table
+        // Bijlage
         doc.addPage();
         let invY = 20; 
         doc.setFontSize(16); 
@@ -765,7 +776,7 @@ export default function SevesoApp() {
           <AlertDialogHeader>
             <AlertDialogTitle>Bedrijf volledig verwijderen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Weet u zeker dat u het bedrijf <span className="font-bold">"{selectedCompany?.name}"</span> en de volledige inventaris wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+              Weet u zeker dat u het bedrijf <span className="font-bold">"{selectedCompany?.name}"</span> wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
