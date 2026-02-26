@@ -23,6 +23,7 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   P6b: { id: 'P6b', name: 'Zelfontledende stoffen & Organische peroxiden, Type C-F', group: 'physical' },
   P7: { id: 'P7', name: 'Pyrofore vloeistoffen en vaste stoffen, categorie 1', group: 'physical' },
   P8: { id: 'P8', name: 'Oxiderende vloeistoffen en vaste stoffen, cat 1, 2, 3', group: 'physical' },
+  P9: { id: 'P9', name: 'Zelfverhittende stoffen en mengsels, categorie 1 en 2', group: 'physical' },
   
   E1: { id: 'E1', name: 'Gevaarlijk voor het aquatisch milieu, acuut 1 of chronisch 1', group: 'environment' },
   E2: { id: 'E2', name: 'Gevaarlijk voor het aquatisch milieu, chronisch 2', group: 'environment' },
@@ -34,9 +35,9 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   // ARIE Specific Categories
   H4: { id: 'H4', name: 'Huidcorrosie, categorie 1A, 1B of 1C (H314)', group: 'health', displayId: 'H4' },
   'ARIE-P1a-sub3': { id: 'ARIE-P1a-sub3', name: 'Stoffen met explosieve eigenschappen (zonder 1.1-1.6)', group: 'physical', displayId: 'P1a (sub 3)' },
-  'ARIE-P6a-1': { id: 'ARIE-P6a-1', name: 'Zelfontledende stoffen (Type A/B)', group: 'physical', displayId: 'P6a (Zelfontl.)' },
-  'ARIE-P6a-2': { id: 'ARIE-P6a-2', name: 'Organische peroxiden (Type A/B)', group: 'physical', displayId: 'P6a (Org. Perox.)' },
-  'ARIE-O4': { id: 'ARIE-O4', name: 'Stoffen met EUH001', group: 'other', displayId: 'O4 (EUH001)' },
+  'ARIE-P6a-1': { id: 'ARIE-P6a-1', name: 'Zelfontledende stoffen (Type A/B)', group: 'physical', displayId: 'P6a' },
+  'ARIE-P6a-2': { id: 'ARIE-P6a-2', name: 'Organische peroxiden (Type A/B)', group: 'physical', displayId: 'P6a' },
+  'ARIE-O4': { id: 'ARIE-O4', name: 'Stoffen met EUH001', group: 'other', displayId: 'O4' },
 };
 
 export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
@@ -54,6 +55,7 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   P3a: { low: 150, high: 500 }, P3b: { low: 5000, high: 50000 }, P4: { low: 50, high: 200 },
   P5a: { low: 10, high: 50 }, P5b: { low: 50, high: 200 }, P5c: { low: 5000, high: 50000 },
   P6a: { low: 10, high: 50 }, P6b: { low: 50, high: 200 }, P7: { low: 50, high: 200 }, P8: { low: 50, high: 200 },
+  P9: { low: 50, high: 200 },
   E1: { low: 100, high: 200 }, E2: { low: 200, high: 500 },
   O1: { low: 100, high: 500 }, O2: { low: 100, high: 500 }, O3: { low: 50, high: 200 },
 };
@@ -61,7 +63,7 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
 export const ARIE_THRESHOLDS: Record<string, number> = {
   H1: 0.05, H2: 0.2, H3: 1, H4: 50,
   P1a: 0.05, 'ARIE-P1a-sub3': 0.05, P1b: 1, P2: 5, P3a: 5, P3b: 50, P4: 5,
-  'ARIE-P6a-1': 0.05, 'ARIE-P6a-2': 0.05,
+  'ARIE-P6a-1': 0.05, 'ARIE-P6a-2': 0.05, P9: 50,
   O1: 0.5, O2: 0.05, O3: 0.5, 'ARIE-O4': 0.05,
 };
 
@@ -73,7 +75,8 @@ export const H_PHRASE_MAPPING: Record<string, string[]> = {
   'H220': ['P2'], 'H221': ['P2'], 'H222': ['P3a', 'P3b'], 'H223': ['P3a', 'P3b'],
   'H224': ['P5a'], 'H225': ['P5c'], 'H226': ['P5c'],
   'H240': ['P6a', 'ARIE-P6a-1', 'ARIE-P6a-2'], 'H241': ['P6a', 'ARIE-P6a-1', 'ARIE-P6a-2'],
-  'H242': ['P6b'], 'H250': ['P7'], 'H270': ['P4'], 'H271': ['P8'], 'H272': ['P8'],
+  'H242': ['P6b'], 'H250': ['P7'], 'H251': ['P9'], 'H252': ['P9'],
+  'H270': ['P4'], 'H271': ['P8'], 'H272': ['P8'],
   'H400': ['E1'], 'H410': ['E1'], 'H411': ['E2'],
   'EUH014': ['O1'], 'H260': ['O2'], 'EUH029': ['O3'],
 };
@@ -82,6 +85,8 @@ export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
   'H200': 'Ontplofbaar, gevaar voor massa-explosie',
   'H220': 'Zeer licht ontvlambaar gas',
   'H224': 'Zeer licht ontvlambare vloeistof en damp',
+  'H251': 'Zelfverhittend; kan brand veroorzaken',
+  'H252': 'In grote hoeveelheden zelfverhittend; kan brand veroorzaken',
   'H300': 'Dodelijk bij inslikken',
   'H314': 'Veroorzaakt ernstige brandwonden en oogletsel',
   'H350': 'Kan kanker veroorzaken',
