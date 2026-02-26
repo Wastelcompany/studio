@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -177,7 +178,7 @@ export default function SevesoApp() {
             const splitText = doc.splitTextToSize(text, fullContentWidth);
             checkPageBreak(splitText.length * 5 + 6);
             doc.text(splitText, margin, finalY);
-            finalY += (splitText.length * 5) + 5;
+            finalY += (splitText.length * 5) + 4;
         };
 
         const addSubHeader = (text: string) => {
@@ -187,7 +188,7 @@ export default function SevesoApp() {
             const splitText = doc.splitTextToSize(text, fullContentWidth);
             checkPageBreak(splitText.length * 5 + 4);
             doc.text(splitText, margin, finalY);
-            finalY += (splitText.length * 5) + 2;
+            finalY += (splitText.length * 5) + 1.5;
         };
 
         const addBodyText = (text: string) => {
@@ -197,7 +198,7 @@ export default function SevesoApp() {
             const splitText = doc.splitTextToSize(text, fullContentWidth);
             checkPageBreak(splitText.length * 4.5 + 4);
             doc.text(splitText, margin, finalY);
-            finalY += (splitText.length * 4.5) + 4;
+            finalY += (splitText.length * 4.5) + 3;
         };
 
         // --- Header Section ---
@@ -232,7 +233,7 @@ export default function SevesoApp() {
             detailsY += 4.5;
             if (selectedCompany.name) { doc.text(selectedCompany.name, margin + 5, detailsY); detailsY += 4; }
             if (selectedCompany.address) { doc.text(selectedCompany.address, margin + 5, detailsY); }
-            finalY += 26;
+            finalY += 24;
         }
 
         const stats = calculateSummations(localInventory, thresholdMode);
@@ -250,7 +251,7 @@ export default function SevesoApp() {
         // --- 2. Beoordelingssystematiek ---
         addMainHeader("2. De Beoordelingssystematiek");
         addSubHeader("2.1 Indeling op basis van H-zinnen");
-        addBodyText("De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS). Deze bepalen de gevarengroep. De ARIE-regeling hanteert voor diverse categorieën lagere drempelwaarden dan de Seveso-richtlijn om de arbeidsveiligheid extra te borgen.");
+        addBodyText("De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS). Deze bepalen de gevarengroep conform de Seveso-richtlijn. De ARIE-regeling hanteert voor diverse categorieën lagere drempelwaarden om de arbeidsveiligheid extra te borgen.");
 
         addSubHeader("2.2 De Sommatieregeling");
         addBodyText("Per gevarengroep wordt de aanwezige hoeveelheid vergeleken met de wettelijke drempelwaarde. Indien de som de waarde 1,0 (100%) bereikt of overschrijdt, is het betreffende wettelijke regime van kracht.");
@@ -342,19 +343,18 @@ export default function SevesoApp() {
         
         if (!isSevesoExceeded) {
             addBodyText(`Op basis van de inventarisatie kan worden geconcludeerd dat de inrichting niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is.`);
-            addBodyText(`Deze status is een momentopname; bij wijzigingen in de procesvoering of opslag is een herberekening noodzakelijk.`);
         } else {
             addBodyText(`De inrichting wordt aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. De wettelijke drempelwaarde voor de gevarengroep ${stats.criticalGroup} wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%).`);
             addBodyText(`Deze overschrijding impliceert dat de inrichting onder een strenger toezichtsregime valt en verplicht is om aanvullende technische en organisatorische maatregelen te treffen om zware ongevallen te voorkomen en de gevolgen daarvan te beperken.`);
         }
 
-        finalY += 2;
+        finalY += 1;
         addSubHeader("4.2 ARIE");
         if (!stats.arieExceeded) {
             addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving niet aangemerkt als ARIE-plichtig. De hoogste fractie binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%.`);
         } else {
             addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Met een gecumuleerde fractie van ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%) in de groep ${stats.criticalArieGroup} wordt de wettelijke drempelwaarde overschreden.`);
-            addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen de gevolgen van zware ongevallen, impliceert deze overschrijding dat de standaard Arbo-RI&E niet langer volstaat en aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn.`);
+            addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen de gevolgen van zware ongevallen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn.`);
         }
 
         // --- 5. Wettelijke Vervolgstappen ---
@@ -377,11 +377,11 @@ export default function SevesoApp() {
                     doc.setFontSize(9.5);
                     doc.setFont('helvetica', 'normal');
                     const splitStep = doc.splitTextToSize(`• ${step}`, fullContentWidth - 5);
-                    checkPageBreak(splitStep.length * 4.5 + 3);
+                    checkPageBreak(splitStep.length * 4.5 + 2);
                     doc.text(splitStep, margin + 5, finalY);
-                    finalY += (splitStep.length * 4.5) + 3;
+                    finalY += (splitStep.length * 4.5) + 2.5;
                 });
-                finalY += 3;
+                finalY += 2;
                 currentStepIdx++;
             }
 
@@ -397,9 +397,9 @@ export default function SevesoApp() {
                     doc.setFontSize(9.5);
                     doc.setFont('helvetica', 'normal');
                     const splitStep = doc.splitTextToSize(`• ${step}`, fullContentWidth - 5);
-                    checkPageBreak(splitStep.length * 4.5 + 3);
+                    checkPageBreak(splitStep.length * 4.5 + 2);
                     doc.text(splitStep, margin + 5, finalY);
-                    finalY += (splitStep.length * 4.5) + 3;
+                    finalY += (splitStep.length * 4.5) + 2.5;
                 });
             }
         }
@@ -415,13 +415,23 @@ export default function SevesoApp() {
         
         const tableHead = includeArie ? [['Product / CAS', 'Seveso', 'ARIE', 'Voorraad']] : [['Product / CAS', 'Seveso', 'Voorraad']];
         const tableData = (localInventory || []).map(sub => {
-            const sevesoCats = sub.sevesoCategoryIds.map(id => (ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))?.displayId || id).join(", ");
+            const sevesoCats = sub.sevesoCategoryIds
+                .map(id => ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))
+                .filter(Boolean)
+                .map(cat => cat!.displayId || cat!.id)
+                .join(", ");
+            
             let rowData: any[] = [
                 { content: sub.productName + (sub.casNumber ? `\n(${sub.casNumber})` : ''), styles: { fontStyle: 'bold' } },
                 sevesoCats
             ];
+            
             if (includeArie) {
-                const arieCats = sub.arieCategoryIds.map(id => (ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))?.displayId || id).join(", ");
+                const arieCats = sub.arieCategoryIds
+                    .map(id => ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))
+                    .filter(Boolean)
+                    .map(cat => cat!.displayId || cat!.id)
+                    .join(", ");
                 rowData.push(arieCats);
             }
             rowData.push({ content: `${sub.quantity} ton`, styles: { halign: 'right' } });
@@ -723,3 +733,4 @@ export default function SevesoApp() {
     </div>
   );
 }
+
