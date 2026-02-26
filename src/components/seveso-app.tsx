@@ -133,17 +133,26 @@ export default function SevesoApp() {
         const colors = { primary: [22, 80, 91], foreground: [58, 66, 78], destructive: [239, 68, 68], muted: [100, 116, 139], border: [226, 232, 240] };
         const now = new Date();
         const YYYYMMDD = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
-        const reportNumber = `${getShortId(selectedCompany.id)}.SERIE.${YYYYMMDD}`;
+        
+        // Dynamic middle part for report number: SERIE for full, SEV for seveso_only
+        const middlePart = reportType === 'full' ? 'SERIE' : 'SEV';
+        const reportNumber = `${getShortId(selectedCompany.id)}.${middlePart}.${YYYYMMDD}`;
 
         const addHeaderAndFooter = (pdfDoc: jsPDF) => {
             const totalPages = (pdfDoc as any).internal.getNumberOfPages();
             for (let i = 2; i <= totalPages; i++) {
                 pdfDoc.setPage(i);
+                
+                // Header line
                 pdfDoc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
                 pdfDoc.line(margin, 15, pageWidth - margin, 15);
+                
+                // Report number in header top right
                 pdfDoc.setFontSize(8);
                 pdfDoc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
                 pdfDoc.text(`Rapportnummer: ${reportNumber}`, pageWidth - margin, 11, { align: 'right' });
+                
+                // Footer line
                 pdfDoc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
                 pdfDoc.text(`Pagina ${i} van ${totalPages}`, margin, pageHeight - 12);
                 pdfDoc.setFont('helvetica', 'bold');
@@ -204,16 +213,18 @@ export default function SevesoApp() {
         doc.text(`Datum: ${now.toLocaleDateString('nl-NL')}`, margin, 160);
         doc.text(`Rapportnummer: ${reportNumber}`, margin, 166);
 
+        // PAGE 2: Introduction
         doc.addPage();
         finalY = 35;
         addMainHeader("1. Inleiding en Kaderstelling");
         addBodyText(`Binnen de bedrijfsvoering van ${selectedCompany.name} wordt gewerkt met diverse gevaarlijke stoffen. De drempelwaardecheck in deze module toetst of de sommatie van stoffen binnen een gevarencategorie de kritieke grens van 1,0 overschrijdt.`);
 
+        // PAGE 3: Results
         doc.addPage();
         finalY = 25;
         addMainHeader("3. Resultaten");
         const stats = calculateSummations(localInventory, thresholdMode);
-        finalY += 30;
+        finalY += 10;
 
         // Conclusion section
         addMainHeader("4. Conclusie");
@@ -225,15 +236,28 @@ export default function SevesoApp() {
             addBodyText(arieText);
         }
 
+        // APPENDIX: Inventory
         doc.addPage();
         finalY = 25;
-        addMainHeader("Bijlage: Volledige Inventaris");
+        // Attachment title without chapter number
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.text("Bijlage: Volledige Inventaris", margin, finalY);
+        finalY += 10;
+
         autoTable(doc, {
-            startY: finalY + 5,
+            startY: finalY,
             head: [['Product / CAS', 'Seveso Cat.', 'Gevarengroep', 'Voorraad']],
-            body: localInventory.map(sub => [sub.productName, sub.sevesoCategoryIds.join(", "), sub.isNamedSubstance ? 'Benoemd' : 'Categorie', `${sub.quantity} t`]),
+            body: localInventory.map(sub => [
+                sub.productName, 
+                sub.sevesoCategoryIds.join(", "), 
+                sub.isNamedSubstance ? 'Benoemd' : 'Categorie', 
+                `${sub.quantity} t`
+            ]),
             theme: 'striped',
-            headStyles: { fillColor: colors.primary as [number, number, number] }
+            headStyles: { fillColor: colors.primary as [number, number, number] },
+            margin: { top: 25 }
         });
 
         addHeaderAndFooter(doc);
@@ -242,6 +266,7 @@ export default function SevesoApp() {
         toast({ title: "PDF opgeslagen" });
     } catch (error) {
         dismiss(toastId);
+        console.error("PDF Error:", error);
         toast({ variant: "destructive", title: "Fout bij PDF maken" });
     } finally {
         setIsSavingPdf(false);
