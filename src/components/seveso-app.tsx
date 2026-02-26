@@ -209,7 +209,7 @@ export default function SevesoApp() {
 
         doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("2. Methode", margin, finalY); finalY += 5;
         const methodeText = includeArie
-            ? "De beoordeling is uitgevoerd door de gevarenaanduidingen (H-zinnen) uit de veiligheidsinformatiebladen (SDS) te vertalen naar specifieke gevarencategorieën. Hoewel de basis voor de sommatieregels vergelijkbaar is, hanteert de ARIE-regeling eigen drempelwaarden en specifieke categorieën (zoals bijv. voor H314) die afwijken van de Seveso-systematiek. Voor beide kaders wordt per gevarengroep de meest kritieke categorie per stof bepaald, waarna de bijdragen binnen de betreffende wettelijke kaders worden gesommeerd."
+            ? "De beoordeling is uitgevoerd door de gevarenaanduidingen (H-zinnen) uit de veiligheidsinformatiebladen (SDS) te vertalen naar specifieke gevarencategorieën. Conform de sommatieregels worden gevarengroepen (gezondheid, fysisch, overig, benoemd) onafhankelijk van elkaar getoetst. Zodra de sommatie van één groep de waarde 1 (100%) bereikt, is de inrichting respectievelijk Seveso- of ARIE-plichtig."
             : "De beoordeling is uitgevoerd door de gevarenaanduidingen (H-zinnen) uit de veiligheidsinformatiebladen (SDS) te vertalen naar specifieke Seveso-gevarencategorieën. Per gevarengroep wordt de meest kritieke categorie per stof bepaald en worden de bijdragen gesommeerd om te toetsen aan de drempelwaarden.";
         const splitMethode = doc.splitTextToSize(methodeText, pageWidth - (margin * 2)); doc.text(splitMethode, margin, finalY); finalY += (splitMethode.length * 5) + 8;
 
@@ -264,7 +264,7 @@ export default function SevesoApp() {
 
         doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("4. Conclusie", margin, finalY); finalY += 5;
         const conclusieText = includeArie
-            ? `Op basis van de huidige inventarisatie is de inrichting ${isSevesoExceeded ? 'wel' : 'niet'} aan te merken als een Seveso-inrichting (${stats.overallStatus === 'Geen' ? 'geen drempels overschreden' : stats.overallStatus}). Tevens is de inrichting ${stats.arieExceeded ? 'wel' : 'niet'} ARIE-plichtig met een totale sommatiewaarde van ${Math.round(stats.arieTotal * 100)}%.`
+            ? `Op basis van de huidige inventarisatie is de inrichting ${isSevesoExceeded ? 'wel' : 'niet'} aan te merken als een Seveso-inrichting (${stats.overallStatus === 'Geen' ? 'geen drempels overschreden' : stats.overallStatus}). Tevens is de inrichting ${stats.arieExceeded ? 'wel' : 'niet'} ARIE-plichtig. De hoogste sommatiewaarde binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%.`
             : `Op basis van de huidige inventarisatie is de inrichting ${isSevesoExceeded ? 'wel' : 'niet'} aan te merken als een Seveso-inrichting (${stats.overallStatus === 'Geen' ? 'geen drempels overschreden' : stats.overallStatus}).`;
         const splitConclusie = doc.splitTextToSize(conclusieText, pageWidth - (margin * 2)); doc.text(splitConclusie, margin, finalY);
 
@@ -279,7 +279,7 @@ export default function SevesoApp() {
                 sevesoCats
             ];
             if (includeArie) {
-                const arieCats = sub.arieCategoryIds.map(id => ALL_CATEGORIES[id]?.displayId || id).join(", ");
+                const arieCats = sub.arieCategoryIds.map(id => (ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))?.displayId || id).join(", ");
                 rowData.push(arieCats);
             }
             rowData.push({ content: `${sub.quantity} ton`, styles: { halign: 'right' } });
@@ -398,7 +398,7 @@ export default function SevesoApp() {
 
         (localInventory || []).forEach(sub => {
             const sevesoCats = sub.sevesoCategoryIds.map(id => (ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))?.displayId || id).join(", ");
-            const arieCats = sub.arieCategoryIds.map(id => ALL_CATEGORIES[id]?.displayId || id).join(", ");
+            const arieCats = sub.arieCategoryIds.map(id => (ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))?.displayId || id).join(", ");
             wsData.push([
                 sub.productName,
                 sub.casNumber || "-",

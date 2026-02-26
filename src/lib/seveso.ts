@@ -9,7 +9,7 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   H1: { id: 'H1', name: 'H1: Acuut toxisch, cat. 1', group: 'health', displayId: 'H1' },
   H2: { id: 'H2', name: 'H2: Acuut toxisch, cat. 2 + cat. 3 (inad.)', group: 'health', displayId: 'H2' },
   H3: { id: 'H3', name: 'H3: STOT eenmalig, cat. 1', group: 'health', displayId: 'H3' },
-  H4: { id: 'H4', name: 'H4: Bijtend', group: 'health', displayId: 'H4' },
+  H4: { id: 'H4', name: 'H4', group: 'health', displayId: 'H4' },
   
   // Fysiek
   P1a: { id: 'P1a', name: 'P1a: Explosieven (instabiel)', group: 'physical', displayId: 'P1a' },
