@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -146,10 +147,34 @@ export default function SevesoApp() {
             link: [37, 99, 235]
         };
 
-        const addFooter = (pdfDoc: jsPDF) => {
+        const now = new Date();
+        const YYYYMMDD = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+        
+        const getShortId = (id: string) => {
+            let hash = 0;
+            for (let i = 0; i < id.length; i++) {
+                const char = id.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash % 10000).toString().padStart(4, '0');
+        };
+        const shortId = getShortId(selectedCompany.id);
+        const reportNumber = `${shortId}.01.${YYYYMMDD}`;
+
+        const addHeaderAndFooter = (pdfDoc: jsPDF) => {
             const totalPages = (pdfDoc as any).internal.getNumberOfPages();
             for (let i = 2; i <= totalPages; i++) {
                 pdfDoc.setPage(i);
+                
+                // --- HEADER ---
+                pdfDoc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
+                pdfDoc.line(margin, 15, pageWidth - margin, 15);
+                pdfDoc.setFontSize(8);
+                pdfDoc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
+                pdfDoc.text(`Rapportnummer: ${reportNumber}`, pageWidth - margin, 11, { align: 'right' });
+
+                // --- FOOTER ---
                 pdfDoc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
                 pdfDoc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
                 pdfDoc.setFontSize(8);
@@ -170,7 +195,7 @@ export default function SevesoApp() {
         const checkPageBreak = (needed: number) => {
           if (finalY + needed > pageHeight - 25) {
             doc.addPage();
-            finalY = 20;
+            finalY = 25; // Header starts at 15, so start text at 25
             return true;
           }
           return false;
@@ -254,22 +279,6 @@ export default function SevesoApp() {
         titleY += 8;
         doc.text(`Locatie: ${selectedCompany.address || 'Adres niet opgegeven'}`, margin, titleY);
         
-        // Generate automatic report number: short company identifier + SERIE + date
-        const now = new Date();
-        const YYYYMMDD = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
-        
-        const getShortId = (id: string) => {
-            let hash = 0;
-            for (let i = 0; i < id.length; i++) {
-                const char = id.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
-            }
-            return Math.abs(hash % 10000).toString().padStart(4, '0');
-        };
-        const shortId = getShortId(selectedCompany.id);
-        const reportNumber = `${shortId}.01.${YYYYMMDD}`;
-
         titleY += 40;
         doc.setFontSize(10);
         doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
@@ -303,7 +312,7 @@ export default function SevesoApp() {
         addBodyText("Per gevarengroep wordt de aanwezige hoeveelheid vergeleken met de wettelijke drempelwaarde. Indien de som de waarde 1,0 (100%) bereikt of overschrijdt, is het betreffende wettelijke regime van kracht.");
 
         doc.addPage();
-        finalY = 20;
+        finalY = 25;
 
         // --- CHAPTER 3: RESULTS ---
         addMainHeader("3. Resultaten");
@@ -442,14 +451,14 @@ export default function SevesoApp() {
               if (topSubArie) {
                   addBodyText(`Binnen deze gevarengroep levert de stof '${(topSubArie as Substance).productName}' de grootste bijdrage aan de sommatiewaarde.`);
               }
-              addLinkToChapter5(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn. Zie Hoofdstuk 5 voor details.`);
+              addLinkToChapter5(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn. Zie Hoofdstuk 5 for details.`);
           }
         }
 
         // --- CHAPTER 5: LEGAL STEPS ---
         if (isSevesoExceeded || (includeArie && stats.arieExceeded)) {
             doc.addPage();
-            finalY = 20;
+            finalY = 25;
             addMainHeader(`5. Wettelijke Vervolgstappen`);
             addBodyText("De vastgestelde status brengt een reeks wettelijke verplichtingen met zich mee die binnen de gestelde termijnen moeten worden uitgevoerd om compliant te blijven.");
             
@@ -498,7 +507,7 @@ export default function SevesoApp() {
 
         // --- CHAPTER 6: APPENDIX ---
         doc.addPage();
-        let invY = 20; 
+        let invY = 25; 
         addMainHeader("6. Bijlage: Volledige Inventaris");
         invY += 6;
         
@@ -561,7 +570,7 @@ export default function SevesoApp() {
             margin: { left: margin, right: margin }
         });
 
-        addFooter(doc);
+        addHeaderAndFooter(doc);
         const baseName = generateFileName('').slice(0, -1);
         const finalFileName = reportType === 'full' ? `${baseName}.pdf` : `${baseName}.seveso-only.pdf`;
         doc.save(finalFileName);
