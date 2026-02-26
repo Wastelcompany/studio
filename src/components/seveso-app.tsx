@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -371,12 +372,12 @@ export default function SevesoApp() {
             if (isSevesoExceeded) {
                 addSubHeader(`5.${currentStepIdx} Seveso: Verplichtingen`);
                 const steps = [
-                    "Kennisgeving: De inrichting moet een formele kennisgeving indienen bij de relevante overheidinstanties.",
-                    "Veiligheidsbeheerssysteem (VBS): De exploitant dient een integraal VBS te implementeren conform de richtlijn.",
-                    "Dominosituatie-onderzoek: Onderzoek of de inrichting deel uitmaakt van een dominosituatie met buurbedrijven.",
+                    "Kennisgeving: De inrichting moet een formele kennisgeving indienen bij de relevante overheidinstanties (zoals de Omgevingsdienst of DCMR) via het e-loket. Deze melding bevat gegevens over de exploitant, de aanwezige gevaarlijke stoffen en de specifieke drempelwaarde-categorie.",
+                    "Veiligheidsbeheerssysteem (VBS): De exploitant dient een integraal VBS te implementeren conform de richtlijn. Dit systeem omvat de organisatiestructuur, verantwoordelijkheden, werkwijzen en procedures voor het vaststellen en uitvoeren van het preventiebeleid.",
+                    "Dominosituatie-onderzoek: Er moet worden onderzocht of de inrichting deel uitmaakt van een groep van inrichtingen die door hun geografische ligging of de nabijheid van gevaarlijke stoffen de kans op een zwaar ongeval vergroten.",
                     stats.overallStatus === 'Hogedrempel' 
-                        ? "Veiligheidsrapport: Bij overschrijding van de hogedrempelwaarde is een uitgebreid Veiligheidsrapport (VR) verplicht." 
-                        : "PBZO-document: Het opstellen van een Preventiebeleid Zware Ongevallen (PBZO) is verplicht voor lagedrempelinrichtingen."
+                        ? "Veiligheidsrapport (VR): Bij overschrijding van de hogedrempelwaarde is een uitgebreid Veiligheidsrapport verplicht. Dit rapport moet aantonen dat een PBZO en een VBS voor de uitvoering ervan zijn ingevoerd en dat de risico's op zware ongevallen zijn geïdentificeerd." 
+                        : "Preventiebeleid Zware Ongevallen (PBZO): Het opstellen van een schriftelijk PBZO-document is verplicht. Dit beleid beschrijft de algemene doelstellingen en de uitgangspunten van het bedrijf met betrekking tot de beheersing van de risico's."
                 ];
                 steps.forEach(step => {
                     doc.setFontSize(9.5);
@@ -393,10 +394,10 @@ export default function SevesoApp() {
             if (includeArie && stats.arieExceeded) {
                 addSubHeader(`5.${currentStepIdx} ARIE-plicht: Actiepunten`);
                 const arieSteps = [
-                    "Melding NLA: De inrichting moet de status als ARIE-bedrijf melden bij de Nederlandse Arbeidsinspectie.",
-                    "Aanvullende RI&E (ARIE-RI&E): Er moet een specifieke verdieping van de RI&E worden uitgevoerd gericht op zware ongevallen.",
-                    "Preventiebeleid Zware Ongevallen (PBZO): De directie moet een PBZO-document opstellen en implementeren.",
-                    "Informatie en Instructie: Werknemers moeten specifiek getraind worden in de noodprocedures bij zware ongevallen."
+                    "Melding NLA: De inrichting moet de status als ARIE-bedrijf formeel melden bij de Nederlandse Arbeidsinspectie via het daarvoor bestemde meldformulier.",
+                    "Aanvullende RI&E (ARIE-RI&E): De standaard Risico-Inventarisatie en -Evaluatie moet worden aangevuld met een specifieke verdieping gericht op de risico's van zware ongevallen voor werknemers. Hierbij moeten scenario's en de effectiviteit van beheersmaatregelen worden geanalyseerd.",
+                    "Preventiebeleid Zware Ongevallen (PBZO): De directie moet een PBZO-document opstellen en implementeren om te borgen dat de arbeidsveiligheid op een structurele wijze wordt beheerst.",
+                    "Informatie en Instructie: Alle werknemers moeten aantoonbaar specifiek getraind worden in de noodprocedures bij zware ongevallen en het gebruik van relevante veiligheidsvoorzieningen."
                 ];
                 arieSteps.forEach(step => {
                     doc.setFontSize(9.5);
