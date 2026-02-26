@@ -29,80 +29,58 @@ interface ReferenceGuideDialogProps {
 }
 
 export default function ReferenceGuideDialog({ isOpen, onOpenChange }: ReferenceGuideDialogProps) {
-  const [searchTerm, setSearchTerm] = useState("");
+  // Filters for each tab's columns
+  const [sevesoFilters, setSevesoFilters] = useState({ cat: "", desc: "", h: "" });
+  const [namedFilters, setNamedFilters] = useState({ name: "", cas: "" });
+  const [arieFilters, setArieFilters] = useState({ cat: "", desc: "", h: "" });
 
   const filteredSevesoCats = useMemo(() => {
-    if (!searchTerm) return SEVESO_CATEGORY_REFERENCE;
-    const term = searchTerm.toLowerCase();
-    return SEVESO_CATEGORY_REFERENCE.filter(item => 
-        item.categoryId.toLowerCase().includes(term) ||
-        item.categoryName.toLowerCase().includes(term) ||
-        item.hPhrase.toLowerCase().includes(term)
-    );
-  }, [searchTerm]);
+    return SEVESO_CATEGORY_REFERENCE.filter(item => {
+        const matchCat = !sevesoFilters.cat || item.categoryId.toLowerCase().includes(sevesoFilters.cat.toLowerCase());
+        const matchDesc = !sevesoFilters.desc || item.categoryName.toLowerCase().includes(sevesoFilters.desc.toLowerCase());
+        const matchH = !sevesoFilters.h || item.hPhrase.toLowerCase().includes(sevesoFilters.h.toLowerCase());
+        return matchCat && matchDesc && matchH;
+    });
+  }, [sevesoFilters]);
 
   const filteredSevesoNamed = useMemo(() => {
-    if (!searchTerm) return SEVESO_NAMED_REFERENCE;
-    const term = searchTerm.toLowerCase();
-    return SEVESO_NAMED_REFERENCE.filter(item => 
-        item.categoryId.toLowerCase().includes(term) ||
-        item.hPhrase.toLowerCase().includes(term)
-    );
-  }, [searchTerm]);
+    return SEVESO_NAMED_REFERENCE.filter(item => {
+        const matchName = !namedFilters.name || item.categoryId.toLowerCase().includes(namedFilters.name.toLowerCase());
+        const matchCas = !namedFilters.cas || item.hPhrase.toLowerCase().includes(namedFilters.cas.toLowerCase());
+        return matchName && matchCas;
+    });
+  }, [namedFilters]);
 
   const filteredArieCats = useMemo(() => {
-    if (!searchTerm) return ARIE_REFERENCE_GUIDE_DATA;
-    const term = searchTerm.toLowerCase();
-    return ARIE_REFERENCE_GUIDE_DATA.filter(item => 
-        item.categoryId.toLowerCase().includes(term) ||
-        item.categoryName.toLowerCase().includes(term) ||
-        item.hPhrase.toLowerCase().includes(term)
-    );
-  }, [searchTerm]);
+    return ARIE_REFERENCE_GUIDE_DATA.filter(item => {
+        const matchCat = !arieFilters.cat || item.categoryId.toLowerCase().includes(arieFilters.cat.toLowerCase());
+        const matchDesc = !arieFilters.desc || item.categoryName.toLowerCase().includes(arieFilters.desc.toLowerCase());
+        const matchH = !arieFilters.h || item.hPhrase.toLowerCase().includes(arieFilters.h.toLowerCase());
+        return matchCat && matchDesc && matchH;
+    });
+  }, [arieFilters]);
 
   const filteredArieNamed = useMemo(() => {
-    if (!searchTerm) return ARIE_NAMED_REFERENCE;
-    const term = searchTerm.toLowerCase();
-    return ARIE_NAMED_REFERENCE.filter(item => 
-        item.categoryId.toLowerCase().includes(term) ||
-        item.hPhrase.toLowerCase().includes(term)
-    );
-  }, [searchTerm]);
+    return ARIE_NAMED_REFERENCE.filter(item => {
+        const matchName = !namedFilters.name || item.categoryId.toLowerCase().includes(namedFilters.name.toLowerCase());
+        const matchCas = !namedFilters.cas || item.hPhrase.toLowerCase().includes(namedFilters.cas.toLowerCase());
+        return matchName && matchCas;
+    });
+  }, [namedFilters]);
+
+  const clearSevesoFilters = () => setSevesoFilters({ cat: "", desc: "", h: "" });
+  const clearNamedFilters = () => setNamedFilters({ name: "", cas: "" });
+  const clearArieFilters = () => setArieFilters({ cat: "", desc: "", h: "" });
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Referentiegids: Beoordelingsmethode</DialogTitle>
           <DialogDescription>
-            Uitleg over de methode voor de drempelwaardecheck, inclusief koppelingen tussen H-zinnen, categorieën en drempelwaarden.
+            Uitleg over de methode voor de drempelwaardecheck, inclusief koppelingen tussen H-zinnen, categorieën en drempelwaarden. Gebruik de kolomfilters om te zoeken.
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-4">
-            <div className="text-sm text-muted-foreground max-w-xl">
-                De beoordeling is gebaseerd op de Seveso III-richtlijn (2012/18/EU) en de ARIE-regeling. Elke gevarenaanduiding (H-zin) wordt gekoppeld aan een categorie.
-            </div>
-            <div className="relative w-full md:w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Snel zoeken..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 h-9"
-                />
-                {searchTerm && (
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="absolute right-0 top-0 h-9 w-9" 
-                        onClick={() => setSearchTerm("")}
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
-                )}
-            </div>
-        </div>
 
         <Tabs defaultValue="seveso-cats" className="mt-4 flex-grow flex flex-col">
           <TabsList className="grid w-full grid-cols-3 shrink-0">
@@ -112,15 +90,56 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
           </TabsList>
           
           <TabsContent value="seveso-cats" className="flex-grow overflow-hidden mt-2">
+            <div className="flex justify-end mb-2">
+                {(sevesoFilters.cat || sevesoFilters.desc || sevesoFilters.h) && (
+                    <Button variant="ghost" size="sm" onClick={clearSevesoFilters} className="h-7 text-xs">
+                        <X className="mr-2 h-3 w-3" /> Filters wissen
+                    </Button>
+                )}
+            </div>
             <ScrollArea className="h-full">
                 <Table>
                 <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                    <TableRow>
-                    <TableHead>Seveso Categorie</TableHead>
-                    <TableHead>Omschrijving</TableHead>
-                    <TableHead>H-Zin(nen)</TableHead>
-                    <TableHead className="text-right">Lage Drempel (ton)</TableHead>
-                    <TableHead className="text-right">Hoge Drempel (ton)</TableHead>
+                    <TableRow className="bg-muted/30">
+                        <TableHead className="py-2">
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-bold uppercase">Cat.</span>
+                                <Input 
+                                    placeholder="Zoek cat..." 
+                                    value={sevesoFilters.cat} 
+                                    onChange={(e) => setSevesoFilters(prev => ({ ...prev, cat: e.target.value }))}
+                                    className="h-7 text-xs"
+                                />
+                            </div>
+                        </TableHead>
+                        <TableHead className="py-2">
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-bold uppercase">Omschrijving</span>
+                                <Input 
+                                    placeholder="Zoek omschrijving..." 
+                                    value={sevesoFilters.desc} 
+                                    onChange={(e) => setSevesoFilters(prev => ({ ...prev, desc: e.target.value }))}
+                                    className="h-7 text-xs"
+                                />
+                            </div>
+                        </TableHead>
+                        <TableHead className="py-2">
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-bold uppercase">H-Zinnen</span>
+                                <Input 
+                                    placeholder="Zoek H-zin..." 
+                                    value={sevesoFilters.h} 
+                                    onChange={(e) => setSevesoFilters(prev => ({ ...prev, h: e.target.value }))}
+                                    className="h-7 text-xs"
+                                />
+                            </div>
+                        </TableHead>
+                        <TableHead className="text-right py-2 w-24">
+                            <span className="text-[10px] font-bold uppercase">Laag (t)</span>
+                        </TableHead>
+                        <TableHead className="text-right py-2 w-24">
+                            <span className="text-[10px] font-bold uppercase">Hoog (t)</span>
+                        </TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -128,10 +147,10 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                         filteredSevesoCats.map(({ categoryId, categoryName, hPhrase, low, high }) => (
                             <TableRow key={categoryId}>
                                 <TableCell className="font-medium">{categoryId}</TableCell>
-                                <TableCell>{categoryName}</TableCell>
-                                <TableCell className="text-muted-foreground">{hPhrase}</TableCell>
-                                <TableCell className="text-right font-mono">{low.toLocaleString('nl-NL')}</TableCell>
-                                <TableCell className="text-right font-mono">{high.toLocaleString('nl-NL')}</TableCell>
+                                <TableCell className="text-xs">{categoryName}</TableCell>
+                                <TableCell className="text-muted-foreground text-xs">{hPhrase}</TableCell>
+                                <TableCell className="text-right font-mono text-xs">{low.toLocaleString('nl-NL')}</TableCell>
+                                <TableCell className="text-right font-mono text-xs">{high.toLocaleString('nl-NL')}</TableCell>
                             </TableRow>
                         ))
                     ) : (
@@ -145,26 +164,59 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
           </TabsContent>
 
           <TabsContent value="seveso-named" className="flex-grow overflow-hidden mt-2">
+            <div className="flex justify-end mb-2">
+                {(namedFilters.name || namedFilters.cas) && (
+                    <Button variant="ghost" size="sm" onClick={clearNamedFilters} className="h-7 text-xs">
+                        <X className="mr-2 h-3 w-3" /> Filters wissen
+                    </Button>
+                )}
+            </div>
             <ScrollArea className="h-full">
                 <Table>
                 <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                    <TableRow>
-                    <TableHead>Stofnaam</TableHead>
-                    <TableHead>CAS Nummer</TableHead>
-                    <TableHead className="text-right">Seveso Laag (t)</TableHead>
-                    <TableHead className="text-right">Seveso Hoog (t)</TableHead>
-                    <TableHead className="text-right">ARIE (t)</TableHead>
+                    <TableRow className="bg-muted/30">
+                        <TableHead className="py-2">
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-bold uppercase">Stofnaam</span>
+                                <Input 
+                                    placeholder="Zoek naam..." 
+                                    value={namedFilters.name} 
+                                    onChange={(e) => setNamedFilters(prev => ({ ...prev, name: e.target.value }))}
+                                    className="h-7 text-xs"
+                                />
+                            </div>
+                        </TableHead>
+                        <TableHead className="py-2">
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-bold uppercase">CAS</span>
+                                <Input 
+                                    placeholder="Zoek CAS..." 
+                                    value={namedFilters.cas} 
+                                    onChange={(e) => setNamedFilters(prev => ({ ...prev, cas: e.target.value }))}
+                                    className="h-7 text-xs"
+                                />
+                            </div>
+                        </TableHead>
+                        <TableHead className="text-right py-2">
+                            <span className="text-[10px] font-bold uppercase">Laag (t)</span>
+                        </TableHead>
+                        <TableHead className="text-right py-2">
+                            <span className="text-[10px] font-bold uppercase">Hoog (t)</span>
+                        </TableHead>
+                        <TableHead className="text-right py-2">
+                            <span className="text-[10px] font-bold uppercase">ARIE (t)</span>
+                        </TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {filteredSevesoNamed.length > 0 ? (
                         filteredSevesoNamed.map((sub) => (
                             <TableRow key={sub.categoryId}>
-                                <TableCell className="font-medium">{sub.categoryId}</TableCell>
-                                <TableCell className="text-muted-foreground">{sub.hPhrase.replace('CAS: ', '')}</TableCell>
-                                <TableCell className="text-right font-mono">{sub.low.toLocaleString('nl-NL')}</TableCell>
-                                <TableCell className="text-right font-mono">{sub.high.toLocaleString('nl-NL')}</TableCell>
-                                <TableCell className="text-right font-mono font-bold text-primary">{sub.arie ? sub.arie.toLocaleString('nl-NL') : '-'}</TableCell>
+                                <TableCell className="font-medium text-xs">{sub.categoryId}</TableCell>
+                                <TableCell className="text-muted-foreground text-xs">{sub.hPhrase.replace('CAS: ', '')}</TableCell>
+                                <TableCell className="text-right font-mono text-xs">{sub.low.toLocaleString('nl-NL')}</TableCell>
+                                <TableCell className="text-right font-mono text-xs">{sub.high.toLocaleString('nl-NL')}</TableCell>
+                                <TableCell className="text-right font-mono font-bold text-primary text-xs">{sub.arie ? sub.arie.toLocaleString('nl-NL') : '-'}</TableCell>
                             </TableRow>
                         ))
                     ) : (
@@ -178,27 +230,66 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
           </TabsContent>
 
           <TabsContent value="arie" className="flex-grow overflow-hidden mt-2">
+            <div className="flex justify-end mb-2">
+                {(arieFilters.cat || arieFilters.desc || arieFilters.h) && (
+                    <Button variant="ghost" size="sm" onClick={clearArieFilters} className="h-7 text-xs">
+                        <X className="mr-2 h-3 w-3" /> Filters wissen
+                    </Button>
+                )}
+            </div>
              <ScrollArea className="h-full">
                 <div className="space-y-6">
                     <div>
-                        <h4 className="font-semibold text-primary mb-2">ARIE Gevarencategorieën</h4>
+                        <h4 className="font-semibold text-primary mb-2 text-sm">ARIE Gevarencategorieën</h4>
                         <Table>
                             <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                                <TableRow>
-                                <TableHead>ARIE Categorie</TableHead>
-                                <TableHead>Omschrijving</TableHead>
-                                <TableHead>H-Zin(nen)</TableHead>
-                                <TableHead className="text-right">Drempel (ton)</TableHead>
+                                <TableRow className="bg-muted/30">
+                                    <TableHead className="py-2">
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase">Cat.</span>
+                                            <Input 
+                                                placeholder="Zoek cat..." 
+                                                value={arieFilters.cat} 
+                                                onChange={(e) => setArieFilters(prev => ({ ...prev, cat: e.target.value }))}
+                                                className="h-7 text-xs"
+                                            />
+                                        </div>
+                                    </TableHead>
+                                    <TableHead className="py-2">
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase">Omschrijving</span>
+                                            <Input 
+                                                placeholder="Zoek omschrijving..." 
+                                                value={arieFilters.desc} 
+                                                onChange={(e) => setArieFilters(prev => ({ ...prev, desc: e.target.value }))}
+                                                className="h-7 text-xs"
+                                            />
+                                        </div>
+                                    </TableHead>
+                                    <TableHead className="py-2">
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase">H-Zinnen</span>
+                                            <Input 
+                                                placeholder="Zoek H-zin..." 
+                                                value={arieFilters.h} 
+                                                onChange={(e) => setArieFilters(prev => ({ ...prev, h: e.target.value }))}
+                                                className="h-7 text-xs"
+                                            />
+                                        </div>
+                                    </TableHead>
+                                    <TableHead className="text-right py-2">
+                                        <span className="text-[10px] font-bold uppercase">Drempel (t)</span>
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredArieCats.length > 0 ? (
                                     filteredArieCats.map(({ categoryId, categoryName, hPhrase, threshold }) => (
                                         <TableRow key={categoryId}>
-                                            <TableCell className="font-medium">{categoryId}</TableCell>
-                                            <TableCell>{categoryName}</TableCell>
-                                            <TableCell className="text-muted-foreground">{hPhrase}</TableCell>
-                                            <TableCell className="text-right font-mono">{threshold.toLocaleString('nl-NL')}</TableCell>
+                                            <TableCell className="font-medium text-xs">{categoryId}</TableCell>
+                                            <TableCell className="text-xs">{categoryName}</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">{hPhrase}</TableCell>
+                                            <TableCell className="text-right font-mono text-xs">{threshold.toLocaleString('nl-NL')}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
@@ -211,22 +302,44 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                     </div>
 
                     <div className="border-t pt-4">
-                        <h4 className="font-semibold text-primary mb-2">Benoemde Stoffen (ARIE)</h4>
+                        <h4 className="font-semibold text-primary mb-2 text-sm">Benoemde Stoffen (ARIE)</h4>
                         <Table>
                             <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                                <TableRow>
-                                <TableHead>Stofnaam</TableHead>
-                                <TableHead>CAS Nummer</TableHead>
-                                <TableHead className="text-right">ARIE Drempel (ton)</TableHead>
+                                <TableRow className="bg-muted/30">
+                                    <TableHead className="py-2">
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase">Naam</span>
+                                            <Input 
+                                                placeholder="Zoek naam..." 
+                                                value={namedFilters.name} 
+                                                onChange={(e) => setNamedFilters(prev => ({ ...prev, name: e.target.value }))}
+                                                className="h-7 text-xs"
+                                            />
+                                        </div>
+                                    </TableHead>
+                                    <TableHead className="py-2">
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase">CAS</span>
+                                            <Input 
+                                                placeholder="Zoek CAS..." 
+                                                value={namedFilters.cas} 
+                                                onChange={(e) => setNamedFilters(prev => ({ ...prev, cas: e.target.value }))}
+                                                className="h-7 text-xs"
+                                            />
+                                        </div>
+                                    </TableHead>
+                                    <TableHead className="text-right py-2">
+                                        <span className="text-[10px] font-bold uppercase">Drempel (t)</span>
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredArieNamed.length > 0 ? (
                                     filteredArieNamed.map((sub) => (
                                         <TableRow key={sub.categoryId}>
-                                            <TableCell className="font-medium">{sub.categoryId}</TableCell>
-                                            <TableCell className="text-muted-foreground">{sub.hPhrase.replace('CAS: ', '')}</TableCell>
-                                            <TableCell className="text-right font-mono font-bold">{sub.threshold.toLocaleString('nl-NL')}</TableCell>
+                                            <TableCell className="font-medium text-xs">{sub.categoryId}</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">{sub.hPhrase.replace('CAS: ', '')}</TableCell>
+                                            <TableCell className="text-right font-mono font-bold text-xs">{sub.threshold.toLocaleString('nl-NL')}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (

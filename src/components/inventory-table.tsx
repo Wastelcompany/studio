@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, FileSpreadsheet, Upload, Search, X } from "lucide-react";
+import { Trash2, FileSpreadsheet, Upload, Search, X, Filter } from "lucide-react";
 import type { Substance, ThresholdMode, NamedSubstance } from "@/lib/types";
 import { ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, ARIE_THRESHOLDS } from "@/lib/seveso";
 import { Progress } from './ui/progress';
@@ -148,18 +148,35 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
 
 export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, thresholdMode, onUpload, onShowExplanation }: InventoryTableProps) {
   const [editingValue, setEditingValue] = useState<{id: string, value: string} | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Per-column filters
+  const [filters, setFilters] = useState({
+    name: "",
+    seveso: "",
+    arie: "",
+  });
 
   const filteredInventory = useMemo(() => {
-    if (!searchTerm) return inventory;
-    const term = searchTerm.toLowerCase();
-    return inventory.filter(sub => 
-      sub.productName.toLowerCase().includes(term) ||
-      (sub.casNumber || "").toLowerCase().includes(term) ||
-      sub.sevesoCategoryIds.some(id => id.toLowerCase().includes(term)) ||
-      sub.arieCategoryIds.some(id => id.toLowerCase().includes(term))
-    );
-  }, [inventory, searchTerm]);
+    return inventory.filter(sub => {
+      const matchName = !filters.name || 
+        sub.productName.toLowerCase().includes(filters.name.toLowerCase()) ||
+        (sub.casNumber || "").toLowerCase().includes(filters.name.toLowerCase());
+      
+      const matchSeveso = !filters.seveso || 
+        sub.sevesoCategoryIds.some(id => id.toLowerCase().includes(filters.seveso.toLowerCase()));
+        
+      const matchArie = !filters.arie || 
+        sub.arieCategoryIds.some(id => id.toLowerCase().includes(filters.arie.toLowerCase()));
+
+      return matchName && matchSeveso && matchArie;
+    });
+  }, [inventory, filters]);
+
+  const clearFilters = () => {
+    setFilters({ name: "", seveso: "", arie: "" });
+  };
+
+  const hasFilters = filters.name || filters.seveso || filters.arie;
 
   if (inventory.length === 0) {
     return (
@@ -175,38 +192,66 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
   return (
     <Card className="overflow-hidden border-primary/20">
       <CardHeader className="border-b bg-muted/20 pb-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
             <CardTitle className="text-lg">Inventarisatie</CardTitle>
-            <div className="relative w-full md:w-72">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Zoek op naam, CAS of categorie..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 h-9 bg-background"
-                />
-                {searchTerm && (
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="absolute right-0 top-0 h-9 w-9" 
-                        onClick={() => setSearchTerm("")}
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
-                )}
-            </div>
+            {hasFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 text-xs">
+                    <X className="mr-2 h-3 w-3" /> Filters wissen
+                </Button>
+            )}
         </div>
       </CardHeader>
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead className="w-[20%]">Productnaam</TableHead>
-            <TableHead className="w-[15%]">Seveso Categorieën</TableHead>
-            <TableHead className="w-[15%]">ARIE Categorieën</TableHead>
-            <TableHead className="text-right w-24">Voorraad (ton)</TableHead>
-            <TableHead className="w-[20%]">Bijdrage per Categorie</TableHead>
-            <TableHead className="text-right">Acties</TableHead>
+          <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableHead className="w-[25%] py-3">
+                <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider">Productnaam / CAS</span>
+                    <Input 
+                        placeholder="Filter naam/CAS..." 
+                        value={filters.name} 
+                        onChange={(e) => setFilters(prev => ({ ...prev, name: e.target.value }))}
+                        className="h-7 text-xs bg-background"
+                    />
+                </div>
+            </TableHead>
+            <TableHead className="w-[15%] py-3">
+                <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider">Seveso</span>
+                    <Input 
+                        placeholder="Filter cat..." 
+                        value={filters.seveso} 
+                        onChange={(e) => setFilters(prev => ({ ...prev, seveso: e.target.value }))}
+                        className="h-7 text-xs bg-background"
+                    />
+                </div>
+            </TableHead>
+            <TableHead className="w-[15%] py-3">
+                <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider">ARIE</span>
+                    <Input 
+                        placeholder="Filter cat..." 
+                        value={filters.arie} 
+                        onChange={(e) => setFilters(prev => ({ ...prev, arie: e.target.value }))}
+                        className="h-7 text-xs bg-background"
+                    />
+                </div>
+            </TableHead>
+            <TableHead className="text-right w-24 py-3">
+                <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider block">Voorraad</span>
+                    <div className="h-7" /> {/* Spacer to align with inputs */}
+                </div>
+            </TableHead>
+            <TableHead className="w-[20%] py-3">
+                <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider">Ratio</span>
+                    <div className="h-7" />
+                </div>
+            </TableHead>
+            <TableHead className="text-right py-3">
+                <div className="h-7" />
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -319,7 +364,7 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
           ) : (
             <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    Geen resultaten gevonden voor "{searchTerm}".
+                    Geen resultaten gevonden voor de opgegeven filters.
                 </TableCell>
             </TableRow>
           )}

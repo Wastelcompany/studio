@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Users, UserCog, Pencil, UserX, UserCheck, Trash2, Building2, Search } from "lucide-react";
+import { Loader2, LogOut, Users, UserCog, Pencil, UserX, UserCheck, Trash2, Building2, Search, X } from "lucide-react";
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -60,7 +60,10 @@ export default function AdminPage() {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [newGroupName, setNewGroupName] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Per-column filters
+  const [userFilters, setUserFilters] = useState({ email: "", group: "", status: "" });
+  const [companyFilters, setCompanyFilters] = useState({ name: "", group: "", owner: "" });
 
   const isAdmin = user?.email === 'post@wastelcompany.eu';
 
@@ -172,167 +175,272 @@ export default function AdminPage() {
 
   const renderUsersTable = () => {
     const filteredUsers = (users || [])
-      .filter(u => 
-        u.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        (u.customerName || '').toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      .filter(u => {
+          const matchEmail = !userFilters.email || u.email.toLowerCase().includes(userFilters.email.toLowerCase());
+          const matchGroup = !userFilters.group || (u.customerName || '').toLowerCase().includes(userFilters.group.toLowerCase());
+          const matchStatus = !userFilters.status || (
+              (userFilters.status === 'admin' && u.email === 'post@wastelcompany.eu') ||
+              (userFilters.status === 'actief' && !u.disabled && u.email !== 'post@wastelcompany.eu') ||
+              (userFilters.status === 'gedeactiveerd' && u.disabled)
+          );
+          return matchEmail && matchGroup && matchStatus;
+      })
       .sort((a, b) => {
         if (a.email === 'post@wastelcompany.eu') return -1;
         if (b.email === 'post@wastelcompany.eu') return 1;
         return (a.customerName || '').localeCompare(b.customerName || '') || a.email.localeCompare(b.email);
       });
 
-    if (filteredUsers.length === 0) {
-        return <p className="text-center text-muted-foreground py-8">Geen gebruikers gevonden.</p>
-    }
+    const hasUserFilters = userFilters.email || userFilters.group || userFilters.status;
 
     return (
-        <ScrollArea className="h-[500px]">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Klantgroep</TableHead>
-                        <TableHead>Geregistreerd op</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Acties</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {filteredUsers.map((u) => (
-                        <TableRow key={u.uid} className={u.disabled ? 'bg-muted/50' : ''}>
-                            <TableCell className="font-medium">{u.email}</TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {u.customerName}
-                            </TableCell>
-                            <TableCell>
-                                {u.createdAt?.seconds ? format(new Date(u.createdAt.seconds * 1000), 'dd-MM-yyyy HH:mm') : 'N/A'}
-                            </TableCell>
-                            <TableCell>
-                               {u.email === 'post@wastelcompany.eu' ? (
-                                    <Badge variant="default" className="bg-primary/80">Admin</Badge>
-                                ) : u.disabled ? (
-                                    <Badge variant="destructive">Gedeactiveerd</Badge>
-                                ) : (
-                                    <Badge variant="secondary">Actief</Badge>
-                                )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {u.email !== 'post@wastelcompany.eu' && (
-                                <div className="flex justify-end gap-1">
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" onClick={() => handleOpenGroupDialog(u)} disabled={isUpdating}>
-                                          <Pencil className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Groep aanpassen</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" onClick={() => handleToggleDisable(u)} disabled={isUpdating}>
-                                            {u.disabled ? <UserCheck className="h-4 w-4 text-green-600" /> : <UserX className="h-4 w-4 text-destructive" />}
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>{u.disabled ? 'Gebruiker activeren' : 'Gebruiker deactiveren'}</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteUserDialog(u)} disabled={isUpdating}>
-                                          <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Gebruikersdata verwijderen</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
+        <div className="space-y-4">
+            <div className="flex justify-between items-center px-1">
+                <span className="text-sm text-muted-foreground">{filteredUsers.length} resultaten</span>
+                {hasUserFilters && (
+                    <Button variant="ghost" size="sm" onClick={() => setUserFilters({ email: "", group: "", status: "" })} className="h-8 text-xs">
+                        <X className="mr-2 h-3 w-3" /> Filters wissen
+                    </Button>
+                )}
+            </div>
+            <ScrollArea className="h-[500px]">
+                <Table>
+                    <TableHeader className="bg-muted/30">
+                        <TableRow>
+                            <TableHead className="py-3">
+                                <div className="space-y-1">
+                                    <span className="text-xs font-bold uppercase tracking-wider">Email</span>
+                                    <Input 
+                                        placeholder="Filter email..." 
+                                        value={userFilters.email} 
+                                        onChange={(e) => setUserFilters(prev => ({ ...prev, email: e.target.value }))}
+                                        className="h-7 text-xs bg-background"
+                                    />
                                 </div>
-                              )}
-                            </TableCell>
+                            </TableHead>
+                            <TableHead className="py-3">
+                                <div className="space-y-1">
+                                    <span className="text-xs font-bold uppercase tracking-wider">Klantgroep</span>
+                                    <Input 
+                                        placeholder="Filter groep..." 
+                                        value={userFilters.group} 
+                                        onChange={(e) => setUserFilters(prev => ({ ...prev, group: e.target.value }))}
+                                        className="h-7 text-xs bg-background"
+                                    />
+                                </div>
+                            </TableHead>
+                            <TableHead className="py-3">
+                                <div className="space-y-1">
+                                    <span className="text-xs font-bold uppercase tracking-wider">Registratie</span>
+                                    <div className="h-7" />
+                                </div>
+                            </TableHead>
+                            <TableHead className="py-3">
+                                <div className="space-y-1">
+                                    <span className="text-xs font-bold uppercase tracking-wider">Status</span>
+                                    <Input 
+                                        placeholder="Filter status..." 
+                                        value={userFilters.status} 
+                                        onChange={(e) => setUserFilters(prev => ({ ...prev, status: e.target.value }))}
+                                        className="h-7 text-xs bg-background"
+                                    />
+                                </div>
+                            </TableHead>
+                            <TableHead className="text-right py-3">
+                                <div className="h-7" />
+                            </TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </ScrollArea>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredUsers.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Geen gebruikers gevonden.</TableCell>
+                            </TableRow>
+                        ) : (
+                            filteredUsers.map((u) => (
+                                <TableRow key={u.uid} className={u.disabled ? 'bg-muted/50' : ''}>
+                                    <TableCell className="font-medium">{u.email}</TableCell>
+                                    <TableCell className="text-muted-foreground">
+                                      {u.customerName}
+                                    </TableCell>
+                                    <TableCell>
+                                        {u.createdAt?.seconds ? format(new Date(u.createdAt.seconds * 1000), 'dd-MM-yyyy HH:mm') : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                       {u.email === 'post@wastelcompany.eu' ? (
+                                            <Badge variant="default" className="bg-primary/80">Admin</Badge>
+                                        ) : u.disabled ? (
+                                            <Badge variant="destructive">Gedeactiveerd</Badge>
+                                        ) : (
+                                            <Badge variant="secondary">Actief</Badge>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      {u.email !== 'post@wastelcompany.eu' && (
+                                        <div className="flex justify-end gap-1">
+                                          <TooltipProvider>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => handleOpenGroupDialog(u)} disabled={isUpdating}>
+                                                  <Pencil className="h-4 w-4" />
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>Groep aanpassen</p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+
+                                          <TooltipProvider>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => handleToggleDisable(u)} disabled={isUpdating}>
+                                                    {u.disabled ? <UserCheck className="h-4 w-4 text-green-600" /> : <UserX className="h-4 w-4 text-destructive" />}
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>{u.disabled ? 'Gebruiker activeren' : 'Gebruiker deactiveren'}</p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+
+                                          <TooltipProvider>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteUserDialog(u)} disabled={isUpdating}>
+                                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>Gebruikersdata verwijderen</p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+                                        </div>
+                                      )}
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </ScrollArea>
+        </div>
     );
   };
 
   const renderCompaniesTable = () => {
     const filteredCompanies = (companies || [])
-      .filter(c => 
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        (c.address || '').toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      .filter(c => {
+        const owner = users?.find(u => u.uid === c.userId);
+        const matchName = !companyFilters.name || c.name.toLowerCase().includes(companyFilters.name.toLowerCase()) || getShortId(c.id).includes(companyFilters.name);
+        const matchGroup = !companyFilters.group || (owner?.customerName || '').toLowerCase().includes(companyFilters.group.toLowerCase());
+        const matchOwner = !companyFilters.owner || (owner?.email || '').toLowerCase().includes(companyFilters.owner.toLowerCase());
+        return matchName && matchGroup && matchOwner;
+      })
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    if (filteredCompanies.length === 0) {
-        return <p className="text-center text-muted-foreground py-8">Geen bedrijven gevonden.</p>
-    }
+    const hasCompanyFilters = companyFilters.name || companyFilters.group || companyFilters.owner;
 
     return (
-        <ScrollArea className="h-[500px]">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Nummer</TableHead>
-                        <TableHead>Bedrijfsnaam</TableHead>
-                        <TableHead>Klantgroep</TableHead>
-                        <TableHead>Eigenaar (Email)</TableHead>
-                        <TableHead className="text-right">Acties</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {filteredCompanies.map((c) => {
-                        const owner = users?.find(u => u.uid === c.userId);
-                        return (
-                            <TableRow key={c.id}>
-                                <TableCell className="font-mono text-xs font-bold text-primary">
-                                    {getShortId(c.id)}
-                                </TableCell>
-                                <TableCell className="font-medium">{c.name}</TableCell>
-                                <TableCell className="text-muted-foreground">
-                                    {owner?.customerName || 'Onbekend'}
-                                </TableCell>
-                                <TableCell className="text-xs">
-                                    {owner?.email || 'N/A'}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon" 
-                                                    onClick={() => handleOpenDeleteCompanyDialog(c)} 
-                                                    disabled={isUpdating}
-                                                >
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Bedrijf verwijderen</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </TableCell>
+        <div className="space-y-4">
+            <div className="flex justify-between items-center px-1">
+                <span className="text-sm text-muted-foreground">{filteredCompanies.length} resultaten</span>
+                {hasCompanyFilters && (
+                    <Button variant="ghost" size="sm" onClick={() => setCompanyFilters({ name: "", group: "", owner: "" })} className="h-8 text-xs">
+                        <X className="mr-2 h-3 w-3" /> Filters wissen
+                    </Button>
+                )}
+            </div>
+            <ScrollArea className="h-[500px]">
+                <Table>
+                    <TableHeader className="bg-muted/30">
+                        <TableRow>
+                            <TableHead className="py-3">
+                                <div className="space-y-1">
+                                    <span className="text-xs font-bold uppercase tracking-wider">Bedrijf / ID</span>
+                                    <Input 
+                                        placeholder="Filter naam/ID..." 
+                                        value={companyFilters.name} 
+                                        onChange={(e) => setCompanyFilters(prev => ({ ...prev, name: e.target.value }))}
+                                        className="h-7 text-xs bg-background"
+                                    />
+                                </div>
+                            </TableHead>
+                            <TableHead className="py-3">
+                                <div className="space-y-1">
+                                    <span className="text-xs font-bold uppercase tracking-wider">Klantgroep</span>
+                                    <Input 
+                                        placeholder="Filter groep..." 
+                                        value={companyFilters.group} 
+                                        onChange={(e) => setCompanyFilters(prev => ({ ...prev, group: e.target.value }))}
+                                        className="h-7 text-xs bg-background"
+                                    />
+                                </div>
+                            </TableHead>
+                            <TableHead className="py-3">
+                                <div className="space-y-1">
+                                    <span className="text-xs font-bold uppercase tracking-wider">Eigenaar</span>
+                                    <Input 
+                                        placeholder="Filter eigenaar..." 
+                                        value={companyFilters.owner} 
+                                        onChange={(e) => setCompanyFilters(prev => ({ ...prev, owner: e.target.value }))}
+                                        className="h-7 text-xs bg-background"
+                                    />
+                                </div>
+                            </TableHead>
+                            <TableHead className="text-right py-3">
+                                <div className="h-7" />
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredCompanies.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Geen bedrijven gevonden.</TableCell>
                             </TableRow>
-                        );
-                    })}
-                </TableBody>
-            </Table>
-        </ScrollArea>
+                        ) : (
+                            filteredCompanies.map((c) => {
+                                const owner = users?.find(u => u.uid === c.userId);
+                                return (
+                                    <TableRow key={c.id}>
+                                        <TableCell>
+                                            <div className="font-medium">{c.name}</div>
+                                            <div className="font-mono text-[10px] text-primary font-bold">[{getShortId(c.id)}]</div>
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                            {owner?.customerName || 'Onbekend'}
+                                        </TableCell>
+                                        <TableCell className="text-xs">
+                                            {owner?.email || 'N/A'}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="icon" 
+                                                            onClick={() => handleOpenDeleteCompanyDialog(c)} 
+                                                            disabled={isUpdating}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Bedrijf verwijderen</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })
+                        )}
+                    </TableBody>
+                </Table>
+            </ScrollArea>
+        </div>
     );
   };
 
@@ -375,15 +483,6 @@ export default function AdminPage() {
                 <p className="text-muted-foreground">Beheer gebruikers, klantgroepen en bedrijfsgegevens.</p>
             </div>
             <div className="flex items-center gap-2">
-                <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Zoeken..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-9 w-[200px] md:w-[300px] bg-background"
-                    />
-                </div>
                 <Button variant="outline" onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" /> Uitloggen
                 </Button>
