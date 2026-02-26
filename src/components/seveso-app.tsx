@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -45,6 +46,7 @@ export default function SevesoApp() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   
   const companiesQuery = useMemoFirebase(() => {
+    // Only query if we have a customerId to avoid permission errors
     if (!userProfile?.customerId || userProfile?.disabled) return null;
     return query(collection(db, 'companies'), where('customerId', '==', userProfile.customerId));
   }, [userProfile, db]);
@@ -53,9 +55,10 @@ export default function SevesoApp() {
   const companies = useMemo(() => companiesData?.sort((a, b) => a.name.localeCompare(b.name)) ?? [], [companiesData]);
 
   const inventoryQuery = useMemoFirebase(() => {
-    if (!selectedCompanyId) return null;
+    // CRITICAL FIX: Ensure user and profile are available before querying inventory to prevent "Missing or insufficient permissions"
+    if (!selectedCompanyId || !user || !userProfile) return null;
     return collection(db, 'companies', selectedCompanyId, 'inventory');
-  }, [selectedCompanyId, db]);
+  }, [selectedCompanyId, db, user, userProfile]);
 
   const { data: firestoreInventory, isLoading: isLoadingInventory } = useCollection<Substance>(inventoryQuery);
 
@@ -250,7 +253,7 @@ export default function SevesoApp() {
         doc.text(`Rapportnummer: ${reportNumber}`, margin, titleY);
 
         doc.addPage();
-        finalY = 30; // More space before Chapter 1
+        finalY = 35; // Increased space before Chapter 1 per user request
 
         // --- CHAPTER 1 & 2 ---
         addMainHeader("1. Inleiding en Kaderstelling");
@@ -324,7 +327,8 @@ export default function SevesoApp() {
                 doc.text(group.name, x, currentY);
                 doc.setFont('helvetica', 'bold'); 
                 doc.setTextColor(isExceeded ? colors.destructive[0] : colors.foreground[0], isExceeded ? colors.destructive[1] : colors.foreground[1], isExceeded ? colors.destructive[2] : colors.foreground[2]); 
-                doc.text(`${ratio.toFixed(2)} / ${percentage}%`, x + width, currentY, { align: 'right' });
+                // Displaying both factor and percentage per user request for consistency
+                doc.text(`${ratio.toFixed(2)} (${percentage}%)`, x + width, currentY, { align: 'right' });
                 currentY += 2.5; 
                 const barHeight = 2.5; 
                 doc.setFillColor(241, 245, 249); 
@@ -396,6 +400,7 @@ export default function SevesoApp() {
             if (topSub) {
                 addBodyText(`De stof met de grootste bijdrage binnen deze groep is '${(topSub as Substance).productName}', wat een belangrijk aangrijpingspunt is voor risicobeheersing.`);
             }
+            // Explicit reference to Chapter 5 as per user request
             addBodyText(`Voor de hieruit voortvloeiende wettelijke verplichtingen wordt verwezen naar Hoofdstuk 5 van deze rapportage.`);
         }
 
@@ -408,15 +413,18 @@ export default function SevesoApp() {
               addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving momenteel niet aangemerkt als ARIE-plichtig. Het hoogste resultaat van de sommatie binnen de ARIE-gevarengroepen bedraagt ${stats.arieTotal.toFixed(2)} (${Math.round(stats.arieTotal * 100)}%).`);
           } else {
               const topSubArie = getTopContributor(criticalArieGroup.group, 'arie');
+              // Using "resultaat van de sommatie" per user instructions
               addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Voor de gevarengroep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${stats.arieTotal.toFixed(2)} (${Math.round(stats.arieTotal * 100)}%), waarmee de wettelijke drempelwaarde van 1.00 wordt overschreden.`);
               if (topSubArie) {
                   addBodyText(`Binnen deze gevarengroep levert de stof '${(topSubArie as Substance).productName}' de grootste bijdrage aan de sommatiewaarde.`);
               }
-              addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn. Voor de hieruit voortvloeiende actiepunten wordt verwezen naar Hoofdstuk 5.`);
+              // Improved layout and explicit reference to Chapter 5
+              addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te bescherming, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn. Voor de hieruit voortvloeiende actiepunten wordt verwezen naar Hoofdstuk 5.`);
           }
         }
 
         // --- CHAPTER 5: WETTELIJKE VERVOLGSTAPPEN ---
+        // Always starting on a new page if there are results to show
         if (isSevesoExceeded || (includeArie && stats.arieExceeded)) {
             doc.addPage();
             finalY = 25;
@@ -469,6 +477,7 @@ export default function SevesoApp() {
         // --- BIJLAGE: INVENTARIS ---
         doc.addPage();
         finalY = 25; 
+        // No chapter number for Appendix as per user request
         addMainHeader("Bijlage: Volledige Inventaris");
         
         const tableHead = includeArie 
