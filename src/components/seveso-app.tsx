@@ -134,6 +134,7 @@ export default function SevesoApp() {
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         const margin = 15;
+        const fullContentWidth = pageWidth - (margin * 2);
         let finalY = 18;
 
         const colors = {
@@ -170,6 +171,15 @@ export default function SevesoApp() {
           return false;
         };
 
+        const addMainHeader = (text: string) => {
+            checkPageBreak(15);
+            doc.setFontSize(11);
+            doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+            doc.setFont('helvetica', 'bold');
+            doc.text(text, margin, finalY);
+            finalY += 8;
+        };
+
         const addSubHeader = (text: string) => {
             checkPageBreak(12);
             doc.setFontSize(10);
@@ -180,7 +190,7 @@ export default function SevesoApp() {
         };
 
         const addBodyText = (text: string) => {
-            const splitText = doc.splitTextToSize(text, pageWidth - (margin * 2));
+            const splitText = doc.splitTextToSize(text, fullContentWidth);
             checkPageBreak(splitText.length * 5 + 5);
             doc.setFontSize(9.5);
             doc.setFont('helvetica', 'normal');
@@ -211,7 +221,7 @@ export default function SevesoApp() {
         // Bedrijfsgegevens box
         if (selectedCompany.name || selectedCompany.address) {
             doc.setFillColor(colors.bgLight[0], colors.bgLight[1], colors.bgLight[2]);
-            doc.rect(margin, finalY, pageWidth - (margin * 2), 20, 'F');
+            doc.rect(margin, finalY, fullContentWidth, 20, 'F');
             let detailsY = finalY + 6;
             doc.setFontSize(10);
             doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
@@ -227,13 +237,7 @@ export default function SevesoApp() {
         const stats = calculateSummations(localInventory, thresholdMode);
 
         // --- 1. Inleiding en Kaderstelling ---
-        checkPageBreak(30);
-        doc.setFontSize(11); 
-        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); 
-        doc.setFont('helvetica', 'bold'); 
-        doc.text("1. Inleiding en Kaderstelling", margin, finalY); 
-        finalY += 8;
-
+        addMainHeader("1. Inleiding en Kaderstelling");
         addBodyText(`Binnen de bedrijfsvoering van ${selectedCompany.name || 'het bedrijf'} op de aangegeven locatie wordt gewerkt met diverse gevaarlijke stoffen. Om de veiligheidsrisico's voor zowel de omgeving als de eigen medewerkers te beheersen en te minimaliseren, is de inrichting onderworpen aan specifieke wettelijke kaders. Deze rapportage heeft tot doel de actuele status van de locatie te toetsen aan de hand van de volgende twee regelgevingen:`);
         
         addSubHeader("1.1 De Seveso-richtlijn (Omgevingswet / Bal)");
@@ -243,13 +247,7 @@ export default function SevesoApp() {
         addBodyText("De regeling Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE) is verankerd in het Arbeidsomstandighedenbesluit (Hoofdstuk 2, Afdeling 2). Waar de Seveso-richtlijn naar buiten kijkt, richt de ARIE-regeling zich op de interne veiligheid. Het doel is werknemers te beschermen tegen de gevolgen van zware ongevallen op de werkvloer. De ARIE fungeert vaak als een vangnet voor risicovolle situaties die net onder de Seveso-drempels blijven of waarbij stoffen betrokken zijn die specifiek binnen een arbeidsomgeving een groot risico vormen.");
 
         // --- 2. De Beoordelingssystematiek ---
-        checkPageBreak(30);
-        doc.setFontSize(11); 
-        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); 
-        doc.setFont('helvetica', 'bold'); 
-        doc.text("2. De Beoordelingssystematiek", margin, finalY); 
-        finalY += 8;
-
+        addMainHeader("2. De Beoordelingssystematiek");
         addBodyText("Om te bepalen of een inrichting onder een van deze kaders valt, wordt een vaste systematiek gevolgd waarbij de intrinsieke eigenschappen van stoffen worden vertaald naar risicocategorieën.");
 
         addSubHeader("2.1 Indeling op basis van H-zinnen");
@@ -259,17 +257,13 @@ export default function SevesoApp() {
         addBodyText("Voor de uiteindelijke statusbepaling wordt de sommatieregel toegepast. Per gevarengroep wordt de aanwezige hoeveelheid van een stof vergeleken met de wettelijke drempelwaarde voor die categorie (de zogenaamde 'fractie'). De fracties van alle stoffen binnen één categorie worden bij elkaar opgeteld. Indien de som van deze fracties de waarde 1,0 (100%) bereikt of overschrijdt, is het betreffende wettelijke regime van kracht.");
 
         // --- 3. Resultaten ---
-        checkPageBreak(60);
-        doc.setFontSize(11); 
-        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); 
-        doc.setFont('helvetica', 'bold'); 
-        doc.text("3. Resultaten", margin, finalY); 
-        finalY += 10;
+        addMainHeader("3. Resultaten");
+        finalY += 2;
 
         const isSevesoExceeded = stats.overallStatus !== 'Geen';
         
         // Status boxes
-        const boxWidth = (pageWidth - (margin * 2) - 8) / 2;
+        const boxWidth = (fullContentWidth - 8) / 2;
         doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]); 
         doc.setFillColor(255, 255, 255); 
         doc.roundedRect(margin, finalY, boxWidth, 20, 1.5, 1.5, 'FD');
@@ -329,52 +323,41 @@ export default function SevesoApp() {
         };
 
         if (includeArie) {
-            const colWidth = (pageWidth - (margin * 2) - 15) / 2;
+            const colWidth = (fullContentWidth - 15) / 2;
             const startSommatieY = finalY;
             const endSevesoY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, startSommatieY, colWidth);
             const endArieY = drawDashboardColumn("ARIE Sommatie", stats.arieSummationGroups, true, margin + colWidth + 15, startSommatieY, colWidth);
             finalY = Math.max(endSevesoY, endArieY) + 12;
         } else {
-            const colWidth = (pageWidth - (margin * 2));
-            finalY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, finalY, colWidth) + 12;
+            finalY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, finalY, fullContentWidth) + 12;
         }
 
         // --- 4. Conclusie ---
-        checkPageBreak(30);
-        doc.setFontSize(11); 
-        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); 
-        doc.setFont('helvetica', 'bold'); 
-        doc.text("4. Conclusie", margin, finalY); 
-        finalY += 8;
+        addMainHeader("4. Conclusie");
 
         addSubHeader("4.1 Seveso");
         const sevesoMaxRatio = Math.max(...stats.summationGroups.map(g => g.totalRatio));
         const marginValue = Math.max(0, 100 - Math.round(sevesoMaxRatio * 100));
         
         if (!isSevesoExceeded) {
-            addBodyText(`Op basis van de uitgevoerde inventarisatie en sommatie kan worden geconcludeerd dat de inrichting niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting binnen de gevarengroepen bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is voordat de ondergrens van de Seveso-richtlijn in beeld komt.\n\nVanuit het perspectief van de externe veiligheid wordt de locatie beschouwd als een reguliere inrichting. Er zijn geen aanvullende publiekrechtelijke verplichtingen van kracht met betrekking tot het voorkomen van zware ongevallen richting de omgeving. Deze status is echter een momentopname; bij structurele wijzigingen in de procesvoering of een significante toename van de opslagcapaciteit van toxische of ontvlambare stoffen is een herberekening strikt noodzakelijk.`);
+            addBodyText(`Op basis van de uitgevoerde inventarisatie en sommatie kan worden geconcludeerd dat de inrichting niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting binnen de gevarengroepen bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is voordat de ondergrens van de Seveso-richtlijn in beeld komt. Vanuit het perspectief van de externe veiligheid wordt de locatie beschouwd als een reguliere inrichting. Er zijn geen aanvullende publiekrechtelijke verplichtingen van kracht met betrekking tot het voorkomen van zware ongevallen richting de omgeving.`);
         } else {
-            addBodyText(`Op basis van de huidige inventarisatie wordt de inrichting aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. De wettelijke drempelwaarde voor de categorie ${stats.criticalGroup} wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%).\n\nDit betekent dat de inrichting onderworpen is aan de verplichtingen van de Seveso-richtlijn gericht op het beheersen van de risico's van zware ongevallen met gevaarlijke stoffen. De overschrijding brengt specifieke administratieve en organisatorische verplichtingen met zich mee om de externe veiligheid te waarborgen. Zie hoofdstuk 5 voor de wettelijke vervolgstappen.`);
+            addBodyText(`Op basis van de huidige inventarisatie wordt de inrichting aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. De wettelijke drempelwaarde voor de categorie ${stats.criticalGroup} wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%). Deze overschrijding brengt specifieke administratieve en organisatorische verplichtingen met zich mee om de externe veiligheid te waarborgen. De exploitant is verplicht om aan te tonen dat alle noodzakelijke maatregelen zijn getroffen om zware ongevallen te voorkomen en de gevolgen daarvan te beperken.`);
         }
 
         if (includeArie) {
+            finalY -= 2; // Verklein witruimte tussen 4.1 en 4.2
             addSubHeader("4.2 ARIE");
             if (!stats.arieExceeded) {
                 addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving niet aangemerkt als ARIE-plichtig. De hoogste fractie binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%. De inrichting kan voor de arbeidsveiligheid volstaan met de reguliere Risico-Inventarisatie en -Evaluatie (RI&E).`);
             } else {
-                addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Met een gecumuleerde fractie van ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%) in de gevarengroep ${stats.criticalArieGroup} wordt de wettelijke drempelwaarde overschreden.\n\nDeze status houdt in dat de inrichting verplicht is aanvullende maatregelen te treffen om zware ongevallen op de werkvloer te voorkomen en de gevolgen daarvan voor werknemers te beperken. De standaard Risico-Inventarisatie en -Evaluatie (RI&E) dient te worden uitgebreid met een specifieke ARIE-module. Zie hoofdstuk 5 voor de actuele actiepunten.`);
+                addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Met een gecumuleerde fractie van ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%) in de gevarengroep ${stats.criticalArieGroup} wordt de wettelijke drempelwaarde overschreden. Deze status houdt in dat de inrichting verplicht is aanvullende maatregelen te treffen om zware ongevallen op de werkvloer te voorkomen en de gevolgen daarvan voor werknemers te beperken. De standaard Risico-Inventarisatie en -Evaluatie (RI&E) dient te worden uitgebreid met een specifieke ARIE-module.`);
             }
         }
 
         // --- 5. Wettelijke Vervolgstappen ---
         if (isSevesoExceeded || stats.arieExceeded) {
-            checkPageBreak(30);
-            doc.setFontSize(11); 
-            doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); 
-            doc.setFont('helvetica', 'bold'); 
-            doc.text(`5. Wettelijke Vervolgstappen`, margin, finalY); 
-            finalY += 10;
-            
+            addMainHeader(`5. Wettelijke Vervolgstappen`);
             addBodyText("Naar aanleiding van de bovenstaande conclusies dient de inrichting rekening te houden met de volgende juridische en organisatorische vervolgstappen.");
 
             let stepCounter = 1;
@@ -382,22 +365,22 @@ export default function SevesoApp() {
             if (isSevesoExceeded) {
                 addSubHeader(`5.${stepCounter} Seveso: Verplichtingen bij overschrijding van de drempelwaarden`);
                 const steps = [
-                    "Kennisgeving: De inrichting moet onverwijld een formele kennisgeving van de Seveso-status indienen bij het bevoegd gezag (de Omgevingsdienst) en de Veiligheidsregio via het Omgevingsloket.",
+                    "Kennisgeving: De inrichting moet onverwijld een formele kennisgeving van de Seveso-status indienen bij het bevoegd gezag (de Omgevingsdienst) via het Omgevingsloket.",
                     "Veiligheidsbeheerssysteem (VBS): De exploitant dient een integraal VBS te implementeren dat voldoet aan bijlage III van de Seveso-III richtlijn.",
-                    "Dominosituatie-onderzoek: Er moet worden onderzocht of de inrichting deel uitmaakt van een dominosituatie, waarbij incidenten op de eigen locatie effect kunnen hebben op naburige risicobedrijven (of vice versa).",
+                    "Dominosituatie-onderzoek: Er moet worden onderzocht of de inrichting deel uitmaakt van een dominosituatie met naburige bedrijven.",
                     stats.overallStatus === 'Hogedrempel' 
-                        ? "Veiligheidsrapport (Hogedrempel): Bij overschrijding van de hogedrempelwaarde is het opstellen van een gedetailleerd Veiligheidsrapport (VR) verplicht, inclusief kwantitatieve risicoanalyses (QRA) om de externe veiligheidscontouren vast te leggen." 
+                        ? "Veiligheidsrapport (Hogedrempel): Bij overschrijding van de hogedrempelwaarde is het opstellen van een gedetailleerd Veiligheidsrapport (VR) verplicht, inclusief QRA." 
                         : "PBZO-document (Lagedrempel): Het opstellen van een document waarin het Preventiebeleid Zware Ongevallen (PBZO) is vastgelegd is verplicht."
                 ];
                 steps.forEach(step => {
-                    const splitStep = doc.splitTextToSize(`• ${step}`, pageWidth - (margin * 2) - 10);
-                    checkPageBreak(splitStep.length * 5 + 5);
+                    const splitStep = doc.splitTextToSize(`• ${step}`, fullContentWidth - 5);
+                    checkPageBreak(splitStep.length * 5 + 3);
                     doc.setFontSize(9.5);
                     doc.setFont('helvetica', 'normal');
                     doc.text(splitStep, margin + 5, finalY);
                     finalY += (splitStep.length * 5) + 3;
                 });
-                finalY += 8;
+                finalY += 6;
                 stepCounter++;
             }
 
@@ -405,13 +388,13 @@ export default function SevesoApp() {
                 addSubHeader(`5.${stepCounter} ARIE-plicht: Actuele actiepunten`);
                 const arieSteps = [
                     "Melding NLA: De inrichting moet de status als ARIE-bedrijf formeel en schriftelijk melden bij de Nederlandse Arbeidsinspectie (NLA).",
-                    "Aanvullende RI&E (ARIE-RI&E): Er moet per direct een verdieping van de RI&E worden uitgevoerd waarbij specifieke scenario's voor zware ongevallen technisch en organisatorisch worden onderbouwd.",
-                    "Preventiebeleid Zware Ongevallen (PBZO): De directie moet een PBZO-document opstellen waarin de doelstellingen en de organisatie voor het voorkomen van zware ongevallen zijn vastgelegd.",
-                    "Informatie en Instructie: Werknemers moeten aantoonbaar worden geïnformeerd over de specifieke gevaren van de aanwezige stoffen en getraind worden in de bijbehorende noodprocedures."
+                    "Aanvullende RI&E (ARIE-RI&E): Er moet per direct een verdieping van de RI&E worden uitgevoerd voor specifieke scenario's.",
+                    "Preventiebeleid Zware Ongevallen (PBZO): De directie moet een PBZO-document opstellen conform de ARIE-richtlijnen.",
+                    "Informatie en Instructie: Werknemers moeten aantoonbaar worden getraind in de bijbehorende noodprocedures."
                 ];
                 arieSteps.forEach(step => {
-                    const splitStep = doc.splitTextToSize(`• ${step}`, pageWidth - (margin * 2) - 10);
-                    checkPageBreak(splitStep.length * 5 + 5);
+                    const splitStep = doc.splitTextToSize(`• ${step}`, fullContentWidth - 5);
+                    checkPageBreak(splitStep.length * 5 + 3);
                     doc.setFontSize(9.5);
                     doc.setFont('helvetica', 'normal');
                     doc.text(splitStep, margin + 5, finalY);
