@@ -175,20 +175,16 @@ export default function SevesoApp() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(11);
             doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-            const splitText = doc.splitTextToSize(text, fullContentWidth);
-            checkPageBreak(splitText.length * 5 + 6);
-            doc.text(splitText, margin, finalY);
-            finalY += (splitText.length * 5) + 3.5;
+            doc.text(text, margin, finalY);
+            finalY += 6;
         };
 
         const addSubHeader = (text: string) => {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(10);
             doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
-            const splitText = doc.splitTextToSize(text, fullContentWidth);
-            checkPageBreak(splitText.length * 5 + 4);
-            doc.text(splitText, margin, finalY);
-            finalY += (splitText.length * 5) + 2.5;
+            doc.text(text, margin, finalY);
+            finalY += 5;
         };
 
         const addBodyText = (text: string) => {
@@ -198,7 +194,7 @@ export default function SevesoApp() {
             const splitText = doc.splitTextToSize(text, fullContentWidth);
             checkPageBreak(splitText.length * 4.5 + 4);
             doc.text(splitText, margin, finalY);
-            finalY += (splitText.length * 4.5) + 3;
+            finalY += (splitText.length * 4.5) + 4;
         };
 
         // --- Header Section ---
@@ -232,7 +228,7 @@ export default function SevesoApp() {
             detailsY += 4.5;
             if (selectedCompany.name) { doc.text(selectedCompany.name, margin + 5, detailsY); detailsY += 4; }
             if (selectedCompany.address) { doc.text(selectedCompany.address, margin + 5, detailsY); }
-            finalY += 22;
+            finalY += 30; // RUIMERE AFSTAND NAAR HOOFDSTUK 1
         }
 
         const stats = calculateSummations(localInventory, thresholdMode);
@@ -248,9 +244,10 @@ export default function SevesoApp() {
           addBodyText("De regeling Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE) is verankerd in het Arbeidsomstandighedenbesluit en richt zich op de interne veiligheid en de bescherming van werknemers op de werkvloer tegen de gevolgen van zware ongevallen.");
         }
 
+        finalY += 4;
         addMainHeader("2. De Beoordelingssystematiek");
         addSubHeader("2.1 Indeling op basis van H-zinnen");
-        addBodyText("De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS). Deze bepalen de gevarengroep conform de Seveso-richtlijn. De ARIE-regeling hanteert voor diverse categorieën drempelwaarden om de arbeidsveiligheid te borgen.");
+        addBodyText("De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS). Deze bepalen de gevarengroep conform de Seveso-richtlijn. De drempelwaardecheck in deze module toetst of de sommatie van stoffen binnen een gevarencategorie de kritieke grens van 1,0 overschrijdt.");
 
         addSubHeader("2.2 De Sommatieregeling");
         addBodyText("Per gevarengroep wordt de aanwezige hoeveelheid vergeleken met de wettelijke drempelwaarde. Indien de som de waarde 1,0 (100%) bereikt of overschrijdt, is het betreffende wettelijke regime van kracht.");
