@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 export type ThresholdMode = 'low' | 'high';
@@ -16,6 +17,15 @@ export interface NamedSubstance extends HazardCategory {
     high: number;
   };
   arieThreshold?: number;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  address?: string;
+  kvkNumber?: string;
+  billingEmail?: string;
+  createdAt?: Timestamp;
 }
 
 export interface Company {

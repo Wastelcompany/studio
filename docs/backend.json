@@ -1,10 +1,48 @@
+
 {
   "entities": {
+    "Customer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Customer",
+      "type": "object",
+      "description": "Represents the legal billing entity (the client). A customer can have multiple facilities/companies.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Customer (often same as the primary user's UID or a generated ID)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Official legal name of the customer for invoicing."
+        },
+        "address": {
+          "type": "string",
+          "description": "Registered business address for invoicing."
+        },
+        "kvkNumber": {
+          "type": "string",
+          "description": "Chamber of Commerce (KVK) registration number."
+        },
+        "billingEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address where invoices should be sent."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
     "Company": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Company",
       "type": "object",
-      "description": "Represents a single company dossier for a facility. It contains high-level information about the company.",
+      "description": "Represents a physical facility or branch belonging to a Customer.",
       "properties": {
         "id": {
           "type": "string",
@@ -12,19 +50,19 @@
         },
         "userId": {
           "type": "string",
-          "description": "Reference to the User who owns this company."
+          "description": "Reference to the User who is the primary operator of this facility."
         },
         "customerId": {
           "type": "string",
-          "description": "Identifier for the customer group this company belongs to."
+          "description": "Identifier for the Customer (billing entity) this facility belongs to."
         },
         "name": {
           "type": "string",
-          "description": "A user-defined name for the company or facility analysis."
+          "description": "A user-defined name for the facility."
         },
         "address": {
           "type": "string",
-          "description": "An optional address of the company."
+          "description": "The physical location of the facility."
         },
         "createdAt": {
           "type": "string",
@@ -131,7 +169,7 @@
         },
         "customerName": {
           "type": "string",
-          "description": "Display name for the customer group."
+          "description": "Display name for the customer group (legal name)."
         },
         "disabled": {
           "type": "boolean",
@@ -162,7 +200,17 @@
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores public profile information for each user. The document ID is the same as the user's auth UID. Access is restricted, except for the admin user who has read/write access to this entire collection to manage user properties like groups and disabled status."
+          "description": "Stores public profile information for each user."
+        }
+      },
+      {
+        "path": "/customers/{customerId}",
+        "definition": {
+          "entityName": "Customer",
+          "schema": {
+            "$ref": "#/backend/entities/Customer"
+          },
+          "description": "Stores legal customer (billing) information."
         }
       },
       {
@@ -172,7 +220,7 @@
           "schema": {
             "$ref": "#/backend/entities/Company"
           },
-          "description": "Stores company profile information. Documents contain a `userId` for ownership and a `customerId` for group sharing. Write access is restricted to the owner. Read access is granted to any user within the same customer group."
+          "description": "Stores facility/branch information linked to a customer."
         }
       },
       {
@@ -182,20 +230,10 @@
           "schema": {
             "$ref": "#/backend/entities/SubstanceInventoryItem"
           },
-          "description": "Contains chemical substances belonging to a specific company. Access is restricted based on the ownership and customer group of the parent company.",
-          "params": [
-            {
-              "name": "companyId",
-              "description": "The unique identifier of the parent company."
-            },
-            {
-              "name": "substanceId",
-              "description": "The unique identifier for the substance inventory item."
-            }
-          ]
+          "description": "Contains chemical substances belonging to a specific company facility."
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed around user ownership and customer-level sharing. The `users` collection now includes `customerId`, `customerName`, and `disabled` fields to facilitate grouping and account management by an admin. The `companies` collection also includes a `customerId`, which is used to enable query-based sharing of company data among users of the same customer group. Security rules enforce that users can only see companies matching their `customerId`, and only write to companies they personally own (`userId`). The admin role (`post@wastelcompany.eu`) has special privileges to manage user profiles."
+    "reasoning": "The structure now explicitly separates Customers (billing entities) from Companies (physical facilities). A customer can have multiple users and multiple facilities. All companies and users are grouped by customerId for billing and sharing purposes."
   }
 }

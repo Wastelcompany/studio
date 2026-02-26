@@ -1,3 +1,4 @@
+
 /**
  * # Firestore Security Rules
  *
@@ -5,12 +6,6 @@
  * This ruleset enforces a strict user-ownership model for writing data, but allows
  * for group-based reading of data. A user's access can be disabled by an admin.
  * The admin role has full read/write access to all data for management purposes.
- *
- * ## Data Structure & Security
- * - **Admin Role:** The user 'post@wastelcompany.eu' has special privileges.
- * - **Disabled Users:** A `disabled` flag on a user's profile blocks their data access.
- * - **Ownership for Writes:** Non-admin users can only create, update, or delete documents they own (`userId`).
- * - **Customer Groups for Reads:** Non-admin users can read a list of companies that share their `customerId`.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -49,53 +44,35 @@ service cloud.firestore {
     // Collection Rules
     // ------------------------------------------------------------------------
     
-    /**
-     * @description Manages user profile documents.
-     */
     match /users/{userId} {
       allow read, write: if isAdmin();
       allow create: if request.auth.uid == userId;
       allow read: if isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * @description Manages company documents and their subcollections.
-     */
-    match /companies/{companyId} {
-      // ADMIN ACCESS: Full control for the admin.
+    match /customers/{customerId} {
       allow read, write: if isAdmin();
-      
-      // -- REGULAR USER ACCESS --
-      
-      // Allow a user to initiate a query on the companies collection.
-      // The actual documents returned are secured by the 'get' rule below.
+      allow read: if isSignedIn() && getUserCustomerId(request.auth.uid) == customerId;
+    }
+
+    match /companies/{companyId} {
+      allow read, write: if isAdmin();
       allow list: if !isAdmin() && isSignedIn();
-                     
-      // Secure individual document reads ('get').
-      // This is checked for every document a 'list' query tries to return.
       allow get: if !isAdmin() && isSignedIn() && isNotDisabled(request.auth.uid) && 
                     resource.data.customerId == getUserCustomerId(request.auth.uid);
 
-      // Secure write operations.
       allow create: if !isAdmin() && isSignedIn() && isCreatingAsOwner() && isNotDisabled(request.auth.uid);
       allow update: if !isAdmin() && isSignedIn() && isOwner(resource.data) && isNotDisabled(request.auth.uid) && request.resource.data.userId == resource.data.userId;
       allow delete: if !isAdmin() && isSignedIn() && isOwner(resource.data) && isNotDisabled(request.auth.uid);
 
-      /**
-       * @description Manages the substance inventory for a specific company.
-       * The permissions for this subcollection are derived from the parent company.
-       */
       match /inventory/{substanceId} {
-        // A user can read/write to an inventory if they have GET access to the parent company.
-        // We must check this by re-evaluating the parent's permission conditions.
         allow read, write: if isAdmin() ||
                              (
                                !isAdmin() &&
                                isSignedIn() &&
                                isNotDisabled(request.auth.uid) &&
-                               // Directly get the parent company's data and compare it with the user's data.
                                get(/databases/$(database)/documents/companies/$(companyId)).data.customerId ==
-                               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.customerId
+                               getUserCustomerId(request.auth.uid)
                              );
       }
     }
