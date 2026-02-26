@@ -256,12 +256,16 @@ export default function SevesoApp() {
         titleY += 8;
         doc.text(`Locatie: ${selectedCompany.address || 'Adres niet opgegeven'}`, margin, titleY);
         
+        const now = new Date();
+        const YYYYMMDD = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+        const reportNumber = `${selectedCompany.id}.${YYYYMMDD}`;
+
         titleY += 40;
         doc.setFontSize(10);
         doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
-        doc.text(`Datum: ${new Date().toLocaleDateString('nl-NL')}`, margin, titleY);
+        doc.text(`Datum: ${now.toLocaleDateString('nl-NL')}`, margin, titleY);
         titleY += 6;
-        doc.text(`Rapportnummer: [KENMERK]`, margin, titleY);
+        doc.text(`Rapportnummer: ${reportNumber}`, margin, titleY);
         titleY += 6;
         doc.text(`Status: Definitief`, margin, titleY);
 
