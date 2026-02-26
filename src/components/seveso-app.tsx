@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -160,7 +159,7 @@ export default function SevesoApp() {
             return Math.abs(hash % 10000).toString().padStart(4, '0');
         };
         const shortId = getShortId(selectedCompany.id);
-        const reportNumber = `${shortId}.01.${YYYYMMDD}`;
+        const reportNumber = `${shortId}.SERIE.${YYYYMMDD}`;
 
         const addHeaderAndFooter = (pdfDoc: jsPDF) => {
             const totalPages = (pdfDoc as any).internal.getNumberOfPages();
@@ -195,7 +194,7 @@ export default function SevesoApp() {
         const checkPageBreak = (needed: number) => {
           if (finalY + needed > pageHeight - 25) {
             doc.addPage();
-            finalY = 25; // Header starts at 15, so start text at 25
+            finalY = 25; 
             return true;
           }
           return false;
@@ -285,8 +284,6 @@ export default function SevesoApp() {
         doc.text(`Datum: ${now.toLocaleDateString('nl-NL')}`, margin, titleY);
         titleY += 6;
         doc.text(`Rapportnummer: ${reportNumber}`, margin, titleY);
-        titleY += 6;
-        doc.text(`Status: Definitief`, margin, titleY);
 
         doc.addPage();
         finalY = 25; 
@@ -314,7 +311,7 @@ export default function SevesoApp() {
         doc.addPage();
         finalY = 25;
 
-        // --- CHAPTER 3: RESULTS ---
+        // --- CHAPTER 3: RESULTATEN ---
         addMainHeader("3. Resultaten");
         finalY += 2;
 
@@ -390,7 +387,7 @@ export default function SevesoApp() {
             finalY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, finalY, fullContentWidth) + 10;
         }
 
-        // --- CHAPTER 4: CONCLUSION ---
+        // --- CHAPTER 4: CONCLUSIE ---
         addMainHeader("4. Conclusie");
         
         const getTopContributor = (groupKey: string, type: 'seveso' | 'arie') => {
@@ -451,11 +448,11 @@ export default function SevesoApp() {
               if (topSubArie) {
                   addBodyText(`Binnen deze gevarengroep levert de stof '${(topSubArie as Substance).productName}' de grootste bijdrage aan de sommatiewaarde.`);
               }
-              addLinkToChapter5(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn. Zie Hoofdstuk 5 for details.`);
+              addLinkToChapter5(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermer, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn. Zie Hoofdstuk 5 for details.`);
           }
         }
 
-        // --- CHAPTER 5: LEGAL STEPS ---
+        // --- CHAPTER 5: WETTELIJKE VERVOLGSTAPPEN ---
         if (isSevesoExceeded || (includeArie && stats.arieExceeded)) {
             doc.addPage();
             finalY = 25;
@@ -505,7 +502,7 @@ export default function SevesoApp() {
             }
         }
 
-        // --- CHAPTER 6: APPENDIX ---
+        // --- CHAPTER 6: BIJLAGE ---
         doc.addPage();
         let invY = 25; 
         addMainHeader("6. Bijlage: Volledige Inventaris");
