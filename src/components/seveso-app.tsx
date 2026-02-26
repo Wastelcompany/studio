@@ -149,7 +149,8 @@ export default function SevesoApp() {
 
         const addFooter = (pdfDoc: jsPDF) => {
             const totalPages = (pdfDoc as any).internal.getNumberOfPages();
-            for (let i = 1; i <= totalPages; i++) {
+            // SKIP page 1 (voorblad)
+            for (let i = 2; i <= totalPages; i++) {
                 pdfDoc.setPage(i);
                 pdfDoc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
                 pdfDoc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
@@ -222,9 +223,6 @@ export default function SevesoApp() {
                 doc.text(linkText, margin + preWidth, finalY);
                 doc.line(margin + preWidth, finalY + 0.5, margin + preWidth + doc.getTextWidth(linkText), finalY + 0.5);
                 
-                // Add actual PDF link (calculated loosely, but works for internal navigation if supported by viewer)
-                // For safety in all viewers, we just style it.
-                
                 doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
                 doc.text(postText, margin + preWidth + doc.getTextWidth(linkText), finalY);
             } else {
@@ -261,20 +259,14 @@ export default function SevesoApp() {
         titleY += 40;
         doc.setFontSize(10);
         doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
-        doc.text(`Versie: 1.0`, margin, titleY);
-        titleY += 6;
         doc.text(`Datum: ${new Date().toLocaleDateString('nl-NL')}`, margin, titleY);
+        titleY += 6;
+        doc.text(`Rapportnummer: [KENMERK]`, margin, titleY);
         titleY += 6;
         doc.text(`Status: Definitief`, margin, titleY);
 
-        titleY += 30;
-        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
-        doc.line(margin, titleY, margin + 60, titleY);
-        titleY += 5;
-        doc.text("Paraaf opsteller", margin, titleY);
-
         doc.addPage();
-        finalY = 20;
+        finalY = 25; // More margin before Chapter 1
 
         // --- CHAPTER 1 & 2 ---
         addMainHeader("1. Inleiding en Kaderstelling");
@@ -348,7 +340,6 @@ export default function SevesoApp() {
                 doc.text(group.name, x, currentY);
                 doc.setFont('helvetica', 'bold'); 
                 doc.setTextColor(isExceeded ? colors.destructive[0] : colors.foreground[0], isExceeded ? colors.destructive[1] : colors.foreground[1], isExceeded ? colors.destructive[2] : colors.foreground[2]); 
-                // Show BOTH factor and percentage for consistency
                 doc.text(`${ratio.toFixed(2)} / ${percentage}%`, x + width, currentY, { align: 'right' });
                 currentY += 2.5; 
                 const barHeight = 2.5; 
@@ -379,7 +370,6 @@ export default function SevesoApp() {
         // --- CHAPTER 4: CONCLUSION ---
         addMainHeader("4. Conclusie");
         
-        // Find top contributor for Seveso if exceeded
         const getTopContributor = (groupKey: string, type: 'seveso' | 'arie') => {
             let maxContrib = 0;
             let topSub: Substance | null = null;
@@ -837,4 +827,3 @@ export default function SevesoApp() {
     </div>
   );
 }
-
