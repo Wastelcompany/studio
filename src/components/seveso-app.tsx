@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -218,33 +217,6 @@ export default function SevesoApp() {
             finalY += (splitText.length * 4.5) + 4;
         };
 
-        const addLinkToChapter5 = (text: string) => {
-            const linkText = "Hoofdstuk 5";
-            const parts = text.split(linkText);
-            
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(9.5);
-            doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
-            
-            if (parts.length > 1) {
-                const preText = parts[0];
-                const postText = parts[1];
-                
-                doc.text(preText, margin, finalY);
-                const preWidth = doc.getTextWidth(preText);
-                
-                doc.setTextColor(colors.link[0], colors.link[1], colors.link[2]);
-                doc.text(linkText, margin + preWidth, finalY);
-                doc.line(margin + preWidth, finalY + 0.5, margin + preWidth + doc.getTextWidth(linkText), finalY + 0.5);
-                
-                doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
-                doc.text(postText, margin + preWidth + doc.getTextWidth(linkText), finalY);
-            } else {
-                doc.text(text, margin, finalY);
-            }
-            finalY += 6;
-        };
-
         // --- TITLE PAGE ---
         doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.rect(0, 0, pageWidth, 60, 'F');
@@ -424,7 +396,7 @@ export default function SevesoApp() {
             if (topSub) {
                 addBodyText(`De stof met de grootste bijdrage binnen deze groep is '${(topSub as Substance).productName}', wat een belangrijk aangrijpingspunt is voor risicobeheersing.`);
             }
-            addLinkToChapter5(`Voor de hieruit voortvloeiende wettelijke verplichtingen wordt verwezen naar Hoofdstuk 5 van deze rapportage.`);
+            addBodyText(`Voor de hieruit voortvloeiende wettelijke verplichtingen wordt verwezen naar Hoofdstuk 5 van deze rapportage.`);
         }
 
         if (includeArie) {
@@ -440,7 +412,7 @@ export default function SevesoApp() {
               if (topSubArie) {
                   addBodyText(`Binnen deze gevarengroep levert de stof '${(topSubArie as Substance).productName}' de grootste bijdrage aan de sommatiewaarde.`);
               }
-              addLinkToChapter5(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermer, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn. Zie Hoofdstuk 5 voor details.`);
+              addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn. Voor de hieruit voortvloeiende actiepunten wordt verwezen naar Hoofdstuk 5.`);
           }
         }
 
