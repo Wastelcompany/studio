@@ -1,7 +1,7 @@
 "use client";
 
 import type { Substance, HazardCategory, NamedSubstance, ThresholdMode, SummationGroup } from '@/lib/types';
-import { FlaskConical, Flame, Leaf, AlertTriangle, Atom, Briefcase, Droplets } from 'lucide-react';
+import { FlaskConical, Flame, Leaf, AlertTriangle, Atom } from 'lucide-react';
 
 // Master list of all hazard categories (Seveso & ARIE)
 export const ALL_CATEGORIES: Record<string, HazardCategory> = {
@@ -32,15 +32,11 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   O3: { id: 'O3', name: 'Stoffen met gevarenaanduiding EUH029', group: 'other' },
 
   // ARIE Specific Categories
-  H4: { id: 'H4', name: 'Huidcorrosie, categorie 1A, 1B of 1C (H314)', group: 'health', displayId: 'H4 (Huid)' },
+  H4: { id: 'H4', name: 'Huidcorrosie, categorie 1A, 1B of 1C (H314)', group: 'health', displayId: 'H4' },
   'ARIE-P1a-sub3': { id: 'ARIE-P1a-sub3', name: 'Stoffen met explosieve eigenschappen (zonder 1.1-1.6)', group: 'physical', displayId: 'P1a (sub 3)' },
   'ARIE-P6a-1': { id: 'ARIE-P6a-1', name: 'Zelfontledende stoffen (Type A/B)', group: 'physical', displayId: 'P6a (Zelfontl.)' },
   'ARIE-P6a-2': { id: 'ARIE-P6a-2', name: 'Organische peroxiden (Type A/B)', group: 'physical', displayId: 'P6a (Org. Perox.)' },
-  'ARIE-Vl-1': { id: 'ARIE-Vl-1', name: 'Ontvlambare vloeistoffen, cat. 1', group: 'physical', displayId: 'Vl.stof 1' },
-  'ARIE-Vl-2': { id: 'ARIE-Vl-2', name: 'Ontvlambare vloeistoffen, cat. 2', group: 'physical', displayId: 'Vl.stof 2' },
-  'ARIE-Vl-3': { id: 'ARIE-Vl-3', name: 'Ontvlambare vloeistoffen, cat. 3', group: 'physical', displayId: 'Vl.stof 3' },
   'ARIE-O4': { id: 'ARIE-O4', name: 'Stoffen met EUH001', group: 'other', displayId: 'O4 (EUH001)' },
-  'ARIE-CMR': { id: 'ARIE-CMR', name: 'CMR-stoffen cat 1A/1B', group: 'health', displayId: 'CMR' },
 };
 
 export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
@@ -63,20 +59,19 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
 };
 
 export const ARIE_THRESHOLDS: Record<string, number> = {
-  H1: 0.05, H2: 0.2, H3: 1, H4: 50, 'ARIE-CMR': 0.5,
+  H1: 0.05, H2: 0.2, H3: 1, H4: 50,
   P1a: 0.05, 'ARIE-P1a-sub3': 0.05, P1b: 1, P2: 5, P3a: 5, P3b: 50, P4: 5,
-  'ARIE-P6a-1': 0.05, 'ARIE-P6a-2': 0.05, 'ARIE-Vl-1': 1, 'ARIE-Vl-2': 10, 'ARIE-Vl-3': 100,
+  'ARIE-P6a-1': 0.05, 'ARIE-P6a-2': 0.05,
   O1: 0.5, O2: 0.05, O3: 0.5, 'ARIE-O4': 0.05,
 };
 
 export const H_PHRASE_MAPPING: Record<string, string[]> = {
   'H300': ['H1', 'H2'], 'H310': ['H1', 'H2'], 'H330': ['H1', 'H2'],
   'H331': ['H2'], 'H370': ['H3'], 'H314': ['H4'],
-  'H340': ['ARIE-CMR'], 'H350': ['ARIE-CMR'], 'H360': ['ARIE-CMR'],
   'H200': ['P1a'], 'H201': ['P1a'], 'H202': ['P1a'], 'H203': ['P1a'], 'H205': ['P1a'],
   'EUH001': ['ARIE-O4', 'ARIE-P1a-sub3'], 'H204': ['P1b'],
   'H220': ['P2'], 'H221': ['P2'], 'H222': ['P3a', 'P3b'], 'H223': ['P3a', 'P3b'],
-  'H224': ['P5a', 'ARIE-Vl-1'], 'H225': ['P5c', 'ARIE-Vl-2'], 'H226': ['P5c', 'ARIE-Vl-3'],
+  'H224': ['P5a'], 'H225': ['P5c'], 'H226': ['P5c'],
   'H240': ['P6a', 'ARIE-P6a-1', 'ARIE-P6a-2'], 'H241': ['P6a', 'ARIE-P6a-1', 'ARIE-P6a-2'],
   'H242': ['P6b'], 'H250': ['P7'], 'H270': ['P4'], 'H271': ['P8'], 'H272': ['P8'],
   'H400': ['E1'], 'H410': ['E1'], 'H411': ['E2'],
