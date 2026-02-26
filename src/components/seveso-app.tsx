@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -20,9 +19,10 @@ import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc, useAuth 
 import { collection, query, where, doc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb } from '@/lib/companies';
-import { Loader2, UserX, LogOut } from 'lucide-react';
+import { Loader2, UserX, LogOut, LayoutDashboard, Building2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useRouter } from 'next/navigation';
+import { Card, CardContent } from './ui/card';
 
 
 export default function SevesoApp() {
@@ -70,14 +70,7 @@ export default function SevesoApp() {
     }
   }, [firestoreInventory, selectedCompanyId]);
 
-  // Set default company
-  useEffect(() => {
-    if (!selectedCompanyId && companies.length > 0) {
-      setSelectedCompanyId(companies[0].id);
-    } else if (companies.length === 0) {
-      setSelectedCompanyId(null);
-    }
-  }, [companies, selectedCompanyId]);
+  // NO LONGER auto-selecting the first company on startup as per user request.
   
   const [thresholdMode, setThresholdMode] = useState<ThresholdMode>('low');
   
@@ -331,6 +324,7 @@ export default function SevesoApp() {
         id: `sub-${Date.now()}-${Math.random()}`,
         quantity: 0
     };
+    // Update locally first for instant feedback
     setLocalInventory(prevInventory => [...prevInventory, substanceWithId]);
     addSubstanceToDb(db, selectedCompanyId, substanceWithId);
   };
@@ -346,11 +340,13 @@ export default function SevesoApp() {
 
   const handleDeleteSubstance = (id: string) => {
     if (!selectedCompanyId || !db) return;
+    setLocalInventory(prev => prev.filter(sub => sub.id !== id));
     deleteSubstanceFromDb(db, selectedCompanyId, id);
   };
 
   const handleClearAll = () => {
     if (!selectedCompanyId || !db) return;
+    setLocalInventory([]);
     clearInventoryFromDb(db, selectedCompanyId);
     setIsClearAlertOpen(false);
   };
@@ -416,9 +412,9 @@ export default function SevesoApp() {
 
   if (isAuthLoading || isLoadingUserProfile || !user) {
     return (
-        <div className="flex items-center justify-center h-screen">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="ml-4 text-lg">Applicatie laden...</p>
+        <div className="flex flex-col items-center justify-center h-screen space-y-4">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-lg font-medium animate-pulse text-muted-foreground">Applicatie laden...</p>
         </div>
     );
   }
@@ -426,10 +422,10 @@ export default function SevesoApp() {
   if (userProfile?.disabled) {
     return (
         <div className="flex flex-col items-center justify-center h-screen text-center p-4">
-            <UserX className="h-12 w-12 text-destructive mb-4" />
-            <h1 className="text-2xl font-bold">Account Gedeactiveerd</h1>
-            <p className="text-muted-foreground mt-2">Uw account is gedeactiveerd. Neem contact op met de beheerder.</p>
-            <Button variant="outline" className="mt-6" onClick={() => signOut(auth)}>
+            <UserX className="h-16 w-16 text-destructive mb-4" />
+            <h1 className="text-3xl font-bold">Account Gedeactiveerd</h1>
+            <p className="text-muted-foreground mt-2 max-w-md">Uw account is gedeactiveerd door de beheerder. U heeft geen toegang meer tot de gegevens.</p>
+            <Button variant="outline" className="mt-8" onClick={() => signOut(auth)}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Uitloggen
             </Button>
@@ -438,7 +434,7 @@ export default function SevesoApp() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-screen-2xl mx-auto">
       <SevesoHeader
         onUpload={() => setIsSdsUploadOpen(true)}
         onClearAll={() => setIsClearAlertOpen(true)}
@@ -455,7 +451,7 @@ export default function SevesoApp() {
         onChange={(e) => handleFileSelect(e, 'json')}
         className="hidden"
         accept="application/json"
-        disabled // Disabled for now
+        disabled 
       />
       <input
         type="file"
@@ -463,7 +459,7 @@ export default function SevesoApp() {
         onChange={(e) => handleFileSelect(e, 'excel')}
         className="hidden"
         accept=".xlsx, .xls"
-        disabled // Disabled for now
+        disabled 
       />
       
       <CompanySelector 
@@ -475,32 +471,49 @@ export default function SevesoApp() {
         disabled={isLoadingCompanies}
       />
       
-      <div className="mt-8 flex flex-col lg:flex-row gap-8">
-        <div className="flex-grow lg:w-2/3">
-          {isLoadingInventory ? (
-             <div className="flex items-center justify-center h-96 border-2 border-dashed rounded-lg">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="ml-4 text-muted-foreground">Inventaris laden...</p>
+      {selectedCompanyId ? (
+        <div className="mt-8 flex flex-col lg:flex-row gap-8">
+            <div className="flex-grow lg:w-2/3">
+            {isLoadingInventory ? (
+                <div className="flex flex-col items-center justify-center h-96 border-2 border-dashed rounded-xl bg-muted/20">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="ml-4 mt-4 text-muted-foreground">Inventaris voor {selectedCompany?.name} laden...</p>
+                </div>
+            ) : (
+                <InventoryTable
+                    inventory={localInventory}
+                    onUpdateQuantity={handleUpdateSubstanceQuantity}
+                    onDelete={handleDeleteSubstance}
+                    thresholdMode={thresholdMode}
+                    onUpload={() => setIsSdsUploadOpen(true)}
+                    onShowExplanation={handleShowExplanation}
+                />
+            )}
             </div>
-          ) : (
-            <InventoryTable
+            <aside className="lg:w-1/3 lg:sticky lg:top-8 h-fit">
+            <Dashboard
                 inventory={localInventory}
-                onUpdateQuantity={handleUpdateSubstanceQuantity}
-                onDelete={handleDeleteSubstance}
                 thresholdMode={thresholdMode}
-                onUpload={() => setIsSdsUploadOpen(true)}
-                onShowExplanation={handleShowExplanation}
+                setThresholdMode={setThresholdMode}
             />
-          )}
+            </aside>
         </div>
-        <aside className="lg:w-1/3 lg:sticky lg:top-8 h-fit">
-          <Dashboard
-            inventory={localInventory}
-            thresholdMode={thresholdMode}
-            setThresholdMode={setThresholdMode}
-          />
-        </aside>
-      </div>
+      ) : (
+          <div className="mt-12 flex flex-col items-center justify-center text-center p-12 border-2 border-dashed rounded-2xl bg-muted/10">
+              <div className="bg-primary/10 p-4 rounded-full mb-6">
+                <Building2 className="w-12 h-12 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground">Welkom bij ChemStats</h2>
+              <p className="text-muted-foreground mt-2 max-w-lg">
+                  Selecteer een bedrijf uit het keuzemenu hierboven om de inventaris en de drempelwaarde-analyse te bekijken, of voeg een nieuw bedrijf toe.
+              </p>
+              <div className="mt-8 flex gap-4">
+                  <Button onClick={handleCreateNewCompany} variant="secondary">
+                      Nieuw bedrijf aanmaken
+                  </Button>
+              </div>
+          </div>
+      )}
 
       <SdsUploadDialog
         isOpen={isSdsUploadOpen}
@@ -518,7 +531,7 @@ export default function SevesoApp() {
           <AlertDialogHeader>
             <AlertDialogTitle>Weet je het zeker?</AlertDialogTitle>
             <AlertDialogDescription>
-              Deze actie kan niet ongedaan worden gemaakt. Dit zal de volledige inventaris voor het geselecteerde bedrijf wissen.
+              Deze actie kan niet ongedaan worden gemaakt. Dit zal de volledige inventaris voor het geselecteerde bedrijf <span className="font-bold">"{selectedCompany?.name}"</span> wissen.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
