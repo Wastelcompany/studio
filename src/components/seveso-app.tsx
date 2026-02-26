@@ -273,12 +273,12 @@ export default function SevesoApp() {
         doc.text(splitSommatieDesc, margin, finalY);
         finalY += (splitSommatieDesc.length * 5) + 10;
 
-        // --- 3. Resultaten per Gevarengroep ---
+        // --- 3. Resultaten ---
         checkPageBreak(100);
         doc.setFontSize(11); 
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); 
         doc.setFont('helvetica', 'bold'); 
-        doc.text("3. Resultaten per Gevarengroep", margin, finalY); 
+        doc.text("3. Resultaten", margin, finalY); 
         finalY += 6;
 
         const isSevesoExceeded = stats.overallStatus !== 'Geen';
@@ -381,7 +381,7 @@ export default function SevesoApp() {
         }
         const splitSevesoConclusie = doc.splitTextToSize(sevesoConclusieText, pageWidth - (margin * 2));
         doc.text(splitSevesoConclusie, margin, finalY);
-        finalY += (splitSevesoConclusie.length * 5) + 8;
+        finalY += (splitSevesoConclusie.length * 5) + 4; // Gereduceerde witruimte
 
         // 4.2 ARIE (Arbo-wetgeving)
         if (includeArie) {
@@ -425,9 +425,11 @@ export default function SevesoApp() {
             doc.text("Naar aanleiding van de bovenstaande conclusies dient de inrichting rekening te houden met de volgende juridische en organisatorische vervolgstappen.", margin, finalY);
             finalY += 10;
 
+            let stepCounter = 1;
+
             if (isSevesoExceeded) {
                 doc.setFont('helvetica', 'bold'); 
-                doc.text(`5.1 Seveso: Verplichtingen bij overschrijding van de drempelwaarden`, margin, finalY); 
+                doc.text(`5.${stepCounter} Seveso: Verplichtingen bij overschrijding van de drempelwaarden`, margin, finalY); 
                 finalY += 6;
                 doc.setFont('helvetica', 'normal');
                 const steps = [
@@ -445,6 +447,7 @@ export default function SevesoApp() {
                     finalY += (splitStep.length * 5) + 3;
                 });
                 finalY += 6;
+                stepCounter++;
             }
 
             if (stats.arieExceeded) {
@@ -452,7 +455,7 @@ export default function SevesoApp() {
                 doc.setFontSize(10);
                 doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); 
                 doc.setFont('helvetica', 'bold'); 
-                doc.text(`5.2 ARIE-plicht: Actuele actiepunten`, margin, finalY); 
+                doc.text(`5.${stepCounter} ARIE-plicht: Actuele actiepunten`, margin, finalY); 
                 finalY += 6;
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
