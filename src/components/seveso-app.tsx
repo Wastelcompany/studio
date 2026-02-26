@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -188,7 +187,7 @@ export default function SevesoApp() {
             const splitText = doc.splitTextToSize(text, fullContentWidth);
             checkPageBreak(splitText.length * 5 + 4);
             doc.text(splitText, margin, finalY);
-            finalY += (splitText.length * 5) + 1.5;
+            finalY += (splitText.length * 5) + 2.5;
         };
 
         const addBodyText = (text: string) => {
@@ -233,7 +232,7 @@ export default function SevesoApp() {
             detailsY += 4.5;
             if (selectedCompany.name) { doc.text(selectedCompany.name, margin + 5, detailsY); detailsY += 4; }
             if (selectedCompany.address) { doc.text(selectedCompany.address, margin + 5, detailsY); }
-            finalY += 24;
+            finalY += 22;
         }
 
         const stats = calculateSummations(localInventory, thresholdMode);
@@ -344,8 +343,7 @@ export default function SevesoApp() {
         if (!isSevesoExceeded) {
             addBodyText(`Op basis van de inventarisatie kan worden geconcludeerd dat de inrichting niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is.`);
         } else {
-            addBodyText(`De inrichting wordt aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. De wettelijke drempelwaarde voor de gevarengroep ${stats.criticalGroup} wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%).`);
-            addBodyText(`Deze overschrijding impliceert dat de inrichting onder een strenger toezichtsregime valt en verplicht is om aanvullende technische en organisatorische maatregelen te treffen om zware ongevallen te voorkomen en de gevolgen daarvan te beperken.`);
+            addBodyText(`De inrichting wordt aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. De wettelijke drempelwaarde voor de gevarengroep ${stats.criticalGroup} wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%). Dit impliceert een verhoogd risicoprofiel en strikte wettelijke verplichtingen.`);
         }
 
         finalY += 1;
@@ -354,7 +352,7 @@ export default function SevesoApp() {
             addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving niet aangemerkt als ARIE-plichtig. De hoogste fractie binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%.`);
         } else {
             addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Met een gecumuleerde fractie van ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%) in de groep ${stats.criticalArieGroup} wordt de wettelijke drempelwaarde overschreden.`);
-            addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen de gevolgen van zware ongevallen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn.`);
+            addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen de gevolgen van zware ongevallen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen en organisatorische acties wettelijk verplicht zijn.`);
         }
 
         // --- 5. Wettelijke Vervolgstappen ---
@@ -733,4 +731,3 @@ export default function SevesoApp() {
     </div>
   );
 }
-

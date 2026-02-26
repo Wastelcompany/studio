@@ -73,6 +73,7 @@ export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
   '98-07-7': { id: 'Benzotrichloride', cas: '98-07-7', name: 'Benzotrichloride', group: 'named', threshold: { low: 0.5, high: 2 }, arieThreshold: 0.5 },
   '100-44-7': { id: 'Benzylchloride', cas: '100-44-7', name: 'Benzylchloride', group: 'named', threshold: { low: 0.5, high: 2 }, arieThreshold: 0.5 },
   '75-55-8': { id: '1-2-Propyleenimine', cas: '75-55-8', name: '1,2-Propyleenimine', group: 'named', threshold: { low: 50, high: 200 }, arieThreshold: 50 },
+  '75-09-2': { id: 'Dichloormethaan', cas: '75-09-2', name: 'Dichloormethaan (methyleenchloride)', group: 'health', threshold: { low: 10, high: 50 }, arieThreshold: 15 },
   'PETROLEUM': { id: 'Petroleum-Producten', cas: 'PETROLEUM', name: 'Petroleumproducten en alternatieve brandstoffen', group: 'named', threshold: { low: 2500, high: 25000 }, arieThreshold: 2500 },
 };
 
@@ -96,9 +97,10 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
 
 export const H_PHRASE_MAPPING: Record<string, string[]> = {
   'H300': ['H1'], 'H310': ['H1'], 'H330': ['H1'],
-  'H301': ['H2'], 'H311': ['H2'], 'H331': ['H2'],
+  'H301': ['H2', 'H3'], 'H311': ['H2', 'H3'], 'H331': ['H2', 'H3'],
   'H370': ['H3'],
   'H314': ['H4'],
+  'H351': ['H3'],
   'H200': ['P1a'], 'H201': ['P1a'], 'H202': ['P1a'], 'H203': ['P1a'], 'H205': ['P1a'],
   'H204': ['P1b'],
   'H220': ['P2'], 'H221': ['P2'],
