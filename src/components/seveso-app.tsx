@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -149,7 +148,6 @@ export default function SevesoApp() {
 
         const addFooter = (pdfDoc: jsPDF) => {
             const totalPages = (pdfDoc as any).internal.getNumberOfPages();
-            // SKIP page 1 (voorblad)
             for (let i = 2; i <= totalPages; i++) {
                 pdfDoc.setPage(i);
                 pdfDoc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
@@ -256,9 +254,22 @@ export default function SevesoApp() {
         titleY += 8;
         doc.text(`Locatie: ${selectedCompany.address || 'Adres niet opgegeven'}`, margin, titleY);
         
+        // Generate automatic report number: short company identifier + date
         const now = new Date();
         const YYYYMMDD = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
-        const reportNumber = `${selectedCompany.id}.${YYYYMMDD}`;
+        
+        // Use a simple hash to turn the ID into a max 4-digit number
+        const getShortId = (id: string) => {
+            let hash = 0;
+            for (let i = 0; i < id.length; i++) {
+                const char = id.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash % 10000).toString().padStart(4, '0');
+        };
+        const shortId = getShortId(selectedCompany.id);
+        const reportNumber = `${shortId}.${YYYYMMDD}`;
 
         titleY += 40;
         doc.setFontSize(10);
@@ -270,7 +281,7 @@ export default function SevesoApp() {
         doc.text(`Status: Definitief`, margin, titleY);
 
         doc.addPage();
-        finalY = 25; // More margin before Chapter 1
+        finalY = 25; 
 
         // --- CHAPTER 1 & 2 ---
         addMainHeader("1. Inleiding en Kaderstelling");
@@ -448,7 +459,7 @@ export default function SevesoApp() {
             if (isSevesoExceeded) {
                 addSubHeader(`5.${currentStepIdx} Seveso: Verplichtingen`);
                 const steps = [
-                    "Kennisgeving: De inrichting moet een formele kennisgeving indienen bij de relevante overheidinstanties (zoals de Omgevingsdienst of DCMR) via het e-loket. Deze melding bevat gegevens over de exploitant, de aanwezige gevaarlijke stoffen en de specifieke drempelwaarde-categorie.",
+                    "Kennisgeving: De inrichting moet een formele kennisgeving indienen bij de relevante overheidinstanties via het e-loket. Deze melding bevat gegevens over de exploitant, de aanwezige gevaarlijke stoffen en de specifieke drempelwaarde-categorie.",
                     "Veiligheidsbeheerssysteem (VBS): De exploitant dient een integraal VBS te implementeren conform de richtlijn. Dit systeem omvat de organisatiestructuur, verantwoordelijkheden, werkwijzen en procedures voor het vaststellen en uitvoeren van het preventiebeleid.",
                     "Dominosituatie-onderzoek: Er moet worden onderzocht of de inrichting deel uitmaakt van een groep van inrichtingen die door hun geografische ligging of de nabijheid van gevaarlijke stoffen de kans op een zwaar ongeval vergroten.",
                     stats.overallStatus === 'Hogedrempel' 
