@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -177,7 +178,7 @@ export default function SevesoApp() {
             const splitText = doc.splitTextToSize(text, fullContentWidth);
             checkPageBreak(splitText.length * 5 + 6);
             doc.text(splitText, margin, finalY);
-            finalY += (splitText.length * 5) + 4;
+            finalY += (splitText.length * 5) + 3.5;
         };
 
         const addSubHeader = (text: string) => {
@@ -219,7 +220,6 @@ export default function SevesoApp() {
         doc.text(`Gegenereerd op ${new Date().toLocaleDateString('nl-NL')}`, margin, finalY);
         finalY += 8;
 
-        // Bedrijfsgegevens box
         if (selectedCompany.name || selectedCompany.address) {
             doc.setFillColor(colors.bgLight[0], colors.bgLight[1], colors.bgLight[2]);
             doc.rect(margin, finalY, fullContentWidth, 18, 'F');
@@ -237,7 +237,6 @@ export default function SevesoApp() {
 
         const stats = calculateSummations(localInventory, thresholdMode);
 
-        // --- 1. Inleiding ---
         addMainHeader("1. Inleiding en Kaderstelling");
         addBodyText(`Binnen de bedrijfsvoering van ${selectedCompany.name || 'het bedrijf'} wordt gewerkt met diverse gevaarlijke stoffen. Om de veiligheidsrisico's te beheersen, is de inrichting onderworpen aan specifieke wettelijke kaders. Deze rapportage toetst de actuele status aan de hand van de volgende regelgevingen:`);
         
@@ -249,8 +248,6 @@ export default function SevesoApp() {
           addBodyText("De regeling Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE) is verankerd in het Arbeidsomstandighedenbesluit en richt zich op de interne veiligheid en de bescherming van werknemers op de werkvloer tegen de gevolgen van zware ongevallen.");
         }
 
-        finalY += 3;
-        // --- 2. Beoordelingssystematiek ---
         addMainHeader("2. De Beoordelingssystematiek");
         addSubHeader("2.1 Indeling op basis van H-zinnen");
         addBodyText("De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS). Deze bepalen de gevarengroep conform de Seveso-richtlijn. De ARIE-regeling hanteert voor diverse categorieën drempelwaarden om de arbeidsveiligheid te borgen.");
@@ -258,15 +255,12 @@ export default function SevesoApp() {
         addSubHeader("2.2 De Sommatieregeling");
         addBodyText("Per gevarengroep wordt de aanwezige hoeveelheid vergeleken met de wettelijke drempelwaarde. Indien de som de waarde 1,0 (100%) bereikt of overschrijdt, is het betreffende wettelijke regime van kracht.");
 
-        // --- 3. Resultaten ---
         doc.addPage();
         finalY = 20;
         addMainHeader("3. Resultaten");
         finalY += 2;
 
         const isSevesoExceeded = stats.overallStatus !== 'Geen';
-        
-        // Status boxes
         const boxWidth = (fullContentWidth - 8) / 2;
         doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]); 
         doc.setFillColor(255, 255, 255); 
@@ -336,9 +330,7 @@ export default function SevesoApp() {
             finalY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, finalY, fullContentWidth) + 10;
         }
 
-        // --- 4. Conclusie ---
         addMainHeader("4. Conclusie");
-
         addSubHeader("4.1 Seveso");
         const sevesoMaxRatio = Math.max(...stats.summationGroups.map(g => g.totalRatio));
         const marginValue = Math.max(0, 100 - Math.round(sevesoMaxRatio * 100));
@@ -347,6 +339,7 @@ export default function SevesoApp() {
             addBodyText(`Op basis van de inventarisatie kan worden geconcludeerd dat de inrichting momenteel niet gekwalificeerd wordt als een Seveso-inrichting. Het resultaat van de sommatie voor de meest kritieke gevarengroep bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een veiligheidsmarge van ${marginValue}% aanwezig is ten opzichte van de wettelijke drempelwaarden.`);
         } else {
             addBodyText(`De inrichting wordt aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. Het resultaat van de sommatie voor de gevarengroep ${stats.criticalGroup} bedraagt ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%), waarmee de wettelijke drempelwaarde wordt overschreden. Dit impliceert een verhoogd risicoprofiel en brengt strikte wettelijke verplichtingen met zich mee voor de exploitant.`);
+            addBodyText(`Voor de hieruit voortvloeiende wettelijke verplichtingen wordt verwezen naar hoofdstuk 5 van deze rapportage.`);
         }
 
         if (includeArie) {
@@ -357,10 +350,10 @@ export default function SevesoApp() {
           } else {
               addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Voor de gevarengroep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%), waarmee de wettelijke drempelwaarde wordt overschreden.`);
               addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen de gevolgen van zware ongevallen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen en organisatorische acties wettelijk verplicht zijn om de arbeidsveiligheid te borgen.`);
+              addBodyText(`Voor de hieruit voortvloeiende wettelijke verplichtingen wordt verwezen naar hoofdstuk 5 van deze rapportage.`);
           }
         }
 
-        // --- 5. Wettelijke Vervolgstappen ---
         if (isSevesoExceeded || (includeArie && stats.arieExceeded)) {
             doc.addPage();
             finalY = 20;
@@ -409,7 +402,6 @@ export default function SevesoApp() {
             }
         }
 
-        // Bijlage
         doc.addPage();
         let invY = 20; 
         doc.setFontSize(16); 
