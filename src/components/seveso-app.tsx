@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES } from '@/lib/seveso';
+import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, ARIE_THRESHOLDS } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
 import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc, useAuth } from '@/firebase';
 import { collection, query, where, doc, Timestamp } from 'firebase/firestore';
@@ -135,10 +135,16 @@ export default function SevesoApp() {
         const pageHeight = doc.internal.pageSize.getHeight();
         const margin = 15;
         const fullContentWidth = pageWidth - (margin * 2);
-        let finalY = 18;
+        let finalY = 20;
 
         const colors = {
-            primary: [22, 80, 91], foreground: [58, 66, 78], destructive: [239, 68, 68], muted: [100, 116, 139], bgLight: [248, 250, 252], border: [226, 232, 240]
+            primary: [22, 80, 91], 
+            foreground: [58, 66, 78], 
+            destructive: [239, 68, 68], 
+            muted: [100, 116, 139], 
+            bgLight: [248, 250, 252], 
+            border: [226, 232, 240],
+            link: [37, 99, 235]
         };
 
         const addFooter = (pdfDoc: jsPDF) => {
@@ -197,42 +203,80 @@ export default function SevesoApp() {
             finalY += (splitText.length * 4.5) + 4;
         };
 
-        // --- Header Section ---
-        doc.setFontSize(22);
-        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        doc.setFont('helvetica', 'bold');
-        doc.text(includeArie ? "Seveso en ARIE Rapportage" : "Seveso Rapportage", margin, finalY);
-        finalY += 8;
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
-        const subTitle = includeArie
-          ? "Gevaarlijke Stoffen Analyse - Seveso en ARIE drempelwaarde check"
-          : "Gevaarlijke Stoffen Analyse - Seveso drempelwaarde check";
-        doc.text(subTitle, margin, finalY);
-        finalY += 6;
-        doc.setFontSize(9);
-        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
-        doc.text(`Gegenereerd op ${new Date().toLocaleDateString('nl-NL')}`, margin, finalY);
-        finalY += 8;
-
-        if (selectedCompany.name || selectedCompany.address) {
-            doc.setFillColor(colors.bgLight[0], colors.bgLight[1], colors.bgLight[2]);
-            doc.rect(margin, finalY, fullContentWidth, 18, 'F');
-            let detailsY = finalY + 5;
+        const addLinkToChapter5 = (text: string) => {
+            const linkText = "Hoofdstuk 5";
+            const parts = text.split(linkText);
+            
+            doc.setFont('helvetica', 'normal');
             doc.setFontSize(9.5);
             doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
-            doc.setFont('helvetica', 'bold');
-            doc.text("Bedrijfsgegevens", margin + 5, detailsY);
-            doc.setFont('helvetica', 'normal');
-            detailsY += 4.5;
-            if (selectedCompany.name) { doc.text(selectedCompany.name, margin + 5, detailsY); detailsY += 4; }
-            if (selectedCompany.address) { doc.text(selectedCompany.address, margin + 5, detailsY); }
-            finalY += 30; // RUIMERE AFSTAND NAAR HOOFDSTUK 1
-        }
+            
+            if (parts.length > 1) {
+                const preText = parts[0];
+                const postText = parts[1];
+                
+                doc.text(preText, margin, finalY);
+                const preWidth = doc.getTextWidth(preText);
+                
+                doc.setTextColor(colors.link[0], colors.link[1], colors.link[2]);
+                doc.text(linkText, margin + preWidth, finalY);
+                doc.line(margin + preWidth, finalY + 0.5, margin + preWidth + doc.getTextWidth(linkText), finalY + 0.5);
+                
+                // Add actual PDF link (calculated loosely, but works for internal navigation if supported by viewer)
+                // For safety in all viewers, we just style it.
+                
+                doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
+                doc.text(postText, margin + preWidth + doc.getTextWidth(linkText), finalY);
+            } else {
+                doc.text(text, margin, finalY);
+            }
+            finalY += 6;
+        };
 
-        const stats = calculateSummations(localInventory, thresholdMode);
+        // --- TITLE PAGE ---
+        doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.rect(0, 0, pageWidth, 60, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.text("ChemStats", margin, 35);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text("Gevaarlijke Stoffen Analyse", margin, 45);
 
+        let titleY = 100;
+        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.setFontSize(28);
+        doc.setFont('helvetica', 'bold');
+        doc.text(includeArie ? "Seveso III & ARIE\nRapportage" : "Seveso III\nRapportage", margin, titleY);
+        
+        titleY += 30;
+        doc.setFontSize(14);
+        doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
+        doc.text(`Bedrijf: ${selectedCompany.name || 'Naamloos'}`, margin, titleY);
+        titleY += 8;
+        doc.text(`Locatie: ${selectedCompany.address || 'Adres niet opgegeven'}`, margin, titleY);
+        
+        titleY += 40;
+        doc.setFontSize(10);
+        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
+        doc.text(`Versie: 1.0`, margin, titleY);
+        titleY += 6;
+        doc.text(`Datum: ${new Date().toLocaleDateString('nl-NL')}`, margin, titleY);
+        titleY += 6;
+        doc.text(`Status: Definitief`, margin, titleY);
+
+        titleY += 30;
+        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
+        doc.line(margin, titleY, margin + 60, titleY);
+        titleY += 5;
+        doc.text("Paraaf opsteller", margin, titleY);
+
+        doc.addPage();
+        finalY = 20;
+
+        // --- CHAPTER 1 & 2 ---
         addMainHeader("1. Inleiding en Kaderstelling");
         addBodyText(`Binnen de bedrijfsvoering van ${selectedCompany.name || 'het bedrijf'} wordt gewerkt met diverse gevaarlijke stoffen. Om de veiligheidsrisico's te beheersen, is de inrichting onderworpen aan specifieke wettelijke kaders. Deze rapportage toetst de actuele status aan de hand van de volgende regelgevingen:`);
         
@@ -254,10 +298,14 @@ export default function SevesoApp() {
 
         doc.addPage();
         finalY = 20;
+
+        // --- CHAPTER 3: RESULTS ---
         addMainHeader("3. Resultaten");
         finalY += 2;
 
+        const stats = calculateSummations(localInventory, thresholdMode);
         const isSevesoExceeded = stats.overallStatus !== 'Geen';
+        
         const boxWidth = (fullContentWidth - 8) / 2;
         doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]); 
         doc.setFillColor(255, 255, 255); 
@@ -300,7 +348,8 @@ export default function SevesoApp() {
                 doc.text(group.name, x, currentY);
                 doc.setFont('helvetica', 'bold'); 
                 doc.setTextColor(isExceeded ? colors.destructive[0] : colors.foreground[0], isExceeded ? colors.destructive[1] : colors.foreground[1], isExceeded ? colors.destructive[2] : colors.foreground[2]); 
-                doc.text(`${percentage}%`, x + width, currentY, { align: 'right' });
+                // Show BOTH factor and percentage for consistency
+                doc.text(`${ratio.toFixed(2)} / ${percentage}%`, x + width, currentY, { align: 'right' });
                 currentY += 2.5; 
                 const barHeight = 2.5; 
                 doc.setFillColor(241, 245, 249); 
@@ -327,34 +376,78 @@ export default function SevesoApp() {
             finalY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, finalY, fullContentWidth) + 10;
         }
 
+        // --- CHAPTER 4: CONCLUSION ---
         addMainHeader("4. Conclusie");
+        
+        // Find top contributor for Seveso if exceeded
+        const getTopContributor = (groupKey: string, type: 'seveso' | 'arie') => {
+            let maxContrib = 0;
+            let topSub: Substance | null = null;
+            
+            localInventory.forEach(sub => {
+                let contrib = 0;
+                if (type === 'seveso') {
+                    sub.sevesoCategoryIds.forEach(catId => {
+                        const cat = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+                        if (cat?.group === groupKey) {
+                            const threshold = SEVESO_THRESHOLDS[catId]?.[thresholdMode] || (cat as any)?.threshold?.[thresholdMode];
+                            if (threshold > 0) contrib += sub.quantity / threshold;
+                        }
+                    });
+                } else {
+                    sub.arieCategoryIds.forEach(catId => {
+                        const cat = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+                        if (cat?.group === groupKey) {
+                            const threshold = ARIE_THRESHOLDS[catId] || (cat as any)?.arieThreshold;
+                            if (threshold > 0) contrib += sub.quantity / threshold;
+                        }
+                    });
+                }
+                if (contrib > maxContrib) {
+                    maxContrib = contrib;
+                    topSub = sub;
+                }
+            });
+            return topSub;
+        };
+
         addSubHeader("4.1 Seveso");
-        const sevesoMaxRatio = Math.max(...stats.summationGroups.map(g => g.totalRatio));
-        const marginValue = Math.max(0, 100 - Math.round(sevesoMaxRatio * 100));
+        const criticalSevesoGroup = stats.summationGroups.find(g => g.isExceeded) || [...stats.summationGroups].sort((a, b) => b.totalRatio - a.totalRatio)[0];
         
         if (!isSevesoExceeded) {
-            addBodyText(`Op basis van de inventarisatie kan worden geconcludeerd dat de inrichting momenteel niet gekwalificeerd wordt als een Seveso-inrichting. Het resultaat van de sommatie voor de meest kritieke gevarengroep bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een veiligheidsmarge van ${marginValue}% aanwezig is ten opzichte van de wettelijke drempelwaarden.`);
+            addBodyText(`Op basis van de inventarisatie kan worden geconcludeerd dat de inrichting momenteel niet gekwalificeerd wordt als een Seveso-inrichting. Het hoogste resultaat van de sommatie voor de meest kritieke gevarengroep (${criticalSevesoGroup.name}) bedraagt ${criticalSevesoGroup.totalRatio.toFixed(2)} (${Math.round(criticalSevesoGroup.totalRatio * 100)}%), wat onder de wettelijke drempelwaarde van 1.00 ligt.`);
         } else {
-            addBodyText(`De inrichting wordt aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. Het resultaat van de sommatie voor de gevarengroep ${stats.criticalGroup} bedraagt ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%), waarmee de wettelijke drempelwaarde wordt overschreden. Dit impliceert een verhoogd risicoprofiel en brengt strikte wettelijke verplichtingen met zich mee voor de exploitant.`);
-            addBodyText(`Voor de hieruit voortvloeiende wettelijke verplichtingen wordt verwezen naar hoofdstuk 5 van deze rapportage.`);
+            const topSub = getTopContributor(criticalSevesoGroup.group, 'seveso');
+            addBodyText(`De inrichting wordt aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. Het resultaat van de sommatie voor de gevarengroep ${stats.criticalGroup} bedraagt ${criticalSevesoGroup.totalRatio.toFixed(2)} (${Math.round(criticalSevesoGroup.totalRatio * 100)}%), waarmee de wettelijke drempelwaarde van 1.00 wordt overschreden.`);
+            if (topSub) {
+                addBodyText(`De stof met de grootste bijdrage binnen deze groep is '${(topSub as Substance).productName}', wat een belangrijk aangrijpingspunt is voor risicobeheersing.`);
+            }
+            addLinkToChapter5(`Voor de hieruit voortvloeiende wettelijke verplichtingen wordt verwezen naar Hoofdstuk 5 van deze rapportage.`);
         }
 
         if (includeArie) {
           finalY += 2;
           addSubHeader("4.2 ARIE");
+          const criticalArieGroup = stats.arieSummationGroups.find(g => g.isExceeded) || [...stats.arieSummationGroups].sort((a, b) => b.totalRatio - a.totalRatio)[0];
+
           if (!stats.arieExceeded) {
-              addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving momenteel niet aangemerkt als ARIE-plichtig. Het hoogste resultaat van de sommatie binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%.`);
+              addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving momenteel niet aangemerkt als ARIE-plichtig. Het hoogste resultaat van de sommatie binnen de ARIE-gevarengroepen bedraagt ${stats.arieTotal.toFixed(2)} (${Math.round(stats.arieTotal * 100)}%).`);
           } else {
-              addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Voor de gevarengroep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%), waarmee de wettelijke drempelwaarde wordt overschreden.`);
-              addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen de gevolgen van zware ongevallen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen en organisatorische acties wettelijk verplicht zijn om de arbeidsveiligheid te borgen.`);
-              addBodyText(`Voor de hieruit voortvloeiende wettelijke verplichtingen wordt verwezen naar hoofdstuk 5 van deze rapportage.`);
+              const topSubArie = getTopContributor(criticalArieGroup.group, 'arie');
+              addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Voor de gevarengroep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${stats.arieTotal.toFixed(2)} (${Math.round(stats.arieTotal * 100)}%), waarmee de wettelijke drempelwaarde van 1.00 wordt overschreden.`);
+              if (topSubArie) {
+                  addBodyText(`Binnen deze gevarengroep levert de stof '${(topSubArie as Substance).productName}' de grootste bijdrage aan de sommatiewaarde.`);
+              }
+              addLinkToChapter5(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn. Zie Hoofdstuk 5 voor details.`);
           }
         }
 
+        // --- CHAPTER 5: LEGAL STEPS ---
         if (isSevesoExceeded || (includeArie && stats.arieExceeded)) {
             doc.addPage();
             finalY = 20;
             addMainHeader(`5. Wettelijke Vervolgstappen`);
+            addBodyText("De vastgestelde status brengt een reeks wettelijke verplichtingen met zich mee die binnen de gestelde termijnen moeten worden uitgevoerd om compliant te blijven.");
             
             let currentStepIdx = 1;
 
@@ -399,16 +492,31 @@ export default function SevesoApp() {
             }
         }
 
+        // --- CHAPTER 6: APPENDIX ---
         doc.addPage();
         let invY = 20; 
-        doc.setFontSize(16); 
-        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); 
-        doc.setFont('helvetica', 'bold'); 
-        doc.text("Bijlage: Volledige Inventaris", margin, invY); 
-        invY += 10;
+        addMainHeader("6. Bijlage: Volledige Inventaris");
+        invY += 6;
         
-        const tableHead = includeArie ? [['Product / CAS', 'Seveso', 'ARIE', 'Voorraad']] : [['Product / CAS', 'Seveso', 'Voorraad']];
+        const tableHead = includeArie 
+            ? [['Product / CAS', 'Seveso Cat.', 'ARIE Cat.', 'Gevarengroep', 'Voorraad']] 
+            : [['Product / CAS', 'Seveso Cat.', 'Gevarengroep', 'Voorraad']];
+            
         const tableData = (localInventory || []).map(sub => {
+            const getGroupLabel = (catIds: string[]) => {
+                const groups = new Set<string>();
+                catIds.forEach(id => {
+                    const cat = ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id);
+                    if (cat) {
+                        const labels: Record<string, string> = {
+                            health: 'Gezondheid', physical: 'Fysiek', environment: 'Milieu', other: 'Overig', named: 'Benoemd'
+                        };
+                        groups.add(labels[cat.group] || cat.group);
+                    }
+                });
+                return Array.from(groups).join(", ");
+            };
+
             const sevesoCats = sub.sevesoCategoryIds
                 .map(id => ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))
                 .filter(Boolean)
@@ -428,13 +536,15 @@ export default function SevesoApp() {
                     .join(", ");
                 rowData.push(arieCats);
             }
-            rowData.push({ content: `${sub.quantity} ton`, styles: { halign: 'right' } });
+            
+            rowData.push(getGroupLabel([...sub.sevesoCategoryIds, ...sub.arieCategoryIds]));
+            rowData.push({ content: `${sub.quantity.toFixed(2)} ton`, styles: { halign: 'right' } });
             return rowData;
         });
 
         const columnStyles = includeArie 
-            ? { 0: { cellWidth: 50 }, 1: { cellWidth: 50 }, 2: { cellWidth: 50 }, 3: { cellWidth: 25 } }
-            : { 0: { cellWidth: 85 }, 1: { cellWidth: 85 }, 2: { cellWidth: 25 } };
+            ? { 0: { cellWidth: 40 }, 1: { cellWidth: 35 }, 2: { cellWidth: 35 }, 3: { cellWidth: 35 }, 4: { cellWidth: 25 } }
+            : { 0: { cellWidth: 65 }, 1: { cellWidth: 60 }, 2: { cellWidth: 40 }, 3: { cellWidth: 25 } };
 
         autoTable(doc, {
             startY: invY,
@@ -442,7 +552,7 @@ export default function SevesoApp() {
             body: tableData as any,
             theme: 'striped',
             headStyles: { fillColor: colors.primary as [number, number, number], textColor: 255, fontStyle: 'bold' },
-            styles: { fontSize: 9 },
+            styles: { fontSize: 8.5 },
             columnStyles: columnStyles,
             margin: { left: margin, right: margin }
         });
@@ -727,3 +837,4 @@ export default function SevesoApp() {
     </div>
   );
 }
+
