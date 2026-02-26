@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -13,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, ARIE_THRESHOLDS } from '@/lib/seveso';
+import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
 import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc, useAuth } from '@/firebase';
 import { collection, query, where, doc, Timestamp } from 'firebase/firestore';
@@ -250,11 +249,11 @@ export default function SevesoApp() {
           addBodyText("De regeling Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE) is verankerd in het Arbeidsomstandighedenbesluit en richt zich op de interne veiligheid en de bescherming van werknemers op de werkvloer tegen de gevolgen van zware ongevallen.");
         }
 
-        finalY += 2;
+        finalY += 3;
         // --- 2. Beoordelingssystematiek ---
         addMainHeader("2. De Beoordelingssystematiek");
         addSubHeader("2.1 Indeling op basis van H-zinnen");
-        addBodyText("De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS). Deze bepalen de gevarengroep conform de Seveso-richtlijn. De ARIE-regeling hanteert voor diverse categorieën lagere drempelwaarden om de arbeidsveiligheid extra te borgen.");
+        addBodyText("De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS). Deze bepalen de gevarengroep conform de Seveso-richtlijn. De ARIE-regeling hanteert voor diverse categorieën drempelwaarden om de arbeidsveiligheid te borgen.");
 
         addSubHeader("2.2 De Sommatieregeling");
         addBodyText("Per gevarengroep wordt de aanwezige hoeveelheid vergeleken met de wettelijke drempelwaarde. Indien de som de waarde 1,0 (100%) bereikt of overschrijdt, is het betreffende wettelijke regime van kracht.");
@@ -345,18 +344,18 @@ export default function SevesoApp() {
         const marginValue = Math.max(0, 100 - Math.round(sevesoMaxRatio * 100));
         
         if (!isSevesoExceeded) {
-            addBodyText(`Op basis van de inventarisatie kan worden geconcludeerd dat de inrichting momenteel niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is ten opzichte van de wettelijke drempelwaarden.`);
+            addBodyText(`Op basis van de inventarisatie kan worden geconcludeerd dat de inrichting momenteel niet gekwalificeerd wordt als een Seveso-inrichting. Het resultaat van de sommatie voor de meest kritieke gevarengroep bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een veiligheidsmarge van ${marginValue}% aanwezig is ten opzichte van de wettelijke drempelwaarden.`);
         } else {
-            addBodyText(`De inrichting wordt aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. De wettelijke drempelwaarde voor de gevarengroep ${stats.criticalGroup} wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%). Dit impliceert een verhoogd risicoprofiel en brengt strikte wettelijke verplichtingen met zich mee voor de exploitant.`);
+            addBodyText(`De inrichting wordt aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. Het resultaat van de sommatie voor de gevarengroep ${stats.criticalGroup} bedraagt ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%), waarmee de wettelijke drempelwaarde wordt overschreden. Dit impliceert een verhoogd risicoprofiel en brengt strikte wettelijke verplichtingen met zich mee voor de exploitant.`);
         }
 
         if (includeArie) {
-          finalY += 1;
+          finalY += 2;
           addSubHeader("4.2 ARIE");
           if (!stats.arieExceeded) {
-              addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving momenteel niet aangemerkt als ARIE-plichtig. De hoogste fractie binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%.`);
+              addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving momenteel niet aangemerkt als ARIE-plichtig. Het hoogste resultaat van de sommatie binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%.`);
           } else {
-              addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Met een gecumuleerde fractie van ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%) in de groep ${stats.criticalArieGroup} wordt de wettelijke drempelwaarde overschreden.`);
+              addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Voor de gevarengroep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%), waarmee de wettelijke drempelwaarde wordt overschreden.`);
               addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen de gevolgen van zware ongevallen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen en organisatorische acties wettelijk verplicht zijn om de arbeidsveiligheid te borgen.`);
           }
         }
@@ -385,9 +384,9 @@ export default function SevesoApp() {
                     const splitStep = doc.splitTextToSize(`• ${step}`, fullContentWidth - 5);
                     checkPageBreak(splitStep.length * 4.5 + 2);
                     doc.text(splitStep, margin + 5, finalY);
-                    finalY += (splitStep.length * 4.5) + 2.5;
+                    finalY += (splitStep.length * 4.5) + 3;
                 });
-                finalY += 2;
+                finalY += 4;
                 currentStepIdx++;
             }
 
@@ -405,7 +404,7 @@ export default function SevesoApp() {
                     const splitStep = doc.splitTextToSize(`• ${step}`, fullContentWidth - 5);
                     checkPageBreak(splitStep.length * 4.5 + 2);
                     doc.text(splitStep, margin + 5, finalY);
-                    finalY += (splitStep.length * 4.5) + 2.5;
+                    finalY += (splitStep.length * 4.5) + 3;
                 });
             }
         }
