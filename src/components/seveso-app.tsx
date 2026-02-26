@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -196,7 +197,7 @@ export default function SevesoApp() {
             doc.setFontSize(11);
             doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
             doc.text(text, margin, finalY);
-            finalY += 6;
+            finalY += 8;
         };
 
         const addSubHeader = (text: string) => {
@@ -204,7 +205,7 @@ export default function SevesoApp() {
             doc.setFontSize(10);
             doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
             doc.text(text, margin, finalY);
-            finalY += 5;
+            finalY += 6;
         };
 
         const addBodyText = (text: string) => {
@@ -277,7 +278,7 @@ export default function SevesoApp() {
         doc.text(`Rapportnummer: ${reportNumber}`, margin, titleY);
 
         doc.addPage();
-        finalY = 25; 
+        finalY = 30; // More space before Chapter 1
 
         // --- CHAPTER 1 & 2 ---
         addMainHeader("1. Inleiding en Kaderstelling");
@@ -291,7 +292,7 @@ export default function SevesoApp() {
           addBodyText("De regeling Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE) is verankerd in het Arbeidsomstandighedenbesluit en richt zich op de interne veiligheid en de bescherming van werknemers op de werkvloer tegen de gevolgen van zware ongevallen.");
         }
 
-        finalY += 4;
+        finalY += 6;
         addMainHeader("2. De Beoordelingssystematiek");
         addSubHeader("2.1 Indeling op basis van H-zinnen");
         addBodyText("De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS). Deze bepalen de gevarengroep conform de Seveso-richtlijn. De drempelwaardecheck in deze module toetst of de sommatie van stoffen binnen een gevarencategorie de kritieke grens van 1,0 overschrijdt.");
@@ -304,7 +305,7 @@ export default function SevesoApp() {
 
         // --- CHAPTER 3: RESULTATEN ---
         addMainHeader("3. Resultaten");
-        finalY += 2;
+        finalY += 4;
 
         const stats = calculateSummations(localInventory, thresholdMode);
         const isSevesoExceeded = stats.overallStatus !== 'Geen';
@@ -332,7 +333,7 @@ export default function SevesoApp() {
           doc.setFont('helvetica', 'bold'); 
           doc.text(stats.arieExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig', margin + boxWidth + 13, finalY + 13);
         }
-        finalY += 26;
+        finalY += 28;
 
         const drawDashboardColumn = (title: string, groups: any[], isArie: boolean, x: number, y: number, width: number) => {
             let currentY = y; 
@@ -340,7 +341,7 @@ export default function SevesoApp() {
             doc.setTextColor(isArie ? colors.foreground[0] : colors.primary[0], isArie ? colors.foreground[1] : colors.primary[1], isArie ? colors.foreground[2] : colors.primary[2]); 
             doc.setFont('helvetica', 'bold'); 
             doc.text(title, x, currentY); 
-            currentY += 6;
+            currentY += 8;
             groups.forEach(group => {
                 const ratio = group.totalRatio; 
                 const percentage = Math.round(ratio * 100); 
@@ -373,9 +374,9 @@ export default function SevesoApp() {
             const startSommatieY = finalY;
             const endSevesoY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, startSommatieY, colWidth);
             const endArieY = drawDashboardColumn("ARIE Sommatie", stats.arieSummationGroups, true, margin + colWidth + 15, startSommatieY, colWidth);
-            finalY = Math.max(endSevesoY, endArieY) + 10;
+            finalY = Math.max(endSevesoY, endArieY) + 12;
         } else {
-            finalY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, finalY, fullContentWidth) + 10;
+            finalY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, finalY, fullContentWidth) + 12;
         }
 
         // --- CHAPTER 4: CONCLUSIE ---
@@ -427,7 +428,7 @@ export default function SevesoApp() {
         }
 
         if (includeArie) {
-          finalY += 2;
+          finalY += 4;
           addSubHeader("4.2 ARIE");
           const criticalArieGroup = stats.arieSummationGroups.find(g => g.isExceeded) || [...stats.arieSummationGroups].sort((a, b) => b.totalRatio - a.totalRatio)[0];
 
@@ -439,7 +440,7 @@ export default function SevesoApp() {
               if (topSubArie) {
                   addBodyText(`Binnen deze gevarengroep levert de stof '${(topSubArie as Substance).productName}' de grootste bijdrage aan de sommatiewaarde.`);
               }
-              addLinkToChapter5(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermer, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn. Zie Hoofdstuk 5 for details.`);
+              addLinkToChapter5(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermer, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn. Zie Hoofdstuk 5 voor details.`);
           }
         }
 
@@ -466,11 +467,11 @@ export default function SevesoApp() {
                     doc.setFontSize(9.5);
                     doc.setFont('helvetica', 'normal');
                     const splitStep = doc.splitTextToSize(`• ${step}`, fullContentWidth - 5);
-                    checkPageBreak(splitStep.length * 4.5 + 2);
+                    checkPageBreak(splitStep.length * 4.5 + 4);
                     doc.text(splitStep, margin + 5, finalY);
-                    finalY += (splitStep.length * 4.5) + 3;
+                    finalY += (splitStep.length * 4.5) + 4;
                 });
-                finalY += 4;
+                finalY += 6;
                 currentStepIdx++;
             }
 
@@ -486,18 +487,17 @@ export default function SevesoApp() {
                     doc.setFontSize(9.5);
                     doc.setFont('helvetica', 'normal');
                     const splitStep = doc.splitTextToSize(`• ${step}`, fullContentWidth - 5);
-                    checkPageBreak(splitStep.length * 4.5 + 2);
+                    checkPageBreak(splitStep.length * 4.5 + 4);
                     doc.text(splitStep, margin + 5, finalY);
-                    finalY += (splitStep.length * 4.5) + 3;
+                    finalY += (splitStep.length * 4.5) + 4;
                 });
             }
         }
 
-        // --- CHAPTER 6: BIJLAGE ---
+        // --- BIJLAGE: INVENTARIS ---
         doc.addPage();
-        let invY = 25; 
-        addMainHeader("6. Bijlage: Volledige Inventaris");
-        invY += 6;
+        finalY = 25; 
+        addMainHeader("Bijlage: Volledige Inventaris");
         
         const tableHead = includeArie 
             ? [['Product / CAS', 'Seveso Cat.', 'ARIE Cat.', 'Gevarengroep', 'Voorraad']] 
@@ -548,7 +548,7 @@ export default function SevesoApp() {
             : { 0: { cellWidth: 65 }, 1: { cellWidth: 60 }, 2: { cellWidth: 40 }, 3: { cellWidth: 25 } };
 
         autoTable(doc, {
-            startY: invY,
+            startY: finalY + 4,
             head: tableHead,
             body: tableData as any,
             theme: 'striped',
