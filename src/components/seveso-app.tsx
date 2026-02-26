@@ -22,6 +22,7 @@ import { Loader2, UserX, LogOut, Building2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useRouter } from 'next/navigation';
 import CompanySelector from './company-selector';
+import { getShortId } from '@/lib/utils';
 
 export default function SevesoApp() {
   const { user, isUserLoading: isAuthLoading } = useUser();
@@ -148,16 +149,6 @@ export default function SevesoApp() {
 
         const now = new Date();
         const YYYYMMDD = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
-        
-        const getShortId = (id: string) => {
-            let hash = 0;
-            for (let i = 0; i < id.length; i++) {
-                const char = id.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
-            }
-            return Math.abs(hash % 10000).toString().padStart(4, '0');
-        };
         const shortId = getShortId(selectedCompany.id);
         const reportNumber = `${shortId}.SERIE.${YYYYMMDD}`;
 
@@ -648,6 +639,7 @@ export default function SevesoApp() {
     } else {
         const wsData = [
             ["Bedrijfsgegevens", ""],
+            ["Bedrijfsnummer", getShortId(selectedCompany.id)],
             ["Bedrijfsnaam", selectedCompany.name || "-"],
             ["Adres", selectedCompany.address || "-"],
             ["Datum", new Date().toLocaleDateString('nl-NL')],
