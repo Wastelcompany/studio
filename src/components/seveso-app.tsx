@@ -12,19 +12,16 @@ import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import CompanyDetails from './company-details';
-import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES, classifySubstance } from '@/lib/seveso';
+import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
 import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc, useAuth } from '@/firebase';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb, deleteCompanyFromDb } from '@/lib/companies';
-import { Loader2, UserX, LogOut, LayoutDashboard, Building2 } from 'lucide-react';
+import { Loader2, UserX, LogOut, Building2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent } from './ui/card';
 import CompanySelector from './company-selector';
-
 
 export default function SevesoApp() {
   const { user, isUserLoading: isAuthLoading } = useUser();
@@ -105,8 +102,6 @@ export default function SevesoApp() {
   }
 
   const selectedCompany = companies.find(c => c.id === selectedCompanyId);
-
-  // --- ACTIONS ---
 
   const handleShowExplanation = (substanceId: string, categoryId: string, type: 'seveso' | 'arie') => {
     const substance = localInventory.find(sub => sub.id === substanceId);
@@ -258,7 +253,7 @@ export default function SevesoApp() {
         const hZinDesc = "De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS) van elk product. Deze gegevens bepalen in welke 'gevarengroep' (Gezondheid, Fysisch of Milieu) een stof wordt ingedeeld.\n\nEen essentieel punt in deze analyse is dat de ARIE-regeling bepaalde gezondheidsgevaren strenger classificeert dan de Omgevingswet. Zo worden bijtende stoffen (H314) binnen de Arbo-wetgeving (ARIE) volledig meegerekend als een acuut gezondheidsgevaar voor werknemers, terwijl deze bij de huidige hoeveelheden binnen de Seveso-systematiek vaak buiten de gezondheidssommatie vallen.";
         const splitHZinDesc = doc.splitTextToSize(hZinDesc, pageWidth - (margin * 2));
         doc.text(splitHZinDesc, margin, finalY);
-        finalY += (splitHZinDesc.length * 5) + 4;
+        finalY += (splitHZinDesc.length * 5) + 2;
 
         // Sub 2.2
         doc.setFont('helvetica', 'bold');
@@ -270,13 +265,11 @@ export default function SevesoApp() {
         doc.text(splitSommatieDesc, margin, finalY);
         finalY += (splitSommatieDesc.length * 5) + 10;
 
-        // Check if we need a new page for results
         if (finalY > pageHeight - 60) {
             doc.addPage();
             finalY = 20;
         }
 
-        // --- Section 3: Resultaten ---
         doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("3. Resultaten", margin, finalY); finalY += 6;
         const isSevesoExceeded = stats.overallStatus !== 'Geen';
         
@@ -326,7 +319,6 @@ export default function SevesoApp() {
             finalY = drawDashboardColumn("Seveso Sommatie", stats.summationGroups, false, margin, finalY, colWidth) + 6;
         }
 
-        // --- Section 4: Conclusie ---
         doc.setFontSize(11); doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); doc.setFont('helvetica', 'bold'); doc.text("4. Conclusie", margin, finalY); finalY += 5;
         const conclusieText = includeArie
             ? `Op basis van de huidige inventarisatie is de inrichting ${isSevesoExceeded ? 'wel' : 'niet'} aan te merken als een Seveso-inrichting (${stats.overallStatus === 'Geen' ? 'geen drempels overschreden' : stats.overallStatus}). Tevens is de inrichting ${stats.arieExceeded ? 'wel' : 'niet'} ARIE-plichtig. De hoogste sommatiewaarde binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%.`
@@ -390,7 +382,6 @@ export default function SevesoApp() {
         id: `sub-${Date.now()}-${Math.random()}`,
         quantity: 0
     };
-    // Update locally first for instant feedback
     setLocalInventory(prevInventory => [...prevInventory, substanceWithId]);
     addSubstanceToDb(db, selectedCompanyId, substanceWithId);
   };
@@ -398,9 +389,7 @@ export default function SevesoApp() {
   const handleUpdateSubstanceQuantity = (id: string, quantity: number) => {
     if (!selectedCompanyId || !db) return;
     const newQuantity = isNaN(quantity) ? 0 : quantity;
-    
     setLocalInventory(prev => prev.map(sub => sub.id === id ? { ...sub, quantity: newQuantity } : sub));
-    
     updateSubstanceQuantityInDb(db, selectedCompanyId, id, newQuantity);
   };
 
@@ -419,13 +408,10 @@ export default function SevesoApp() {
 
   const handleDeleteCompany = async () => {
     if (!selectedCompanyId || !db) return;
-    
     const companyNameToDelete = selectedCompany?.name;
     await deleteCompanyFromDb(db, selectedCompanyId);
-    
     setSelectedCompanyId(null);
     setIsDeleteCompanyAlertOpen(false);
-    
     toast({
         title: "Bedrijf Verwijderd",
         description: `Het bedrijf "${companyNameToDelete}" en de inventaris zijn succesvol verwijderd.`
