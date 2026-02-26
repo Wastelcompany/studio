@@ -134,7 +134,6 @@ export default function SevesoApp() {
         const now = new Date();
         const YYYYMMDD = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
         
-        // Dynamic middle part for report number: SERIE for full, SEV for seveso_only
         const middlePart = reportType === 'full' ? 'SERIE' : 'SEV';
         const reportNumber = `${getShortId(selectedCompany.id)}.${middlePart}.${YYYYMMDD}`;
 
@@ -143,16 +142,13 @@ export default function SevesoApp() {
             for (let i = 2; i <= totalPages; i++) {
                 pdfDoc.setPage(i);
                 
-                // Header line
                 pdfDoc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
                 pdfDoc.line(margin, 15, pageWidth - margin, 15);
                 
-                // Report number in header top right
                 pdfDoc.setFontSize(8);
                 pdfDoc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
                 pdfDoc.text(`Rapportnummer: ${reportNumber}`, pageWidth - margin, 11, { align: 'right' });
                 
-                // Footer line
                 pdfDoc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
                 pdfDoc.text(`Pagina ${i} van ${totalPages}`, margin, pageHeight - 12);
                 pdfDoc.setFont('helvetica', 'bold');
@@ -218,28 +214,64 @@ export default function SevesoApp() {
         finalY = 35;
         addMainHeader("1. Inleiding en Kaderstelling");
         addBodyText(`Binnen de bedrijfsvoering van ${selectedCompany.name} wordt gewerkt met diverse gevaarlijke stoffen. De drempelwaardecheck in deze module toetst of de sommatie van stoffen binnen een gevarencategorie de kritieke grens van 1,0 overschrijdt.`);
+        
+        addMainHeader("2. Wettelijk Kader");
+        addBodyText(`De Seveso III-richtlijn (2012/18/EU) is gericht op de preventie van zware ongevallen waarbij gevaarlijke stoffen zijn betrokken. ${includeArie ? 'De ARIE-regeling (Aanvullende Risico-Inventarisatie en -Evaluatie) is de Nederlandse vertaling van deze richtlijn voor situaties die onder de drempelwaarden van Seveso vallen.' : ''}`);
 
         // PAGE 3: Results
         doc.addPage();
         finalY = 25;
-        addMainHeader("3. Resultaten");
+        addMainHeader("3. Resultaten van de Sommatie");
         const stats = calculateSummations(localInventory, thresholdMode);
-        finalY += 10;
+        
+        // Seveso Results Table
+        autoTable(doc, {
+          startY: finalY,
+          head: [['Gevarengroep (Seveso)', 'Resultaat Sommatie', 'Status']],
+          body: stats.summationGroups.map(g => [
+            g.name,
+            `${(g.totalRatio).toFixed(2)}`,
+            g.isExceeded ? 'OVERSCHREDEN' : 'Voldoet'
+          ]),
+          theme: 'striped',
+          headStyles: { fillColor: colors.primary as [number, number, number] },
+        });
+        
+        finalY = (doc as any).lastAutoTable.finalY + 15;
 
-        // Conclusion section
+        if (includeArie) {
+          checkPageBreak(50);
+          addMainHeader("3.2 ARIE Resultaten");
+          autoTable(doc, {
+            startY: finalY,
+            head: [['Gevarengroep (ARIE)', 'Resultaat Sommatie', 'Status']],
+            body: stats.arieSummationGroups.map(g => [
+              g.name,
+              `${(g.totalRatio).toFixed(2)}`,
+              g.isExceeded ? 'OVERSCHREDEN' : 'Voldoet'
+            ]),
+            theme: 'striped',
+            headStyles: { fillColor: colors.foreground as [number, number, number] },
+          });
+          finalY = (doc as any).lastAutoTable.finalY + 15;
+        }
+
+        // PAGE 4: Conclusion
+        checkPageBreak(40);
         addMainHeader("4. Conclusie");
-        addBodyText(`Op basis van de resultaten voor de gevarengroep ${stats.criticalGroup} bedraagt het resultaat van de sommatie ${stats.summationGroups.find(g => g.name === stats.criticalGroup)?.totalRatio.toFixed(2)}. Indien dit resultaat 1.0 of hoger is, is de inrichting Seveso-plichtig.`);
+        const statusText = stats.overallStatus === 'Geen' ? 'niet' : 'wel';
+        addBodyText(`Op basis van de ingevoerde inventaris is geconstateerd dat de inrichting ${statusText} voldoet aan de criteria voor een Seveso-inrichting (${thresholdMode === 'low' ? 'Lagedrempel' : 'Hogedrempel'}). De meest kritieke gevarengroep is ${stats.criticalGroup} met een sommatiewaarde van ${stats.summationGroups.find(g => g.name === stats.criticalGroup)?.totalRatio.toFixed(2)}.`);
 
         if (includeArie) {
             addMainHeader("4.2 ARIE Conclusie");
-            const arieText = `De inrichting wordt op basis van de vigerende Arbo-wetgeving beoordeeld op de ARIE-gevarengroepen. Voor de gevarengroep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${stats.arieTotal.toFixed(2)}. Bij een waarde van 1.00 of hoger wordt de inrichting aangemerkt als ARIE-plichtig.`;
+            const arieStatus = stats.arieExceeded ? 'wel' : 'niet';
+            const arieText = `De inrichting wordt op basis van de vigerende Arbo-wetgeving beoordeeld op de ARIE-gevarengroepen. De inrichting is op basis van deze berekening ${arieStatus} ARIE-plichtig. Voor de meest kritieke groep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${stats.arieTotal.toFixed(2)}.`;
             addBodyText(arieText);
         }
 
         // APPENDIX: Inventory
         doc.addPage();
         finalY = 25;
-        // Attachment title without chapter number
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
