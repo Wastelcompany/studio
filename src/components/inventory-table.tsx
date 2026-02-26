@@ -12,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Trash2, FileSpreadsheet, Upload } from "lucide-react";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Trash2, FileSpreadsheet, Upload, Search, X } from "lucide-react";
 import type { Substance, ThresholdMode, NamedSubstance } from "@/lib/types";
 import { ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, ARIE_THRESHOLDS } from "@/lib/seveso";
 import { Progress } from './ui/progress';
@@ -148,6 +148,18 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
 
 export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, thresholdMode, onUpload, onShowExplanation }: InventoryTableProps) {
   const [editingValue, setEditingValue] = useState<{id: string, value: string} | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredInventory = useMemo(() => {
+    if (!searchTerm) return inventory;
+    const term = searchTerm.toLowerCase();
+    return inventory.filter(sub => 
+      sub.productName.toLowerCase().includes(term) ||
+      (sub.casNumber || "").toLowerCase().includes(term) ||
+      sub.sevesoCategoryIds.some(id => id.toLowerCase().includes(term)) ||
+      sub.arieCategoryIds.some(id => id.toLowerCase().includes(term))
+    );
+  }, [inventory, searchTerm]);
 
   if (inventory.length === 0) {
     return (
@@ -161,7 +173,31 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
   }
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden border-primary/20">
+      <CardHeader className="border-b bg-muted/20 pb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <CardTitle className="text-lg">Inventarisatie</CardTitle>
+            <div className="relative w-full md:w-72">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Zoek op naam, CAS of categorie..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9 h-9 bg-background"
+                />
+                {searchTerm && (
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute right-0 top-0 h-9 w-9" 
+                        onClick={() => setSearchTerm("")}
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                )}
+            </div>
+        </div>
+      </CardHeader>
       <Table>
         <TableHeader>
           <TableRow>
@@ -174,111 +210,119 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
           </TableRow>
         </TableHeader>
         <TableBody>
-          {inventory.map((substance) => {
-            const allSevesoCategories = [...new Set(substance.sevesoCategoryIds)].map(id => ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id)).filter(Boolean);
-            const allArieCategories = [...new Set(substance.arieCategoryIds)].map(id => ALL_CATEGORIES[id]).filter(Boolean);
-            
-            return (
-              <TableRow key={substance.id}>
-                <TableCell className="font-medium">
-                  {substance.productName}
-                  <div className="text-xs text-muted-foreground">{substance.casNumber || 'N/A'}</div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {allSevesoCategories.map((cat) => {
-                      const threshold = SEVESO_THRESHOLDS[cat.id] || (cat as NamedSubstance).threshold;
-                      return (
-                      <TooltipProvider key={cat.id}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Badge
-                              onClick={() => onShowExplanation(substance.id, cat.id, 'seveso')}
-                              className="cursor-pointer"
-                              variant="default"
-                            >
-                              {cat.displayId || cat.id}
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="font-semibold">{cat.name}</p>
-                            {threshold && (
-                                <>
-                                <p className="text-xs text-muted-foreground">Lage drempel: {threshold.low.toLocaleString('nl-NL')} ton</p>
-                                <p className="text-xs text-muted-foreground">Hoge drempel: {threshold.high.toLocaleString('nl-NL')} ton</p>
-                                </>
-                            )}
-                            <p className="text-xs text-muted-foreground/80 mt-1">Klik voor onderbouwing</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )})}
-                  </div>
-                </TableCell>
-                <TableCell>
+          {filteredInventory.length > 0 ? (
+            filteredInventory.map((substance) => {
+              const allSevesoCategories = [...new Set(substance.sevesoCategoryIds)].map(id => ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id)).filter(Boolean);
+              const allArieCategories = [...new Set(substance.arieCategoryIds)].map(id => ALL_CATEGORIES[id]).filter(Boolean);
+              
+              return (
+                <TableRow key={substance.id}>
+                  <TableCell className="font-medium">
+                    {substance.productName}
+                    <div className="text-xs text-muted-foreground">{substance.casNumber || 'N/A'}</div>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex flex-wrap gap-1">
-                        {allArieCategories.map((cat) => {
-                          const threshold = ARIE_THRESHOLDS[cat.id];
-                          return (
-                            <TooltipProvider key={cat.id}>
-                                <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Badge
-                                      onClick={() => onShowExplanation(substance.id, cat.id, 'arie')}
-                                      className="cursor-pointer"
-                                      variant="secondary"
-                                    >
-                                    {cat.displayId || cat.id}
-                                    </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p className="font-semibold">{cat.name}</p>
-                                    {threshold && <p className="text-xs text-muted-foreground">Drempel: {threshold.toLocaleString('nl-NL')} ton</p>}
-                                    <p className="text-xs text-muted-foreground/80 mt-1">Klik voor onderbouwing</p>
-                                </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )})}
+                      {allSevesoCategories.map((cat) => {
+                        const threshold = SEVESO_THRESHOLDS[cat.id] || (cat as NamedSubstance).threshold;
+                        return (
+                        <TooltipProvider key={cat.id}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge
+                                onClick={() => onShowExplanation(substance.id, cat.id, 'seveso')}
+                                className="cursor-pointer"
+                                variant="default"
+                              >
+                                {cat.displayId || cat.id}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="font-semibold">{cat.name}</p>
+                              {threshold && (
+                                  <>
+                                  <p className="text-xs text-muted-foreground">Lage drempel: {threshold.low.toLocaleString('nl-NL')} ton</p>
+                                  <p className="text-xs text-muted-foreground">Hoge drempel: {threshold.high.toLocaleString('nl-NL')} ton</p>
+                                  </>
+                              )}
+                              <p className="text-xs text-muted-foreground/80 mt-1">Klik voor onderbouwing</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )})}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                          {allArieCategories.map((cat) => {
+                            const threshold = ARIE_THRESHOLDS[cat.id];
+                            return (
+                              <TooltipProvider key={cat.id}>
+                                  <Tooltip>
+                                  <TooltipTrigger asChild>
+                                      <Badge
+                                        onClick={() => onShowExplanation(substance.id, cat.id, 'arie')}
+                                        className="cursor-pointer"
+                                        variant="secondary"
+                                      >
+                                      {cat.displayId || cat.id}
+                                      </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                      <p className="font-semibold">{cat.name}</p>
+                                      {threshold && <p className="text-xs text-muted-foreground">Drempel: {threshold.toLocaleString('nl-NL')} ton</p>}
+                                      <p className="text-xs text-muted-foreground/80 mt-1">Klik voor onderbouwing</p>
+                                  </TooltipContent>
+                                  </Tooltip>
+                              </TooltipProvider>
+                          )})}
+                      </div>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      value={
+                        editingValue && editingValue.id === substance.id
+                          ? editingValue.value
+                          : substance.quantity
+                      }
+                      onBlur={() => setEditingValue(null)}
+                      onChange={(e) => {
+                          setEditingValue({ id: substance.id, value: e.target.value });
+                          
+                          const value = e.target.value.replace(',', '.');
+                          let quantity = parseFloat(value);
+                          
+                          if (isNaN(quantity)) {
+                              onUpdateQuantity(substance.id, 0);
+                          } else if (quantity < 0) {
+                              onUpdateQuantity(substance.id, 0);
+                          } else {
+                              onUpdateQuantity(substance.id, quantity);
+                          }
+                      }}
+                      className="w-24 h-9 ml-auto text-right"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Contributions substance={substance} mode={thresholdMode} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => onDelete(substance.id)} aria-label={`Verwijder ${substance.productName}`}>
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          ) : (
+            <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    Geen resultaten gevonden voor "{searchTerm}".
                 </TableCell>
-                <TableCell>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={
-                      editingValue && editingValue.id === substance.id
-                        ? editingValue.value
-                        : substance.quantity
-                    }
-                    onBlur={() => setEditingValue(null)}
-                    onChange={(e) => {
-                        setEditingValue({ id: substance.id, value: e.target.value });
-                        
-                        const value = e.target.value.replace(',', '.');
-                        let quantity = parseFloat(value);
-                        
-                        if (isNaN(quantity)) {
-                            onUpdateQuantity(substance.id, 0);
-                        } else if (quantity < 0) {
-                            onUpdateQuantity(substance.id, 0);
-                        } else {
-                            onUpdateQuantity(substance.id, quantity);
-                        }
-                    }}
-                    className="w-24 h-9 ml-auto text-right"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Contributions substance={substance} mode={thresholdMode} />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => onDelete(substance.id)} aria-label={`Verwijder ${substance.productName}`}>
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            );
-          })}
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </Card>
