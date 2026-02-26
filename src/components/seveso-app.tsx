@@ -10,7 +10,7 @@ import ReferenceGuideDialog from './reference-guide-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
-import { jsPDF } from 'jspdf';
+import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, ARIE_THRESHOLDS } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
@@ -175,9 +175,9 @@ export default function SevesoApp() {
             doc.setFontSize(11);
             doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
             const splitText = doc.splitTextToSize(text, fullContentWidth);
-            checkPageBreak(splitText.length * 5 + 4);
+            checkPageBreak(splitText.length * 5 + 6);
             doc.text(splitText, margin, finalY);
-            finalY += (splitText.length * 5) + 3;
+            finalY += (splitText.length * 5) + 4;
         };
 
         const addSubHeader = (text: string) => {
@@ -185,9 +185,9 @@ export default function SevesoApp() {
             doc.setFontSize(10);
             doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
             const splitText = doc.splitTextToSize(text, fullContentWidth);
-            checkPageBreak(splitText.length * 4.5 + 3);
+            checkPageBreak(splitText.length * 5 + 4);
             doc.text(splitText, margin, finalY);
-            finalY += (splitText.length * 4.5) + 2.5;
+            finalY += (splitText.length * 5) + 3;
         };
 
         const addBodyText = (text: string) => {
@@ -197,10 +197,10 @@ export default function SevesoApp() {
             const splitText = doc.splitTextToSize(text, fullContentWidth);
             checkPageBreak(splitText.length * 4.5 + 4);
             doc.text(splitText, margin, finalY);
-            finalY += (splitText.length * 4.5) + 3.5;
+            finalY += (splitText.length * 4.5) + 4;
         };
 
-        // Header
+        // --- Header Section ---
         doc.setFontSize(22);
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.setFont('helvetica', 'bold');
@@ -237,25 +237,23 @@ export default function SevesoApp() {
 
         const stats = calculateSummations(localInventory, thresholdMode);
 
-        // --- 1. Inleiding en Kaderstelling ---
+        // --- 1. Inleiding ---
         addMainHeader("1. Inleiding en Kaderstelling");
-        addBodyText(`Binnen de bedrijfsvoering van ${selectedCompany.name || 'het bedrijf'} op de aangegeven locatie wordt gewerkt met diverse gevaarlijke stoffen. Om de veiligheidsrisico's te beheersen en te minimaliseren, is de inrichting onderworpen aan specifieke wettelijke kaders. Deze rapportage toetst de actuele status aan de hand van de volgende twee regelgevingen:`);
+        addBodyText(`Binnen de bedrijfsvoering van ${selectedCompany.name || 'het bedrijf'} wordt gewerkt met diverse gevaarlijke stoffen. Om de veiligheidsrisico's te beheersen, is de inrichting onderworpen aan specifieke wettelijke kaders. Deze rapportage toetst de actuele status aan de hand van de volgende regelgevingen:`);
         
         addSubHeader("1.1 De Seveso-richtlijn");
-        addBodyText("De Seveso-III richtlijn is gericht op het voorkomen van zware ongevallen waarbij gevaarlijke stoffen betrokken zijn en het beperken van de gevolgen daarvan voor de mens en het milieu. In de Nederlandse wetgeving is dit ondergebracht in het Besluit activiteiten leefomgeving (Bal).");
+        addBodyText("De Seveso-III richtlijn is gericht op het voorkomen van zware ongevallen waarbij gevaarlijke stoffen betrokken zijn en het beperken van de gevolgen daarvan voor de mens en het milieu. De richtlijn onderscheidt lagedrempel- en hogedrempelinrichtingen.");
 
-        addSubHeader("1.2 De ARIE-regeling (Arbo-wetgeving)");
-        addBodyText("De regeling Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE) is verankerd in het Arbeidsomstandighedenbesluit. Waar de Seveso-richtlijn naar buiten kijkt, richt de ARIE-regeling zich op de interne veiligheid en de bescherming van werknemers op de werkvloer.");
+        addSubHeader("1.2 De ARIE-regeling");
+        addBodyText("De regeling Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE) is verankerd in het Arbeidsomstandighedenbesluit en richt zich op de interne veiligheid en de bescherming van werknemers op de werkvloer tegen de gevolgen van zware ongevallen.");
 
-        // --- 2. De Beoordelingssystematiek ---
+        // --- 2. Beoordelingssystematiek ---
         addMainHeader("2. De Beoordelingssystematiek");
-        addBodyText("Om te bepalen of een inrichting onder een van deze kaders valt, wordt een vaste systematiek gevolgd waarbij de intrinsieke eigenschappen van stoffen worden vertaald naar risicocategorieën.");
-
         addSubHeader("2.1 Indeling op basis van H-zinnen");
-        addBodyText("De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS). Deze gegevens bepalen in welke gevarengroep een stof wordt ingedeeld. De ARIE-regeling classificeert bepaalde gezondheidsgevaren strenger dan de Seveso-richtlijn.");
+        addBodyText("De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS). Deze gegevens bepalen de gevarengroep. De ARIE-regeling hanteert voor diverse categorieën lagere drempelwaarden dan de Seveso-richtlijn.");
 
         addSubHeader("2.2 De Sommatieregeling");
-        addBodyText("Voor de statusbepaling wordt de sommatieregel toegepast. Per gevarengroep wordt de aanwezige hoeveelheid vergeleken met de wettelijke drempelwaarde. Indien de som de waarde 1,0 (100%) bereikt of overschrijdt, is het betreffende wettelijke regime van kracht.");
+        addBodyText("Per gevarengroep wordt de aanwezige hoeveelheid vergeleken met de wettelijke drempelwaarde. Indien de som de waarde 1,0 (100%) bereikt of overschrijdt, is het betreffende wettelijke regime van kracht.");
 
         // --- 3. Resultaten ---
         doc.addPage();
@@ -343,20 +341,19 @@ export default function SevesoApp() {
         const marginValue = Math.max(0, 100 - Math.round(sevesoMaxRatio * 100));
         
         if (!isSevesoExceeded) {
-            addBodyText(`Op basis van de uitgevoerde inventarisatie en sommatie kan worden geconcludeerd dat de inrichting niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is voordat de ondergrens van de Seveso-richtlijn wordt bereikt.`);
-            addBodyText(`Vanuit het perspectief van de externe veiligheid wordt de locatie beschouwd als een reguliere inrichting. Er zijn geen aanvullende publiekrechtelijke verplichtingen van kracht met betrekking tot het voorkomen van zware ongevallen richting de omgeving. Deze status is echter een momentopname; bij structurele wijzigingen in de procesvoering of een significante toename van de opslagcapaciteit van toxische of ontvlambare stoffen is een herberekening strikt noodzakelijk.`);
+            addBodyText(`Op basis van de inventarisatie kan worden geconcludeerd dat de inrichting niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is.`);
+            addBodyText(`Deze status is een momentopname; bij wijzigingen in de procesvoering of opslag is een herberekening noodzakelijk.`);
         } else {
             addBodyText(`De inrichting wordt aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. De wettelijke drempelwaarde voor de categorie ${stats.criticalGroup} wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%).`);
-            addBodyText(`Deze overschrijding impliceert dat de inrichting onder een strenger toezichtsregime valt en verplicht is om aanvullende technische en organisatorische maatregelen te treffen om zware ongevallen te voorkomen. De exploitant dient de wettelijke verplichtingen onder de Seveso-richtlijn onverwijld op te pakken om de veiligheid van de omgeving te borgen.`);
+            addBodyText(`Deze overschrijding impliceert dat de inrichting onder een strenger toezichtsregime valt en verplicht is om aanvullende technische en organisatorische maatregelen te treffen om zware ongevallen te voorkomen.`);
         }
 
         addSubHeader("4.2 ARIE");
         if (!stats.arieExceeded) {
-            addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving niet aangemerkt als ARIE-plichtig. De hoogste fractie binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%. De inrichting kan voor de arbeidsveiligheid volstaan met de reguliere RI&E.`);
-            addBodyText(`Hoewel de wettelijke drempels voor de ARIE-regeling momenteel niet worden bereikt, dient de organisatie alert te blijven op de opslag van bijtende of toxische stoffen, aangezien de ARIE-grenswaarden voor deze gevaren aanzienlijk lager liggen dan in de Seveso-systematiek.`);
+            addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving niet aangemerkt als ARIE-plichtig. De hoogste fractie binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%.`);
         } else {
             addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Met een gecumuleerde fractie van ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%) in de gevarengroep ${stats.criticalArieGroup} wordt de wettelijke drempelwaarde overschreden.`);
-            addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen acute gevaren op de werkvloer, weegt de wetgever bepaalde gevaren vele malen zwaarder dan in de algemene milieusystematiek. Deze overschrijding impliceert dat de standaard Arbo-RI&E niet langer volstaat en dat de organisatie wettelijk verplicht is aanvullende beheersmaatregelen te implementeren om de risico's op zware ongevallen intern te minimaliseren.`);
+            addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen, impliceert deze overschrijding dat de standaard Arbo-RI&E niet langer volstaat en aanvullende beheersmaatregelen verplicht zijn.`);
         }
 
         // --- 5. Wettelijke Vervolgstappen ---
@@ -369,8 +366,8 @@ export default function SevesoApp() {
                 addSubHeader(`5.${currentStepIdx} Seveso: Verplichtingen`);
                 const steps = [
                     "Kennisgeving: De inrichting moet een formele kennisgeving indienen via het Omgevingsloket.",
-                    "Veiligheidsbeheerssysteem (VBS): De exploitant dient een integraal VBS te implementeren conform de richtlijn.",
-                    "Dominosituatie-onderzoek: Er moet worden onderzocht of de inrichting deel uitmaakt van een dominosituatie.",
+                    "Veiligheidsbeheerssysteem (VBS): De exploitant dient een integraal VBS te implementeren.",
+                    "Dominosituatie-onderzoek: Onderzoek of de inrichting deel uitmaakt van een dominosituatie.",
                     stats.overallStatus === 'Hogedrempel' 
                         ? "Veiligheidsrapport: Bij overschrijding van de hogedrempelwaarde is een Veiligheidsrapport (VR) verplicht." 
                         : "PBZO-document: Het opstellen van een PBZO-document is verplicht voor lagedrempelinrichtingen."
@@ -391,7 +388,7 @@ export default function SevesoApp() {
                 addSubHeader(`5.${currentStepIdx} ARIE-plicht: Actiepunten`);
                 const arieSteps = [
                     "Melding NLA: De inrichting moet de status als ARIE-bedrijf melden bij de Nederlandse Arbeidsinspectie.",
-                    "Aanvullende RI&E (ARIE-RI&E): Er moet per direct een verdieping van de RI&E worden uitgevoerd.",
+                    "Aanvullende RI&E (ARIE-RI&E): Er moet een verdieping van de RI&E worden uitgevoerd.",
                     "Preventiebeleid Zware Ongevallen (PBZO): De directie moet een PBZO-document opstellen.",
                     "Informatie en Instructie: Werknemers moeten getraind worden in de specifieke noodprocedures."
                 ];
