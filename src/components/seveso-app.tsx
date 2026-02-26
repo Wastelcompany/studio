@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -139,6 +140,7 @@ export default function SevesoApp() {
           muted: [100, 116, 139], 
           border: [226, 232, 240] 
         };
+        
         const now = new Date();
         const YYYYMMDD = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
         const code = reportType === 'seveso' ? 'SEV' : 'SERIE';
@@ -273,6 +275,7 @@ export default function SevesoApp() {
         addBodyText(`Op basis van de ingevoerde inventaris is geconstateerd dat de inrichting ${statusText} voldoet aan de criteria voor een Seveso-inrichting (${thresholdMode === 'low' ? 'Lagedrempel' : 'Hogedrempel'}). De meest kritieke gevarengroep is ${stats.criticalGroup} met een sommatiewaarde van ${stats.summationGroups.find(g => g.name === stats.criticalGroup)?.totalRatio.toFixed(2)}.`);
 
         if (reportType === 'full') {
+          checkPageBreak(30);
           addMainHeader("4.2 ARIE Conclusie");
           const arieStatus = stats.arieExceeded ? 'wel' : 'niet';
           const arieText = `De inrichting wordt op basis van de vigerende Arbo-wetgeving beoordeeld op de ARIE-gevarengroepen. De inrichting is op basis van deze berekening ${arieStatus} ARIE-plichtig. Voor de meest kritieke groep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${stats.arieTotal.toFixed(2)}.`;
