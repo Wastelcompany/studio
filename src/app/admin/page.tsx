@@ -441,9 +441,6 @@ export default function AdminPage() {
                         <X className="mr-2 h-3 w-3" /> Filters wissen
                     </Button>
                 )}
-                <Button onClick={() => setIsKvkDialogOpen(true)} className="gap-2">
-                  <Plus className="h-4 w-4" /> Nieuw bedrijf (KVK)
-                </Button>
             </div>
             <ScrollArea className="h-[500px]">
                 <Table>
@@ -553,11 +550,16 @@ export default function AdminPage() {
       <div className="space-y-4">
         <div className="flex justify-between items-center px-1">
           <span className="text-sm text-muted-foreground">{filteredCustomers.length} resultaten</span>
-          {hasCustomerFilters && (
-            <Button variant="ghost" size="sm" onClick={() => setCustomerFilters({ name: "", users: "", companies: "" })} className="h-8 text-xs">
-              <X className="mr-2 h-3 w-3" /> Filters wissen
+          <div className="flex items-center gap-2">
+            {hasCustomerFilters && (
+              <Button variant="ghost" size="sm" onClick={() => setCustomerFilters({ name: "", users: "", companies: "" })} className="h-8 text-xs">
+                <X className="mr-2 h-3 w-3" /> Filters wissen
+              </Button>
+            )}
+            <Button onClick={() => setIsKvkDialogOpen(true)} className="gap-2 h-8 text-xs">
+              <Plus className="h-3.5 w-3.5" /> Nieuw bedrijf (KVK)
             </Button>
-          )}
+          </div>
         </div>
         <ScrollArea className="h-[500px]">
           <Table>
