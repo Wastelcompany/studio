@@ -11,7 +11,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { PlusCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PlusCircle, Trash2 } from "lucide-react";
 import type { Company } from "@/lib/types";
 
 interface CompanySelectorProps {
@@ -19,6 +20,7 @@ interface CompanySelectorProps {
   selectedCompanyId: string | null;
   onSelectCompany: (companyId: string) => void;
   onCreateNew: () => void;
+  onDeleteCompany: () => void;
   onDetailsChange: (details: Partial<Company>) => void;
   disabled: boolean;
 }
@@ -28,6 +30,7 @@ export default function CompanySelector({
   selectedCompanyId,
   onSelectCompany,
   onCreateNew,
+  onDeleteCompany,
   onDetailsChange,
   disabled
 }: CompanySelectorProps) {
@@ -57,37 +60,52 @@ export default function CompanySelector({
   return (
     <Card className="mt-6">
       <CardContent className="pt-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-          <div className="space-y-2">
+        <div className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-grow space-y-2 w-full md:w-auto">
             <Label htmlFor="company-select">Geselecteerd Bedrijf</Label>
-            <Select
-              value={selectedCompanyId || ""}
-              onValueChange={(value) => {
-                if (value === "new") {
-                  onCreateNew();
-                } else {
-                  onSelectCompany(value);
-                }
-              }}
-              disabled={disabled}
-            >
-              <SelectTrigger id="company-select">
-                <SelectValue placeholder="Selecteer een bedrijf..." />
-              </SelectTrigger>
-              <SelectContent>
-                {companies.map((company) => (
-                  <SelectItem key={company.id} value={company.id}>
-                    {company.name}
+            <div className="flex gap-2">
+              <Select
+                value={selectedCompanyId || ""}
+                onValueChange={(value) => {
+                  if (value === "new") {
+                    onCreateNew();
+                  } else {
+                    onSelectCompany(value);
+                  }
+                }}
+                disabled={disabled}
+              >
+                <SelectTrigger id="company-select" className="flex-grow">
+                  <SelectValue placeholder="Selecteer een bedrijf..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="new" className="text-primary font-semibold">
+                    <div className="flex items-center gap-2">
+                      <PlusCircle className="h-4 w-4" />
+                      <span>Nieuw bedrijf toevoegen...</span>
+                    </div>
                   </SelectItem>
-                ))}
-                <SelectItem value="new" className="text-primary font-semibold">
-                  <div className="flex items-center gap-2">
-                    <PlusCircle className="h-4 w-4" />
-                    <span>Nieuw bedrijf toevoegen...</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                </SelectContent>
+              </Select>
+              
+              {selectedCompanyId && (
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={onDeleteCompany}
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive shrink-0"
+                  title="Bedrijf verwijderen"
+                  disabled={disabled}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
         

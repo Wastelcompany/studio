@@ -49,6 +49,30 @@ export const updateCompanyDetails = (db: Firestore, companyId: string, details: 
     }, 500);
 };
 
+export const deleteCompanyFromDb = async (db: Firestore, companyId: string): Promise<void> => {
+    const batch = writeBatch(db);
+    const companyRef = doc(db, 'companies', companyId);
+    
+    // 1. Delete all items in the inventory subcollection
+    const inventoryRef = collection(db, 'companies', companyId, 'inventory');
+    const inventorySnapshot = await getDocs(inventoryRef);
+    inventorySnapshot.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+    
+    // 2. Delete the company document itself
+    batch.delete(companyRef);
+    
+    try {
+        await batch.commit();
+    } catch (error) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: companyRef.path,
+            operation: 'delete'
+        }));
+    }
+};
+
 
 export const addSubstanceToDb = (db: Firestore, companyId: string, substance: Substance) => {
     const newDocRef = doc(collection(db, 'companies', companyId, 'inventory'), substance.id);

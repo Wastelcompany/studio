@@ -18,7 +18,7 @@ import * as XLSX from 'xlsx';
 import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc, useAuth } from '@/firebase';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb } from '@/lib/companies';
+import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb, deleteCompanyFromDb } from '@/lib/companies';
 import { Loader2, UserX, LogOut, LayoutDashboard, Building2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useRouter } from 'next/navigation';
@@ -70,13 +70,13 @@ export default function SevesoApp() {
     }
   }, [firestoreInventory, selectedCompanyId]);
 
-  // NO LONGER auto-selecting the first company on startup as per user request.
-  
   const [thresholdMode, setThresholdMode] = useState<ThresholdMode>('low');
   
   const [isSdsUploadOpen, setIsSdsUploadOpen] = useState(false);
   const [isReferenceGuideOpen, setIsReferenceGuideOpen] = useState(false);
   const [isClearAlertOpen, setIsClearAlertOpen] = useState(false);
+  const [isDeleteCompanyAlertOpen, setIsDeleteCompanyAlertOpen] = useState(false);
+  
   const jsonFileInputRef = useRef<HTMLInputElement>(null);
   const excelFileInputRef = useRef<HTMLInputElement>(null);
   const { toast, dismiss } = useToast();
@@ -350,6 +350,21 @@ export default function SevesoApp() {
     clearInventoryFromDb(db, selectedCompanyId);
     setIsClearAlertOpen(false);
   };
+
+  const handleDeleteCompany = async () => {
+    if (!selectedCompanyId || !db) return;
+    
+    const companyNameToDelete = selectedCompany?.name;
+    await deleteCompanyFromDb(db, selectedCompanyId);
+    
+    setSelectedCompanyId(null);
+    setIsDeleteCompanyAlertOpen(false);
+    
+    toast({
+        title: "Bedrijf Verwijderd",
+        description: `Het bedrijf "${companyNameToDelete}" en de inventaris zijn succesvol verwijderd.`
+    });
+  };
   
   const handleExport = (type: 'json' | 'excel') => {
     if (!selectedCompany) {
@@ -467,6 +482,7 @@ export default function SevesoApp() {
         selectedCompanyId={selectedCompanyId}
         onSelectCompany={handleSelectCompany}
         onCreateNew={handleCreateNewCompany}
+        onDeleteCompany={() => setIsDeleteCompanyAlertOpen(true)}
         onDetailsChange={handleCompanyDetailsChange}
         disabled={isLoadingCompanies}
       />
@@ -538,6 +554,23 @@ export default function SevesoApp() {
             <AlertDialogCancel>Annuleren</AlertDialogCancel>
             <AlertDialogAction onClick={handleClearAll} className="bg-destructive hover:bg-destructive/90">
               Alles Wissen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isDeleteCompanyAlertOpen} onOpenChange={setIsDeleteCompanyAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bedrijf volledig verwijderen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet u zeker dat u het bedrijf <span className="font-bold">"{selectedCompany?.name}"</span> en de volledige inventaris wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCompany} className="bg-destructive hover:bg-destructive/90">
+              Bedrijf Verwijderen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
