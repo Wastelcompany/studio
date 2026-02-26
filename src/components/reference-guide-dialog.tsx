@@ -16,7 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from './ui/scroll-area';
-import { SEVESO_CATEGORY_REFERENCE, SEVESO_NAMED_REFERENCE, ARIE_REFERENCE_GUIDE_DATA } from '@/lib/seveso';
+import { SEVESO_CATEGORY_REFERENCE, SEVESO_NAMED_REFERENCE, ARIE_REFERENCE_GUIDE_DATA, ARIE_NAMED_REFERENCE } from '@/lib/seveso';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ReferenceGuideDialogProps {
@@ -100,26 +100,53 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
 
           <TabsContent value="arie">
              <ScrollArea className="h-[50vh] mt-2">
-                <Table>
-                <TableHeader className="sticky top-0 bg-background">
-                    <TableRow>
-                    <TableHead>ARIE Categorie</TableHead>
-                    <TableHead>Omschrijving</TableHead>
-                    <TableHead>H-Zin(nen)</TableHead>
-                    <TableHead className="text-right">Drempel (ton)</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {(ARIE_REFERENCE_GUIDE_DATA || []).map(({ categoryId, categoryName, hPhrase, threshold }) => (
-                    <TableRow key={categoryId}>
-                        <TableCell className="font-medium">{categoryId}</TableCell>
-                        <TableCell>{categoryName}</TableCell>
-                        <TableCell className="text-muted-foreground">{hPhrase}</TableCell>
-                        <TableCell className="text-right font-mono">{threshold.toLocaleString('nl-NL')}</TableCell>
-                    </TableRow>
-                    ))}
-                </TableBody>
-                </Table>
+                <div className="space-y-6">
+                    <div>
+                        <h4 className="font-semibold text-primary mb-2">ARIE Gevarencategorieën</h4>
+                        <Table>
+                            <TableHeader className="sticky top-0 bg-background">
+                                <TableRow>
+                                <TableHead>ARIE Categorie</TableHead>
+                                <TableHead>Omschrijving</TableHead>
+                                <TableHead>H-Zin(nen)</TableHead>
+                                <TableHead className="text-right">Drempel (ton)</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {(ARIE_REFERENCE_GUIDE_DATA || []).map(({ categoryId, categoryName, hPhrase, threshold }) => (
+                                <TableRow key={categoryId}>
+                                    <TableCell className="font-medium">{categoryId}</TableCell>
+                                    <TableCell>{categoryName}</TableCell>
+                                    <TableCell className="text-muted-foreground">{hPhrase}</TableCell>
+                                    <TableCell className="text-right font-mono">{threshold.toLocaleString('nl-NL')}</TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    <div className="border-t pt-4">
+                        <h4 className="font-semibold text-primary mb-2">Benoemde Stoffen (ARIE)</h4>
+                        <Table>
+                            <TableHeader className="sticky top-0 bg-background">
+                                <TableRow>
+                                <TableHead>Stofnaam</TableHead>
+                                <TableHead>CAS Nummer</TableHead>
+                                <TableHead className="text-right">ARIE Drempel (ton)</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {(ARIE_NAMED_REFERENCE || []).map((sub) => (
+                                <TableRow key={sub.categoryId}>
+                                    <TableCell className="font-medium">{sub.categoryId}</TableCell>
+                                    <TableCell className="text-muted-foreground">{sub.hPhrase.replace('CAS: ', '')}</TableCell>
+                                    <TableCell className="text-right font-mono font-bold">{sub.threshold.toLocaleString('nl-NL')}</TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </div>
             </ScrollArea>
           </TabsContent>
         </Tabs>

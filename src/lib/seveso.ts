@@ -9,7 +9,7 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   H1: { id: 'H1', name: 'H1: Acuut toxisch, cat. 1 (alle routes)', group: 'health', displayId: 'H1' },
   H2: { id: 'H2', name: 'H2: Acuut toxisch, cat. 2 (alle routes) + cat. 3 (inademing)', group: 'health', displayId: 'H2' },
   H3: { id: 'H3', name: 'H3: STOT eenmalig, cat. 1', group: 'health', displayId: 'H3' },
-  H4: { id: 'H4', name: 'H4', group: 'health', displayId: 'H4' }, // H314 Bijtend
+  H4: { id: 'H4', name: 'H4: Bijtend', group: 'health', displayId: 'H4' },
   
   // Fysiek
   P1a: { id: 'P1a', name: 'P1a: Explosieven (instabiel)', group: 'physical', displayId: 'P1a' },
@@ -32,15 +32,18 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   E2: { id: 'E2', name: 'E2: Aquatisch chronisch 2', group: 'environment', displayId: 'E2' },
   
   // Overig
-  O1: { id: 'O1', name: 'O1: EUH014', group: 'other', displayId: 'O1' },
-  O2: { id: 'O2', name: 'O2: Water-reactief (cat 1)', group: 'other', displayId: 'O2' },
-  O3: { id: 'O3', name: 'O3: EUH029', group: 'other', displayId: 'O3' },
-  O4: { id: 'O4', name: 'O4', group: 'other', displayId: 'O4' }, // EUH001
+  O1: { id: 'O1', name: 'O1: EUH014 (reageert heftig met water)', group: 'other', displayId: 'O1' },
+  O2: { id: 'O2', name: 'O2: Water-reactief (ontwikkelt ontvlambare gassen, cat 1)', group: 'other', displayId: 'O2' },
+  O3: { id: 'O3', name: 'O3: EUH029 (vormt giftig gas met water)', group: 'other', displayId: 'O3' },
+  O4: { id: 'O4', name: 'O4', group: 'other', displayId: 'O4' },
 };
 
 export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
+  // Ammoniumnitraat categorieën
   '6484-52-2': { id: 'Ammoniumnitraat-1', cas: '6484-52-2', name: 'Ammoniumnitraat (onzuiverheden < 0,2%)', group: 'named', threshold: { low: 5000, high: 10000 }, arieThreshold: 5000 },
   '7757-79-1': { id: 'Kaliumnitraat', cas: '7757-79-1', name: 'Kaliumnitraat (samengestelde meststof)', group: 'named', threshold: { low: 5000, high: 10000 }, arieThreshold: 5000 },
+  
+  // Specifieke chemicaliën
   '1303-28-2': { id: 'Arseenpentoxide', cas: '1303-28-2', name: 'Arseenpentoxide, arseenzuur (V) en zouten', group: 'named', threshold: { low: 1, high: 2 }, arieThreshold: 1 },
   '1327-53-3': { id: 'Arseentrioxide', cas: '1327-53-3', name: 'Arseentrioxide, arseenigzuur (III) en zouten', group: 'named', threshold: { low: 0.1, high: 0.1 }, arieThreshold: 0.1 },
   '7726-95-6': { id: 'Broom', cas: '7726-95-6', name: 'Broom', group: 'named', threshold: { low: 20, high: 100 }, arieThreshold: 20 },
@@ -69,20 +72,17 @@ export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
   '10102-43-9': { id: 'Stikstofmonoxide', cas: '10102-43-9', name: 'Stikstofmonoxide', group: 'named', threshold: { low: 25, high: 25 }, arieThreshold: 25 },
   '10102-44-0': { id: 'Stikstofdioxide', cas: '10102-44-0', name: 'Stikstofdioxide', group: 'named', threshold: { low: 1, high: 20 }, arieThreshold: 1 },
   '7446-09-5': { id: 'Zwaveldioxide', cas: '7446-09-5', name: 'Zwaveldioxide', group: 'named', threshold: { low: 15, high: 75 }, arieThreshold: 15 },
-  '3030-47-5': { id: 'B-DMAE-M-A', cas: '3030-47-5', name: 'Bis(2-dimethylaminoethyl)(methyl)amine', group: 'named', threshold: { low: 50, high: 200 }, arieThreshold: 50 },
-  '5397-31-1': { id: 'E-H-O-P-A', cas: '5397-31-1', name: '3-(2-Ethylhexyloxy)propylamine', group: 'named', threshold: { low: 50, high: 200 }, arieThreshold: 50 },
-  '1309-64-4': { id: 'Antimoontrioxide', cas: '1309-64-4', name: 'Antimoontrioxide', group: 'named', threshold: { low: 1, high: 1 }, arieThreshold: 1 },
-  '1120-71-4': { id: '1-3-Propaansulton', cas: '1120-71-4', name: '1,3-Propaansulton', group: 'named', threshold: { low: 0.01, high: 0.01 }, arieThreshold: 0.01 },
-  '96-33-3': { id: 'Methylacrylaat', cas: '96-33-3', name: 'Methylacrylaat', group: 'named', threshold: { low: 500, high: 2000 }, arieThreshold: 500 },
-  '52-51-7': { id: 'Bronopol', cas: '52-51-7', name: '2-Bromo-2-nitropropaan-1,3-diol', group: 'named', threshold: { low: 10, high: 50 }, arieThreshold: 10 },
-  '80-15-9': { id: 'Cumylhydroperoxide', cas: '80-15-9', name: 'alfa,alfa-Dimethylbenzylhydroperoxide', group: 'named', threshold: { low: 50, high: 200 }, arieThreshold: 50 },
-  '77-73-6': { id: 'Dicyclopentadieen', cas: '77-73-6', name: 'Dicyclopentadieen', group: 'named', threshold: { low: 50, high: 200 }, arieThreshold: 50 },
-  '106-93-4': { id: 'EDB', cas: '106-93-4', name: '1,2-Dibroomethaan', group: 'named', threshold: { low: 0.5, high: 2 }, arieThreshold: 0.5 },
+  
+  // Extra carcinogenen uit Deel 2
+  '92-67-1': { id: '4-Aminobifenyl', cas: '92-67-1', name: '4-Aminobifenyl en/of de zouten daarvan', group: 'named', threshold: { low: 0.01, high: 0.01 }, arieThreshold: 0.01 },
+  '98-07-7': { id: 'Benzotrichloride', cas: '98-07-7', name: 'Benzotrichloride', group: 'named', threshold: { low: 0.5, high: 2 }, arieThreshold: 0.5 },
+  '100-44-7': { id: 'Benzylchloride', cas: '100-44-7', name: 'Benzylchloride', group: 'named', threshold: { low: 0.5, high: 2 }, arieThreshold: 0.5 },
+  '75-55-8': { id: '1-2-Propyleenimine', cas: '75-55-8', name: '1,2-Propyleenimine', group: 'named', threshold: { low: 50, high: 200 }, arieThreshold: 50 },
   'PETROLEUM': { id: 'Petroleum-Producten', cas: 'PETROLEUM', name: 'Petroleumproducten en alternatieve brandstoffen', group: 'named', threshold: { low: 2500, high: 25000 }, arieThreshold: 2500 },
 };
 
 export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = {
-  H1: { low: 5, high: 20 }, H2: { low: 50, high: 200 }, H3: { low: 50, high: 200 },
+  H1: { low: 5, high: 20 }, H2: { low: 50, high: 200 }, H3: { low: 50, high: 200 }, H4: { low: 0, high: 0 },
   P1a: { low: 10, high: 50 }, P1b: { low: 50, high: 200 }, P2: { low: 10, high: 50 },
   P3a: { low: 150, high: 500 }, P3b: { low: 5000, high: 50000 }, P4: { low: 50, high: 200 },
   P5a: { low: 10, high: 50 }, P5b: { low: 50, high: 200 }, P5c: { low: 5000, high: 50000 },
@@ -262,6 +262,16 @@ export const SEVESO_NAMED_REFERENCE = Object.values(NAMED_SUBSTANCES).map(sub =>
   high: sub.threshold.high,
   arie: sub.arieThreshold
 })).sort((a, b) => a.categoryId.localeCompare(b.categoryId));
+
+export const ARIE_NAMED_REFERENCE = Object.values(NAMED_SUBSTANCES)
+  .filter(sub => sub.arieThreshold !== undefined)
+  .map(sub => ({
+    categoryId: sub.name,
+    categoryName: 'Benoemde stof',
+    hPhrase: `CAS: ${sub.cas}`,
+    threshold: sub.arieThreshold!
+  }))
+  .sort((a, b) => a.categoryId.localeCompare(b.categoryId));
 
 export const ARIE_REFERENCE_GUIDE_DATA = Object.keys(ARIE_THRESHOLDS).map(id => ({
   categoryId: ALL_CATEGORIES[id]?.displayId || id,
