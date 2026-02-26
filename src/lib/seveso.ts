@@ -8,8 +8,8 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   // Gezondheid
   H1: { id: 'H1', name: 'H1: Acuut toxisch, cat. 1', group: 'health', displayId: 'H1' },
   H2: { id: 'H2', name: 'H2: Acuut toxisch, cat. 2 + cat. 3 (inad.)', group: 'health', displayId: 'H2' },
-  H3: { id: 'H3', name: 'H3: STOT eenmalig, cat. 1', group: 'health', displayId: 'H3' },
-  H4: { id: 'H4', name: 'H4', group: 'health', displayId: 'H4' },
+  H3: { id: 'H3', name: 'H3: Acuut toxisch cat. 3 / STOT SE cat. 1', group: 'health', displayId: 'H3' },
+  H4: { id: 'H4', name: 'H4: Huidcorrosie/-irritatie cat. 1', group: 'health', displayId: 'H4' },
   
   // Fysiek
   P1a: { id: 'P1a', name: 'P1a: Explosieven (instabiel)', group: 'physical', displayId: 'P1a' },
@@ -35,7 +35,7 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   O1: { id: 'O1', name: 'O1: EUH014 (reageert heftig met water)', group: 'other', displayId: 'O1' },
   O2: { id: 'O2', name: 'O2: Ontwikkelt ontvlambare gassen, cat 1', group: 'other', displayId: 'O2' },
   O3: { id: 'O3', name: 'O3: EUH029 (vormt giftig gas met water)', group: 'other', displayId: 'O3' },
-  O4: { id: 'O4', name: 'O4', group: 'other', displayId: 'O4' },
+  O4: { id: 'O4', name: 'O4: Zelfontledende stoffen/peroxiden', group: 'other', displayId: 'O4' },
 };
 
 export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {

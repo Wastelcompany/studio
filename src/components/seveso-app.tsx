@@ -177,7 +177,7 @@ export default function SevesoApp() {
             const splitText = doc.splitTextToSize(text, fullContentWidth);
             checkPageBreak(splitText.length * 5 + 6);
             doc.text(splitText, margin, finalY);
-            finalY += (splitText.length * 5) + 4;
+            finalY += (splitText.length * 5) + 5;
         };
 
         const addSubHeader = (text: string) => {
@@ -187,7 +187,7 @@ export default function SevesoApp() {
             const splitText = doc.splitTextToSize(text, fullContentWidth);
             checkPageBreak(splitText.length * 5 + 4);
             doc.text(splitText, margin, finalY);
-            finalY += (splitText.length * 5) + 3;
+            finalY += (splitText.length * 5) + 2;
         };
 
         const addBodyText = (text: string) => {
@@ -250,7 +250,7 @@ export default function SevesoApp() {
         // --- 2. Beoordelingssystematiek ---
         addMainHeader("2. De Beoordelingssystematiek");
         addSubHeader("2.1 Indeling op basis van H-zinnen");
-        addBodyText("De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS). Deze gegevens bepalen de gevarengroep. De ARIE-regeling hanteert voor diverse categorieën lagere drempelwaarden dan de Seveso-richtlijn.");
+        addBodyText("De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS). Deze bepalen de gevarengroep. De ARIE-regeling hanteert voor diverse categorieën lagere drempelwaarden dan de Seveso-richtlijn om de arbeidsveiligheid extra te borgen.");
 
         addSubHeader("2.2 De Sommatieregeling");
         addBodyText("Per gevarengroep wordt de aanwezige hoeveelheid vergeleken met de wettelijke drempelwaarde. Indien de som de waarde 1,0 (100%) bereikt of overschrijdt, is het betreffende wettelijke regime van kracht.");
@@ -344,16 +344,17 @@ export default function SevesoApp() {
             addBodyText(`Op basis van de inventarisatie kan worden geconcludeerd dat de inrichting niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is.`);
             addBodyText(`Deze status is een momentopname; bij wijzigingen in de procesvoering of opslag is een herberekening noodzakelijk.`);
         } else {
-            addBodyText(`De inrichting wordt aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. De wettelijke drempelwaarde voor de categorie ${stats.criticalGroup} wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%).`);
-            addBodyText(`Deze overschrijding impliceert dat de inrichting onder een strenger toezichtsregime valt en verplicht is om aanvullende technische en organisatorische maatregelen te treffen om zware ongevallen te voorkomen.`);
+            addBodyText(`De inrichting wordt aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. De wettelijke drempelwaarde voor de gevarengroep ${stats.criticalGroup} wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%).`);
+            addBodyText(`Deze overschrijding impliceert dat de inrichting onder een strenger toezichtsregime valt en verplicht is om aanvullende technische en organisatorische maatregelen te treffen om zware ongevallen te voorkomen en de gevolgen daarvan te beperken.`);
         }
 
+        finalY += 2;
         addSubHeader("4.2 ARIE");
         if (!stats.arieExceeded) {
             addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving niet aangemerkt als ARIE-plichtig. De hoogste fractie binnen de ARIE-gevarengroepen bedraagt ${Math.round(stats.arieTotal * 100)}%.`);
         } else {
-            addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Met een gecumuleerde fractie van ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%) in de gevarengroep ${stats.criticalArieGroup} wordt de wettelijke drempelwaarde overschreden.`);
-            addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen, impliceert deze overschrijding dat de standaard Arbo-RI&E niet langer volstaat en aanvullende beheersmaatregelen verplicht zijn.`);
+            addBodyText(`De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Met een gecumuleerde fractie van ${(stats.arieTotal).toFixed(2)} (${Math.round(stats.arieTotal * 100)}%) in de groep ${stats.criticalArieGroup} wordt de wettelijke drempelwaarde overschreden.`);
+            addBodyText(`Omdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen de gevolgen van zware ongevallen, impliceert deze overschrijding dat de standaard Arbo-RI&E niet langer volstaat en aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn.`);
         }
 
         // --- 5. Wettelijke Vervolgstappen ---
@@ -365,18 +366,18 @@ export default function SevesoApp() {
             if (isSevesoExceeded) {
                 addSubHeader(`5.${currentStepIdx} Seveso: Verplichtingen`);
                 const steps = [
-                    "Kennisgeving: De inrichting moet een formele kennisgeving indienen via het Omgevingsloket.",
+                    "Kennisgeving: De inrichting moet een formele kennisgeving indienen bij de relevante overheidinstanties.",
                     "Veiligheidsbeheerssysteem (VBS): De exploitant dient een integraal VBS te implementeren.",
-                    "Dominosituatie-onderzoek: Onderzoek of de inrichting deel uitmaakt van een dominosituatie.",
+                    "Dominosituatie-onderzoek: Onderzoek of de inrichting deel uitmaakt van een dominosituatie met buurbedrijven.",
                     stats.overallStatus === 'Hogedrempel' 
-                        ? "Veiligheidsrapport: Bij overschrijding van de hogedrempelwaarde is een Veiligheidsrapport (VR) verplicht." 
-                        : "PBZO-document: Het opstellen van een PBZO-document is verplicht voor lagedrempelinrichtingen."
+                        ? "Veiligheidsrapport: Bij overschrijding van de hogedrempelwaarde is een uitgebreid Veiligheidsrapport (VR) verplicht." 
+                        : "PBZO-document: Het opstellen van een Preventiebeleid Zware Ongevallen (PBZO) is verplicht voor lagedrempelinrichtingen."
                 ];
                 steps.forEach(step => {
-                    const splitStep = doc.splitTextToSize(`• ${step}`, fullContentWidth - 5);
-                    checkPageBreak(splitStep.length * 4.5 + 3);
                     doc.setFontSize(9.5);
                     doc.setFont('helvetica', 'normal');
+                    const splitStep = doc.splitTextToSize(`• ${step}`, fullContentWidth - 5);
+                    checkPageBreak(splitStep.length * 4.5 + 3);
                     doc.text(splitStep, margin + 5, finalY);
                     finalY += (splitStep.length * 4.5) + 3;
                 });
@@ -388,15 +389,15 @@ export default function SevesoApp() {
                 addSubHeader(`5.${currentStepIdx} ARIE-plicht: Actiepunten`);
                 const arieSteps = [
                     "Melding NLA: De inrichting moet de status als ARIE-bedrijf melden bij de Nederlandse Arbeidsinspectie.",
-                    "Aanvullende RI&E (ARIE-RI&E): Er moet een verdieping van de RI&E worden uitgevoerd.",
-                    "Preventiebeleid Zware Ongevallen (PBZO): De directie moet een PBZO-document opstellen.",
-                    "Informatie en Instructie: Werknemers moeten getraind worden in de specifieke noodprocedures."
+                    "Aanvullende RI&E (ARIE-RI&E): Er moet een specifieke verdieping van de RI&E worden uitgevoerd gericht op zware ongevallen.",
+                    "Preventiebeleid Zware Ongevallen (PBZO): De directie moet een PBZO-document opstellen en implementeren.",
+                    "Informatie en Instructie: Werknemers moeten specifiek getraind worden in de noodprocedures bij zware ongevallen."
                 ];
                 arieSteps.forEach(step => {
-                    const splitStep = doc.splitTextToSize(`• ${step}`, fullContentWidth - 5);
-                    checkPageBreak(splitStep.length * 4.5 + 3);
                     doc.setFontSize(9.5);
                     doc.setFont('helvetica', 'normal');
+                    const splitStep = doc.splitTextToSize(`• ${step}`, fullContentWidth - 5);
+                    checkPageBreak(splitStep.length * 4.5 + 3);
                     doc.text(splitStep, margin + 5, finalY);
                     finalY += (splitStep.length * 4.5) + 3;
                 });
