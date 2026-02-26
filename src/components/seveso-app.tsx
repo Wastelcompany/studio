@@ -169,6 +169,14 @@ export default function SevesoApp() {
           return false;
         };
 
+        const addSubHeader = (text: string) => {
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
+            doc.text(text, margin, finalY);
+            finalY += 6;
+        };
+
         // Header
         doc.setFontSize(22);
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
@@ -220,10 +228,7 @@ export default function SevesoApp() {
         doc.text(splitIntro, margin, finalY);
         finalY += (splitIntro.length * 5) + 6;
         
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text("1.1 De Seveso-richtlijn (Omgevingswet / Bal)", margin, finalY);
-        finalY += 6;
+        addSubHeader("1.1 De Seveso-richtlijn (Omgevingswet / Bal)");
         doc.setFontSize(9.5);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
@@ -232,10 +237,7 @@ export default function SevesoApp() {
         doc.text(splitSevesoDesc, margin, finalY);
         finalY += (splitSevesoDesc.length * 5) + 6;
 
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text("1.2 De ARIE-regeling (Arbo-wetgeving)", margin, finalY);
-        finalY += 6;
+        addSubHeader("1.2 De ARIE-regeling (Arbo-wetgeving)");
         doc.setFontSize(9.5);
         doc.setFont('helvetica', 'normal');
         const arieDesc = "De regeling Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE) is verankerd in het Arbeidsomstandighedenbesluit (Hoofdstuk 2, Afdeling 2). Waar de Seveso-richtlijn naar buiten kijkt, richt de ARIE-regeling zich op de interne veiligheid. Het doel is werknemers te beschermen tegen de gevolgen van zware ongevallen op de werkvloer. De ARIE fungeert vaak als een vangnet voor risicovolle situaties die net onder de Seveso-drempels blijven of waarbij stoffen betrokken zijn die specifiek binnen een arbeidsomgeving een groot risico vormen.";
@@ -258,22 +260,16 @@ export default function SevesoApp() {
         doc.text(splitSysIntro, margin, finalY);
         finalY += (splitSysIntro.length * 5) + 6;
 
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text("2.1 Indeling op basis van H-zinnen", margin, finalY);
-        finalY += 6;
+        addSubHeader("2.1 Indeling op basis van H-zinnen");
         doc.setFontSize(9.5);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
-        const hZinDesc = "De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS) van elk product. Deze gegevens bepalen in welke 'gevarengroep' (Gezondheid, Fysisch of Milieu) een stof wordt ingedeeld.\n\nEen essentieel punt in deze analyse is dat de ARIE-regeling bepaalde gezondheidsgevaren strenger classificeert dan de Omgevingswet. Zo worden bijtende stoffen (H314) binnen de Arbo-wetgeving (ARIE) volledig meegerekend als een acuut gezondheidsgevaar voor werknemers, terwijl deze bij de huidige hoeveelheden binnen de Seveso-systematiek vaak buiten de gezondheidssommatie vallen.";
+        const hZinDesc = "De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS) van elk product. Deze gegevens bepalen in welke 'gevarengroep' (Gezondheid, Fysisch of Milieu) een stof wordt ingedeeld.";
         const splitHZinDesc = doc.splitTextToSize(hZinDesc, pageWidth - (margin * 2));
         doc.text(splitHZinDesc, margin, finalY);
         finalY += (splitHZinDesc.length * 5) + 6;
 
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text("2.2 De Sommatieregeling", margin, finalY);
-        finalY += 6;
+        addSubHeader("2.2 De Sommatieregeling");
         doc.setFontSize(9.5);
         doc.setFont('helvetica', 'normal');
         const sommatieDesc = "Voor de uiteindelijke statusbepaling wordt de sommatieregel toegepast. Per gevarengroep wordt de aanwezige hoeveelheid van een stof vergeleken met de wettelijke drempelwaarde voor die categorie (de zogenaamde 'fractie'). De fracties van alle stoffen binnen één categorie worden bij elkaar opgeteld. Indien de som van deze fracties de waarde 1,0 (100%) bereikt of overschrijdt, is het betreffende wettelijke regime van kracht.";
@@ -368,12 +364,9 @@ export default function SevesoApp() {
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); 
         doc.setFont('helvetica', 'bold'); 
         doc.text("4. Conclusie", margin, finalY); 
-        finalY += 8;
-        
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text("4.1 Seveso", margin, finalY);
-        finalY += 6;
+        finalY += 10;
+
+        addSubHeader("4.1 Seveso");
         doc.setFontSize(9.5); 
         doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]); 
         doc.setFont('helvetica', 'normal');
@@ -383,9 +376,9 @@ export default function SevesoApp() {
         
         let sevesoConclusieText = "";
         if (!isSevesoExceeded) {
-            sevesoConclusieText = `Op basis van de uitgevoerde inventarisatie en sommatie kan worden geconcludeerd dat de inrichting niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting binnen de gevarengroepen bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is voordat de ondergrens van het Besluit activiteiten leefomgeving (Bal) in beeld komt.\n\nVanuit het perspectief van de Omgevingswet wordt de locatie beschouwd als een reguliere inrichting. Er zijn geen aanvullende publiekrechtelijke verplichtingen van kracht met betrekking tot het voorkomen van zware ongevallen richting de omgeving. Deze status is echter een momentopname; bij structurele wijzigingen in de procesvoering of een significante toename van de opslagcapaciteit van toxische of ontvlambare stoffen is een herberekening strikt noodzakelijk.`;
+            sevesoConclusieText = `Op basis van de uitgevoerde inventarisatie en sommatie kan worden geconcludeerd dat de inrichting niet gekwalificeerd wordt als een Seveso-inrichting. De maximale belasting binnen de gevarengroepen bedraagt ${Math.round(sevesoMaxRatio * 100)}%, wat betekent dat er een substantiële veiligheidsmarge van ${marginValue}% aanwezig is voordat de ondergrens van de Seveso-richtlijn in beeld komt.\n\nVanuit het perspectief van de Omgevingswet wordt de locatie beschouwd als een reguliere inrichting. Er zijn geen aanvullende publiekrechtelijke verplichtingen van kracht met betrekking tot het voorkomen van zware ongevallen richting de omgeving. Deze status is echter een momentopname; bij structurele wijzigingen in de procesvoering of een significante toename van de opslagcapaciteit van toxische of ontvlambare stoffen is een herberekening strikt noodzakelijk.`;
         } else {
-            sevesoConclusieText = `Op basis van de huidige inventarisatie wordt de inrichting aangemerkt als een ${stats.overallStatus}-inrichting onder het Besluit activiteiten leefomgeving (Bal). De wettelijke drempelwaarde wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%).\n\nDit betekent dat de inrichting onderworpen is aan de Seveso-III richtlijn. Zie hoofdstuk 5 voor de vervolgstappen.`;
+            sevesoConclusieText = `Op basis van de huidige inventarisatie wordt de inrichting aangemerkt als een ${stats.overallStatus}-inrichting onder de Seveso-richtlijn. De wettelijke drempelwaarde voor de categorie ${stats.criticalGroup.toLowerCase()} wordt overschreden met een fractie van ${(sevesoMaxRatio).toFixed(2)} (${Math.round(sevesoMaxRatio * 100)}%).\n\nDit betekent dat de inrichting onderworpen is aan de verplichtingen van de Seveso-III richtlijn. Zie hoofdstuk 5 voor de vervolgstappen.`;
         }
         const splitSevesoConclusie = doc.splitTextToSize(sevesoConclusieText, pageWidth - (margin * 2));
         doc.text(splitSevesoConclusie, margin, finalY);
@@ -393,11 +386,7 @@ export default function SevesoApp() {
 
         if (includeArie) {
             checkPageBreak(60);
-            doc.setFontSize(10); 
-            doc.setFont('helvetica', 'bold'); 
-            doc.text("4.2 ARIE", margin, finalY); 
-            finalY += 6;
-            
+            addSubHeader("4.2 ARIE");
             doc.setFontSize(9.5); 
             doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]); 
             doc.setFont('helvetica', 'normal');
@@ -431,10 +420,7 @@ export default function SevesoApp() {
             let stepCounter = 1;
 
             if (isSevesoExceeded) {
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'bold'); 
-                doc.text(`5.${stepCounter} Seveso: Verplichtingen bij overschrijding van de drempelwaarden`, margin, finalY); 
-                finalY += 6;
+                addSubHeader(`5.${stepCounter} Seveso: Verplichtingen bij overschrijding van de drempelwaarden`);
                 doc.setFontSize(9.5);
                 doc.setFont('helvetica', 'normal');
                 const steps = [
@@ -457,10 +443,7 @@ export default function SevesoApp() {
 
             if (stats.arieExceeded) {
                 checkPageBreak(60);
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'bold'); 
-                doc.text(`5.${stepCounter} ARIE-plicht: Actuele actiepunten`, margin, finalY); 
-                finalY += 6;
+                addSubHeader(`5.${stepCounter} ARIE-plicht: Actuele actiepunten`);
                 doc.setFontSize(9.5);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
