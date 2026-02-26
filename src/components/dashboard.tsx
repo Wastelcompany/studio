@@ -18,7 +18,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ inventory, thresholdMode, setThresholdMode }: DashboardProps) {
-  const { summationGroups, arieSummationGroups, overallStatus, criticalGroup, arieTotal, arieExceeded } = useSevesoCalculator(inventory, thresholdMode);
+  const { summationGroups, arieSummationGroups, overallStatus, criticalGroup, arieTotal, arieExceeded, criticalArieGroup } = useSevesoCalculator(inventory, thresholdMode);
   const [selectedGroupInfo, setSelectedGroupInfo] = useState<{ group: SummationGroupType, type: 'seveso' | 'arie' } | null>(null);
 
   const getStatusIcon = () => {
@@ -114,7 +114,7 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
         <CardHeader>
           <CardTitle>ARIE Sommatie</CardTitle>
           <CardDescription>
-            Bijdrage per gevarengroep aan de totale ARIE-som.
+            Ratio per gevarengroep. Klik voor details.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -131,11 +131,11 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
                     <group.icon className="w-4 h-4 text-muted-foreground" />
                     <span>{group.name}</span>
                   </div>
-                  <span className="text-sm font-semibold text-foreground">
+                  <span className={cn("text-sm font-semibold", group.isExceeded ? 'text-destructive' : 'text-foreground')}>
                     {percentage}%
                   </span>
                 </div>
-                <Progress value={Math.min(percentage, 100)} className="h-2" indicatorClassName="bg-foreground" />
+                <Progress value={Math.min(percentage, 100)} className="h-2" indicatorClassName={group.isExceeded ? 'bg-destructive' : 'bg-foreground'} />
               </div>
             );
           })}
@@ -153,9 +153,15 @@ export default function Dashboard({ inventory, thresholdMode, setThresholdMode }
                 <p className={cn("text-base font-bold", arieExceeded ? 'text-destructive' : 'text-foreground/80')}>
                     {arieExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig'}
                 </p>
-                 <p className="text-xs text-muted-foreground">
-                    Totale sommatiewaarde: {ariePercentage}%
-                </p>
+                {arieExceeded ? (
+                    <p className="text-xs text-muted-foreground">
+                        Kritieke groep: <span className="font-semibold text-foreground">{criticalArieGroup}</span>
+                    </p>
+                ) : (
+                    <p className="text-xs text-muted-foreground">
+                        Hoogste sommatiewaarde: {ariePercentage}%
+                    </p>
+                )}
             </div>
         </CardContent>
       </Card>

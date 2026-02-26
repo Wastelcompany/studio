@@ -6,8 +6,8 @@ import { FlaskConical, Flame, Leaf, AlertTriangle, Atom } from 'lucide-react';
 // Master list of all hazard categories (Seveso & ARIE)
 export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   // Gezondheid
-  H1: { id: 'H1', name: 'H1: Acuut toxisch, cat. 1 (alle routes)', group: 'health', displayId: 'H1' },
-  H2: { id: 'H2', name: 'H2: Acuut toxisch, cat. 2 (alle routes) + cat. 3 (inademing)', group: 'health', displayId: 'H2' },
+  H1: { id: 'H1', name: 'H1: Acuut toxisch, cat. 1', group: 'health', displayId: 'H1' },
+  H2: { id: 'H2', name: 'H2: Acuut toxisch, cat. 2 + cat. 3 (inad.)', group: 'health', displayId: 'H2' },
   H3: { id: 'H3', name: 'H3: STOT eenmalig, cat. 1', group: 'health', displayId: 'H3' },
   H4: { id: 'H4', name: 'H4: Bijtend', group: 'health', displayId: 'H4' },
   
@@ -33,17 +33,14 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   
   // Overig
   O1: { id: 'O1', name: 'O1: EUH014 (reageert heftig met water)', group: 'other', displayId: 'O1' },
-  O2: { id: 'O2', name: 'O2: Water-reactief (ontwikkelt ontvlambare gassen, cat 1)', group: 'other', displayId: 'O2' },
+  O2: { id: 'O2', name: 'O2: Ontwikkelt ontvlambare gassen, cat 1', group: 'other', displayId: 'O2' },
   O3: { id: 'O3', name: 'O3: EUH029 (vormt giftig gas met water)', group: 'other', displayId: 'O3' },
   O4: { id: 'O4', name: 'O4', group: 'other', displayId: 'O4' },
 };
 
 export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
-  // Ammoniumnitraat categorieën
   '6484-52-2': { id: 'Ammoniumnitraat-1', cas: '6484-52-2', name: 'Ammoniumnitraat (onzuiverheden < 0,2%)', group: 'named', threshold: { low: 5000, high: 10000 }, arieThreshold: 5000 },
   '7757-79-1': { id: 'Kaliumnitraat', cas: '7757-79-1', name: 'Kaliumnitraat (samengestelde meststof)', group: 'named', threshold: { low: 5000, high: 10000 }, arieThreshold: 5000 },
-  
-  // Specifieke chemicaliën
   '1303-28-2': { id: 'Arseenpentoxide', cas: '1303-28-2', name: 'Arseenpentoxide, arseenzuur (V) en zouten', group: 'named', threshold: { low: 1, high: 2 }, arieThreshold: 1 },
   '1327-53-3': { id: 'Arseentrioxide', cas: '1327-53-3', name: 'Arseentrioxide, arseenigzuur (III) en zouten', group: 'named', threshold: { low: 0.1, high: 0.1 }, arieThreshold: 0.1 },
   '7726-95-6': { id: 'Broom', cas: '7726-95-6', name: 'Broom', group: 'named', threshold: { low: 20, high: 100 }, arieThreshold: 20 },
@@ -72,8 +69,6 @@ export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
   '10102-43-9': { id: 'Stikstofmonoxide', cas: '10102-43-9', name: 'Stikstofmonoxide', group: 'named', threshold: { low: 25, high: 25 }, arieThreshold: 25 },
   '10102-44-0': { id: 'Stikstofdioxide', cas: '10102-44-0', name: 'Stikstofdioxide', group: 'named', threshold: { low: 1, high: 20 }, arieThreshold: 1 },
   '7446-09-5': { id: 'Zwaveldioxide', cas: '7446-09-5', name: 'Zwaveldioxide', group: 'named', threshold: { low: 15, high: 75 }, arieThreshold: 15 },
-  
-  // Extra carcinogenen uit Deel 2
   '92-67-1': { id: '4-Aminobifenyl', cas: '92-67-1', name: '4-Aminobifenyl en/of de zouten daarvan', group: 'named', threshold: { low: 0.01, high: 0.01 }, arieThreshold: 0.01 },
   '98-07-7': { id: 'Benzotrichloride', cas: '98-07-7', name: 'Benzotrichloride', group: 'named', threshold: { low: 0.5, high: 2 }, arieThreshold: 0.5 },
   '100-44-7': { id: 'Benzylchloride', cas: '100-44-7', name: 'Benzylchloride', group: 'named', threshold: { low: 0.5, high: 2 }, arieThreshold: 0.5 },
@@ -156,7 +151,6 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
 export function calculateSummations(inventory: Substance[], mode: ThresholdMode) {
   const groups: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0, named: 0 };
   const arieGroups: Record<string, number> = { health: 0, physical: 0, other: 0, named: 0 };
-  let arieTotal = 0;
 
   inventory.forEach(sub => {
     // --- SEVESO ---
@@ -193,7 +187,6 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
           if (namedSub.arieThreshold > 0) {
               const ratio = sub.quantity / namedSub.arieThreshold;
               arieGroups.named += ratio;
-              arieTotal += ratio;
               isAppliedAsNamedArie = true;
           }
       }
@@ -208,7 +201,6 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
             if (arieGroups[category.group] !== undefined) {
               arieGroups[category.group] += ratio;
             }
-            arieTotal += ratio;
           }
         });
     }
@@ -223,10 +215,10 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
   ];
 
   const arieSummationGroups: SummationGroup[] = [
-    { name: 'Gezondheid', icon: FlaskConical, group: 'health', totalRatio: arieGroups.health, isExceeded: false },
-    { name: 'Fysiek', icon: Flame, group: 'physical', totalRatio: arieGroups.physical, isExceeded: false },
-    { name: 'Andere gevaren', icon: AlertTriangle, group: 'other', totalRatio: arieGroups.other, isExceeded: false },
-    { name: 'Benoemde Stoffen', icon: Atom, group: 'named', totalRatio: arieGroups.named, isExceeded: false },
+    { name: 'Gezondheid', icon: FlaskConical, group: 'health', totalRatio: arieGroups.health, isExceeded: arieGroups.health >= 1 },
+    { name: 'Fysiek', icon: Flame, group: 'physical', totalRatio: arieGroups.physical, isExceeded: arieGroups.physical >= 1 },
+    { name: 'Andere gevaren', icon: AlertTriangle, group: 'other', totalRatio: arieGroups.other, isExceeded: arieGroups.other >= 1 },
+    { name: 'Benoemde Stoffen', icon: Atom, group: 'named', totalRatio: arieGroups.named, isExceeded: arieGroups.named >= 1 },
   ];
 
   let overallStatus: 'Geen' | 'Lagedrempel' | 'Hogedrempel' = 'Geen';
@@ -235,14 +227,19 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
   }
 
   const criticalGroup = [...summationGroups].sort((a, b) => b.totalRatio - a.totalRatio)[0]?.name;
+  
+  // ARIE status logic: exceeded if any individual group is >= 1
+  const arieExceeded = arieSummationGroups.some(g => g.isExceeded);
+  const criticalArieGroup = [...arieSummationGroups].sort((a, b) => b.totalRatio - a.totalRatio)[0]?.name;
 
   return { 
     summationGroups, 
     arieSummationGroups, 
     overallStatus, 
-    criticalGroup, 
-    arieTotal, 
-    arieExceeded: arieTotal >= 1 
+    criticalGroup,
+    arieExceeded,
+    criticalArieGroup,
+    arieTotal: Math.max(...arieSummationGroups.map(g => g.totalRatio)) // Show max ratio as representative total
   };
 }
 
