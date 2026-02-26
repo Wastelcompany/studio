@@ -4,18 +4,22 @@ import type { Substance, HazardCategory, NamedSubstance, ThresholdMode, Summatio
 import { FlaskConical, Flame, Leaf, AlertTriangle, Atom } from 'lucide-react';
 
 // Master list of all hazard categories (Seveso & ARIE)
+// Corresponds to Seveso III (2012/18/EU) and ARIE (Stb. 2022, 332)
 export const ALL_CATEGORIES: Record<string, HazardCategory> = {
-  // SEVESO Categories
-  H1: { id: 'H1', name: 'Acuut toxisch, categorie 1 (alle blootstellingsroutes)', group: 'health' },
-  H2: { id: 'H2', name: 'Acuut toxisch, categorie 2 (alle) & cat. 3 (inademing)', group: 'health' },
-  H3: { id: 'H3', name: 'STOT eenmalig, cat. 1', group: 'health' },
+  // SEVESO & ARIE Health
+  H1: { id: 'H1', name: 'Acuut toxisch, categorie 1', group: 'health', displayId: 'H1 / A.1' },
+  H2: { id: 'H2', name: 'Acuut toxisch, categorie 2', group: 'health', displayId: 'H2 / A.2' },
+  'ARIE-A3': { id: 'ARIE-A3', name: 'Acuut toxisch, categorie 3', group: 'health', displayId: 'A.3' },
+  H3: { id: 'H3', name: 'STOT eenmalig, cat. 1', group: 'health', displayId: 'H3 / A.4' },
+  'ARIE-H4': { id: 'ARIE-H4', name: 'H4', group: 'health', displayId: 'A.5' },
   
-  P1a: { id: 'P1a', name: 'Explosieve stoffen (instabiel, 1.1, 1.2, 1.3, 1.5)', group: 'physical' },
-  P1b: { id: 'P1b', name: 'Explosieve stoffen (1.4)', group: 'physical' },
-  P2: { id: 'P2', name: 'Ontvlambare gassen, categorie 1 en 2', group: 'physical' },
-  P3a: { id: 'P3a', name: 'Ontvlambare aerosolen, cat 1 & 2 (met ontvlambaar gas/vloeistof cat 1)', group: 'physical' },
-  P3b: { id: 'P3b', name: 'Ontvlambare aerosolen, cat 1 & 2 (overig)', group: 'physical' },
-  P4: { id: 'P4', name: 'Oxiderende gassen, categorie 1', group: 'physical' },
+  // SEVESO & ARIE Physical
+  P1a: { id: 'P1a', name: 'Explosieve stoffen (instabiel, 1.1, 1.2, 1.3, 1.5)', group: 'physical', displayId: 'P1a / B.1.1' },
+  P1b: { id: 'P1b', name: 'Explosieve stoffen (1.4)', group: 'physical', displayId: 'P1b / B.1.2' },
+  P2: { id: 'P2', name: 'Ontvlambare gassen, categorie 1 en 2', group: 'physical', displayId: 'P2 / B.2' },
+  P3a: { id: 'P3a', name: 'Ontvlambare aerosolen, cat 1 & 2 (bevat ontvl. gas/vloeistof)', group: 'physical', displayId: 'P3a / B.3' },
+  P3b: { id: 'P3b', name: 'Ontvlambare aerosolen, cat 1 & 2 (overig)', group: 'physical', displayId: 'P3b / B.3' },
+  P4: { id: 'P4', name: 'Oxiderende gassen, categorie 1', group: 'physical', displayId: 'P4 / B.4' },
   P5a: { id: 'P5a', name: 'Ontvlambare vloeistoffen, categorie 1', group: 'physical' },
   P5b: { id: 'P5b', name: 'Ontvlambare vloeistoffen, cat 2/3 (onder druk/hoge T)', group: 'physical' },
   P5c: { id: 'P5c', name: 'Ontvlambare vloeistoffen, categorie 2 en 3', group: 'physical' },
@@ -23,21 +27,19 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   P6b: { id: 'P6b', name: 'Zelfontledende stoffen & Organische peroxiden, Type C-F', group: 'physical' },
   P7: { id: 'P7', name: 'Pyrofore vloeistoffen en vaste stoffen, categorie 1', group: 'physical' },
   P8: { id: 'P8', name: 'Oxiderende vloeistoffen en vaste stoffen, cat 1, 2, 3', group: 'physical' },
-  P9: { id: 'P9', name: 'Zelfverhittende stoffen en mengsels, categorie 1 en 2', group: 'physical' },
+  P9: { id: 'P9', name: 'Zelfverhittende stoffen en mengsels, categorie 1 en 2', group: 'physical', displayId: 'P9 / B.9' },
   
+  // SEVESO Environment
   E1: { id: 'E1', name: 'Gevaarlijk voor het aquatisch milieu, acuut 1 of chronisch 1', group: 'environment' },
   E2: { id: 'E2', name: 'Gevaarlijk voor het aquatisch milieu, chronisch 2', group: 'environment' },
   
-  O1: { id: 'O1', name: 'Stoffen met gevarenaanduiding EUH014', group: 'other' },
-  O2: { id: 'O2', name: 'Stoffen die in contact met water ontvlambare gassen ontwikkelen (Cat 1)', group: 'other' },
-  O3: { id: 'O3', name: 'Stoffen met gevarenaanduiding EUH029', group: 'other' },
-
-  // ARIE Specific Categories
-  H4: { id: 'H4', name: 'Veroorzaakt ernstige brandwonden en oogletsel (H314)', group: 'health', displayId: 'H4' },
-  'ARIE-O4': { id: 'ARIE-O4', name: 'O4', group: 'other', displayId: 'O4' },
+  // SEVESO & ARIE Other
+  O1: { id: 'O1', name: 'Stoffen met gevarenaanduiding EUH014', group: 'other', displayId: 'O1 / C.1' },
+  O2: { id: 'O2', name: 'Stoffen die in contact met water ontvlambare gassen ontwikkelen (Cat 1)', group: 'other', displayId: 'O2 / C.2' },
+  O3: { id: 'O3', name: 'Stoffen met gevarenaanduiding EUH029', group: 'other', displayId: 'O3 / C.3' },
+  'ARIE-O4': { id: 'ARIE-O4', name: 'O4', group: 'other', displayId: 'C.4' },
 };
 
-// Seveso III Directive Annex I, Part 2: Named Substances (Volledige lijst)
 export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
   '6484-52-2': { id: 'Ammoniumnitraat-1', cas: '6484-52-2', name: 'Ammoniumnitraat (vrij van onzuiverheden)', group: 'named', threshold: { low: 5000, high: 10000 } },
   '7757-79-1': { id: 'Kaliumnitraat', cas: '7757-79-1', name: 'Kaliumnitraat (samengestelde meststof)', group: 'named', threshold: { low: 5000, high: 10000 } },
@@ -93,23 +95,34 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
 };
 
 export const ARIE_THRESHOLDS: Record<string, number> = {
-  H1: 0.05, H2: 0.2, H3: 50, H4: 50,
+  H1: 0.05, H2: 0.2, 'ARIE-A3': 1.0, H3: 50, 'ARIE-H4': 50,
   P1a: 0.05, P1b: 1, P2: 5, P3a: 5, P3b: 50, P4: 5, P9: 50,
   O1: 0.5, O2: 0.05, O3: 0.5, 'ARIE-O4': 0.05,
 };
 
 export const H_PHRASE_MAPPING: Record<string, string[]> = {
-  'H300': ['H1', 'H2'], 'H310': ['H1', 'H2'], 'H330': ['H1', 'H2'],
-  'H331': ['H2'], 'H370': ['H3'], 'H314': ['H4'],
+  // Gezondheid
+  'H300': ['H1'], 'H310': ['H1'], 'H330': ['H1'],
+  'H301': ['ARIE-A3'], 'H311': ['ARIE-A3'],
+  'H331': ['H2', 'ARIE-A3'], // Seveso H2 bevat cat 3 inademing
+  'H370': ['H3'],
+  'H314': ['ARIE-H4'],
+
+  // Fysiek
   'H200': ['P1a'], 'H201': ['P1a'], 'H202': ['P1a'], 'H203': ['P1a'], 'H205': ['P1a'],
-  'EUH001': ['ARIE-O4'], 'H204': ['P1b'],
-  'H220': ['P2'], 'H221': ['P2'], 'H222': ['P3a', 'P3b'], 'H223': ['P3a', 'P3b'],
+  'H204': ['P1b'],
+  'H220': ['P2'], 'H221': ['P2'],
+  'H222': ['P3a', 'P3b'], 'H223': ['P3a', 'P3b'],
   'H224': ['P5a'], 'H225': ['P5c'], 'H226': ['P5c'],
   'H240': ['P6a'], 'H241': ['P6a'], 'H242': ['P6b'], 
   'H250': ['P7'], 'H251': ['P9'], 'H252': ['P9'],
   'H270': ['P4'], 'H271': ['P8'], 'H272': ['P8'],
+  
+  // Milieu (Seveso only)
   'H400': ['E1'], 'H410': ['E1'], 'H411': ['E2'],
-  'EUH014': ['O1'], 'H260': ['O2'], 'EUH029': ['O3'],
+  
+  // Overig
+  'EUH014': ['O1'], 'H260': ['O2'], 'EUH029': ['O3'], 'EUH001': ['ARIE-O4'],
 };
 
 export function classifySubstance(hStatements: string[], casNumber: string | null) {
@@ -152,7 +165,6 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
 
   inventory.forEach(sub => {
     // SEVESO
-    // Check if it's a named substance first (highest priority according to Note 4)
     let isAppliedAsNamed = false;
     sub.sevesoCategoryIds.forEach(catId => {
       const namedSub = Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
@@ -165,7 +177,6 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
       }
     });
 
-    // If NOT applied as named, apply generic categories
     if (!isAppliedAsNamed) {
         sub.sevesoCategoryIds.forEach(catId => {
           const category = ALL_CATEGORIES[catId];
@@ -225,7 +236,7 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
 }
 
 export const SEVESO_CATEGORY_REFERENCE = Object.keys(SEVESO_THRESHOLDS).map(id => ({
-  categoryId: id,
+  categoryId: ALL_CATEGORIES[id]?.displayId || id,
   categoryName: ALL_CATEGORIES[id]?.name || 'Onbekend',
   hPhrase: Object.keys(H_PHRASE_MAPPING).filter(h => H_PHRASE_MAPPING[h].includes(id)).join(', '),
   low: SEVESO_THRESHOLDS[id].low,
