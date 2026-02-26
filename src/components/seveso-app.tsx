@@ -254,11 +254,10 @@ export default function SevesoApp() {
         titleY += 8;
         doc.text(`Locatie: ${selectedCompany.address || 'Adres niet opgegeven'}`, margin, titleY);
         
-        // Generate automatic report number: short company identifier + date
+        // Generate automatic report number: short company identifier + SERIE + date
         const now = new Date();
         const YYYYMMDD = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
         
-        // Use a simple hash to turn the ID into a max 4-digit number
         const getShortId = (id: string) => {
             let hash = 0;
             for (let i = 0; i < id.length; i++) {
@@ -269,7 +268,7 @@ export default function SevesoApp() {
             return Math.abs(hash % 10000).toString().padStart(4, '0');
         };
         const shortId = getShortId(selectedCompany.id);
-        const reportNumber = `${shortId}.${YYYYMMDD}`;
+        const reportNumber = `${shortId}.01.${YYYYMMDD}`;
 
         titleY += 40;
         doc.setFontSize(10);
