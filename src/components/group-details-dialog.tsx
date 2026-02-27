@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo } from 'react';
@@ -38,59 +39,25 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
         let contribution = 0;
         
         if (type === 'seveso') {
-            let isAppliedAsNamed = false;
             substance.sevesoCategoryIds.forEach(catId => {
-              const namedSub = Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-              if (namedSub && namedSub.group === group.group) {
-                const threshold = namedSub.threshold[mode];
-                if (threshold > 0 && substance.quantity > 0) {
-                    contribution += substance.quantity / threshold;
-                    isAppliedAsNamed = true;
-                }
+              const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+              const thresholdInfo = SEVESO_THRESHOLDS[catId] || (category as any)?.threshold;
+              if (category && category.group === group.group && thresholdInfo) {
+                const threshold = thresholdInfo[mode];
+                if (threshold > 0 && substance.quantity > 0) contribution += substance.quantity / threshold;
               }
             });
-
-            if (!isAppliedAsNamed) {
-                substance.sevesoCategoryIds.forEach(catId => {
-                  const category = ALL_CATEGORIES[catId];
-                  const thresholdInfo = SEVESO_THRESHOLDS[catId];
-                  if (category && category.group === group.group && thresholdInfo) {
-                    const threshold = thresholdInfo[mode];
-                    if (threshold > 0 && substance.quantity > 0) {
-                      contribution += substance.quantity / threshold;
-                    }
-                  }
-                });
-            }
         } else { // ARIE
-            let isAppliedAsNamed = false;
             substance.arieCategoryIds.forEach(catId => {
-              const namedSub = Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-              if (namedSub && namedSub.group === group.group && namedSub.arieThreshold !== undefined) {
-                  if (namedSub.arieThreshold > 0 && substance.quantity > 0) {
-                      contribution += substance.quantity / namedSub.arieThreshold;
-                      isAppliedAsNamed = true;
-                  }
-              }
+                const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+                const threshold = ARIE_THRESHOLDS[catId] || (category as any)?.arieThreshold || (category as any)?.threshold?.low;
+                if (category && category.group === group.group && threshold && threshold > 0) {
+                    contribution += substance.quantity / threshold;
+                }
             });
-
-            if (!isAppliedAsNamed) {
-                substance.arieCategoryIds.forEach(catId => {
-                    const category = ALL_CATEGORIES[catId];
-                    if (category && category.group === group.group) {
-                        const threshold = ARIE_THRESHOLDS[catId];
-                        if (threshold > 0 && substance.quantity > 0) {
-                            contribution += substance.quantity / threshold;
-                        }
-                    }
-                });
-            }
         }
 
-        return {
-          ...substance,
-          contribution,
-        };
+        return { ...substance, contribution };
       })
       .filter(item => item.contribution > 0)
       .sort((a, b) => b.contribution - a.contribution);
@@ -128,9 +95,7 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                    Geen bijdragende stoffen gevonden.
-                  </TableCell>
+                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">Geen bijdragende stoffen gevonden.</TableCell>
                 </TableRow>
               )}
             </TableBody>
