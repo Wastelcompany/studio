@@ -140,14 +140,14 @@ export const SUMMATION_GROUPS_CONFIG = [
  * Gets the correct ARIE threshold for a category ID.
  */
 export function getArieThreshold(catId: string): number | null {
-  // Check explicit ARIE map first
-  if (ARIE_THRESHOLDS[catId]) return ARIE_THRESHOLDS[catId];
+  // 1. Check explicit ARIE map first
+  if (ARIE_THRESHOLDS[catId] !== undefined) return ARIE_THRESHOLDS[catId];
   
-  // Check named substances
+  // 2. Check named substances
   const named = Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-  if (named) return named.arieThreshold || named.threshold.low;
+  if (named) return named.arieThreshold ?? named.threshold.low;
   
-  // Fallback to Seveso low threshold if applicable
+  // 3. Fallback to Seveso low threshold if applicable
   if (SEVESO_THRESHOLDS[catId]) return SEVESO_THRESHOLDS[catId].low;
   
   return null;
