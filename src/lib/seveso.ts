@@ -194,11 +194,11 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
   hCodes.forEach(code => {
     if (H_PHRASE_MAPPING[code]) {
       H_PHRASE_MAPPING[code].forEach(catId => {
-        // Seveso only if in Seveso threshold list
+        // Seveso indeling
         if (SEVESO_THRESHOLDS[catId]) {
           sevesoCategoryIds.add(catId);
         }
-        // ARIE if in ARIE threshold list OR is a special ARIE-only category
+        // ARIE indeling
         if (getArieThreshold(catId) !== null || catId.startsWith('ARIE-')) {
           arieCategoryIds.add(catId);
         }
