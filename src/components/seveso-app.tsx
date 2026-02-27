@@ -129,7 +129,7 @@ export default function SevesoApp() {
         const doc = new jsPDF('p', 'mm', 'a4');
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
-        const margin = 15;
+        const margin = 20;
         const fullContentWidth = pageWidth - (margin * 2);
         let finalY = 20;
 
@@ -152,7 +152,7 @@ export default function SevesoApp() {
                 pdfDoc.setPage(i);
                 pdfDoc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
                 pdfDoc.line(margin, 15, pageWidth - margin, 15);
-                pdfDoc.setFontSize(8);
+                pdfDoc.setFontSize(9);
                 pdfDoc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
                 pdfDoc.text(`Rapportnummer: ${reportNumber}`, pageWidth - margin, 11, { align: 'right' });
                 pdfDoc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
@@ -172,71 +172,100 @@ export default function SevesoApp() {
           return false;
         };
 
-        const addMainHeader = (text: string) => {
+        const addSectionHeader = (text: string) => {
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(11);
+            doc.setFontSize(14);
             doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
             doc.text(text, margin, finalY);
-            finalY += 8;
+            finalY += 10;
+        };
+
+        const addSubsectionHeader = (text: string) => {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
+            doc.text(text, margin, finalY);
+            finalY += 6;
         };
 
         const addBodyText = (text: string) => {
             doc.setFont('helvetica', 'normal');
-            doc.setFontSize(9.5);
+            doc.setFontSize(10);
             doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
             const splitText = doc.splitTextToSize(text, fullContentWidth);
-            checkPageBreak(splitText.length * 4.5 + 4);
+            checkPageBreak(splitText.length * 5 + 6);
             doc.text(splitText, margin, finalY);
-            finalY += (splitText.length * 4.5) + 4;
+            finalY += (splitText.length * 5) + 6;
         };
 
-        // --- TITLE PAGE ---
+        // --- TITELPAGINA ---
         doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        doc.rect(0, 0, pageWidth, 60, 'F');
+        doc.rect(0, 0, pageWidth, 65, 'F');
         doc.setTextColor(255, 255, 255);
-        doc.setFontSize(24);
-        doc.setFont('helvetica', 'bold');
-        doc.text("ChemStats", margin, 35);
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        doc.text("Gevaarlijke Stoffen Analyse", margin, 45);
-
-        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.setFontSize(28);
         doc.setFont('helvetica', 'bold');
-        const mainTitle = reportType === 'seveso' ? "Seveso III\nRapportage" : "Seveso III & ARIE\nRapportage";
-        doc.text(mainTitle, margin, 100);
-        
-        doc.setFontSize(14);
-        doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
-        doc.text(`Bedrijf: ${selectedCompany.name}`, margin, 130);
-        doc.text(`Locatie: ${selectedCompany.address}`, margin, 138);
-        doc.setFontSize(10);
-        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
-        doc.text(`Datum: ${now.toLocaleDateString('nl-NL')}`, margin, 160);
-        doc.text(`Rapportnummer: ${reportNumber}`, margin, 166);
+        doc.text("ChemStats", margin, 38);
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'normal');
+        doc.text("Gevaarlijke Stoffen Analyse", margin, 48);
 
-        // --- PAGE 2: Introduction ---
+        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.setFontSize(30);
+        doc.setFont('helvetica', 'bold');
+        const mainTitle = reportType === 'seveso' ? "Seveso III\nRapportage" : "Seveso III & ARIE\nRapportage";
+        doc.text(mainTitle, margin, 105);
+        
+        doc.setFontSize(16);
+        doc.setTextColor(colors.foreground[0], colors.foreground[1], colors.foreground[2]);
+        doc.text(`Bedrijf: ${selectedCompany.name}`, margin, 140);
+        doc.setFontSize(14);
+        doc.text(`Locatie: ${selectedCompany.address}`, margin, 148);
+        doc.setFontSize(11);
+        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2]);
+        doc.text(`Datum: ${now.toLocaleDateString('nl-NL')}`, margin, 175);
+        doc.text(`Rapportnummer: ${reportNumber}`, margin, 182);
+
+        // --- PAGINA 2: Inleiding en Systematiek (CONFORM VOORBEELD) ---
         doc.addPage();
         finalY = 35;
-        addMainHeader("1. Inleiding en Kaderstelling");
-        const introText = reportType === 'full' 
-          ? `Binnen de bedrijfsvoering van ${selectedCompany.name} wordt gewerkt met diverse gevaarlijke stoffen. De drempelwaardecheck in deze module toetst of de sommatie van stoffen binnen een gevarencategorie de kritieke grens van 1,0 overschrijdt.`
-          : `Binnen de bedrijfsvoering van ${selectedCompany.name} wordt gewerkt met diverse gevaarlijke stoffen. Dit rapport toetst specifiek de drempelwaarden conform de Seveso III-richtlijn.`;
-        addBodyText(introText);
         
-        addMainHeader("2. Wettelijk Kader");
-        const kaderText = reportType === 'full'
-          ? `De Seveso III-richtlijn (2012/18/EU) is gericht op de preventie van zware ongevallen waarbij gevaarlijke stoffen zijn betrokken. De ARIE-regeling (Aanvullende Risico-Inventarisatie en -Evaluatie) is de Nederlandse vertaling van deze richtlijn voor situaties die onder de drempelwaarden van Seveso vallen.`
-          : `De Seveso III-richtlijn (2012/18/EU) is de Europese richtlijn gericht op de preventie van zware ongevallen waarbij gevaarlijke stoffen zijn betrokken en de beperking van de gevolgen daarvan voor de menselijke gezondheid en het milieu.`;
-        addBodyText(kaderText);
+        // 1. Inleiding en Kaderstelling
+        addSectionHeader("1. Inleiding en Kaderstelling");
+        addBodyText(`Binnen de bedrijfsvoering van ${selectedCompany.name} wordt gewerkt met diverse gevaarlijke stoffen. Om de veiligheidsrisico's te beheersen, is de inrichting onderworpen aan specifieke wettelijke kaders. Deze rapportage toetst de actuele status aan de hand van de volgende regelgevingen:`);
+        
+        // 1.1 De Seveso-richtlijn
+        addSubsectionHeader("1.1 De Seveso-richtlijn");
+        addBodyText("De Seveso-III richtlijn is gericht op het voorkomen van zware ongevallen waarbij gevaarlijke stoffen betrokken zijn en het beperken van de gevolgen daarvan voor de mens en het milieu. De richtlijn onderscheidt lagedrempel- en hogedrempelinrichtingen.");
 
-        // --- PAGE 3: Results ---
+        // 1.2 De ARIE-regeling (Alleen in SERIE rapport)
+        if (reportType === 'full') {
+            addSubsectionHeader("1.2 De ARIE-regeling");
+            addBodyText("De regeling Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE) is verankerd in het Arbeidsomstandighedenbesluit en richt zich op de interne veiligheid en de bescherming van werknemers op de werkvloer tegen de gevolgen van zware ongevallen.");
+        }
+
+        finalY += 5;
+
+        // 2. De Beoordelingssystematiek
+        addSectionHeader("2. De Beoordelingssystematiek");
+        
+        // 2.1 Indeling op basis van H-zinnen
+        addSubsectionHeader("2.1 Indeling op basis van H-zinnen");
+        const hZinText = reportType === 'full' 
+            ? "De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS). Deze bepalen de gevarengroep conform de Seveso-richtlijn en ARIE-regeling. De drempelwaardecheck in deze module toetst of de sommatie van stoffen binnen een gevarencategorie de kritieke grens van 1,0 overschrijdt."
+            : "De basis voor de indeling zijn de gevarenaanduidingen (H-zinnen) zoals vermeld op het Veiligheidsinformatieblad (SDS). Deze bepalen de gevarengroep conform de Seveso-richtlijn. De drempelwaardecheck in deze module toetst of de sommatie van stoffen binnen een gevarencategorie de kritieke grens van 1,0 overschrijdt.";
+        addBodyText(hZinText);
+
+        // 2.2 De Sommatieregeling
+        addSubsectionHeader("2.2 De Sommatieregeling");
+        addBodyText("Per gevarengroep wordt de aanwezige hoeveelheid vergeleken met de wettelijke drempelwaarde. Indien de som de waarde 1,0 (100%) bereikt of overschrijdt, is het betreffende wettelijke regime van kracht.");
+
+        // --- PAGINA 3: Resultaten ---
         doc.addPage();
         finalY = 25;
-        addMainHeader("3. Resultaten van de Sommatie");
+        addSectionHeader("3. Resultaten van de Sommatie");
         const stats = calculateSummations(localInventory, thresholdMode);
         
+        addSubsectionHeader("3.1 Seveso Resultaten");
         autoTable(doc, {
           startY: finalY,
           head: [['Gevarengroep (Seveso)', 'Resultaat Sommatie', 'Status']],
@@ -253,7 +282,7 @@ export default function SevesoApp() {
 
         if (reportType === 'full') {
           checkPageBreak(50);
-          addMainHeader("3.2 ARIE Resultaten");
+          addSubsectionHeader("3.2 ARIE Resultaten");
           autoTable(doc, {
             startY: finalY,
             head: [['Gevarengroep (ARIE)', 'Resultaat Sommatie', 'Status']],
@@ -268,32 +297,32 @@ export default function SevesoApp() {
           finalY = (doc as any).lastAutoTable.finalY + 15;
         }
 
-        // --- PAGE 4: Conclusion ---
-        checkPageBreak(40);
-        addMainHeader("4. Conclusie");
+        // --- PAGINA 4: Conclusie ---
+        checkPageBreak(50);
+        addSectionHeader("4. Conclusie");
         const statusText = stats.overallStatus === 'Geen' ? 'niet' : 'wel';
         addBodyText(`Op basis van de ingevoerde inventaris is geconstateerd dat de inrichting ${statusText} voldoet aan de criteria voor een Seveso-inrichting (${thresholdMode === 'low' ? 'Lagedrempel' : 'Hogedrempel'}). De meest kritieke gevarengroep is ${stats.criticalGroup} met een sommatiewaarde van ${stats.summationGroups.find(g => g.name === stats.criticalGroup)?.totalRatio.toFixed(2)}.`);
 
         if (reportType === 'full') {
-          checkPageBreak(30);
-          addMainHeader("4.2 ARIE Conclusie");
+          checkPageBreak(40);
+          addSubsectionHeader("4.2 ARIE Conclusie");
           const arieStatus = stats.arieExceeded ? 'wel' : 'niet';
           const arieText = `De inrichting wordt op basis van de vigerende Arbo-wetgeving beoordeeld op de ARIE-gevarengroepen. De inrichting is op basis van deze berekening ${arieStatus} ARIE-plichtig. Voor de meest kritieke groep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${stats.arieTotal.toFixed(2)}.`;
           addBodyText(arieText);
         }
 
-        // --- APPENDIX: Inventory ---
+        // --- BIJLAGE: Inventaris ---
         doc.addPage();
         finalY = 25;
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
+        doc.setFontSize(14);
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.text("Bijlage: Volledige Inventaris", margin, finalY);
         finalY += 10;
 
         autoTable(doc, {
             startY: finalY,
-            head: [['Product / CAS', 'Seveso Cat.', 'Gevarengroep', 'Voorraad']],
+            head: [['Product / CAS', 'Seveso Cat.', 'Type', 'Voorraad']],
             body: localInventory.map(sub => [
                 sub.productName, 
                 sub.sevesoCategoryIds.join(", "), 
