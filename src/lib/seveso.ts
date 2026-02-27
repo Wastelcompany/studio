@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Substance, HazardCategory, NamedSubstance, ThresholdMode, SummationGroup } from '@/lib/types';
@@ -6,35 +5,36 @@ import { FlaskConical, Flame, Leaf, AlertTriangle, Atom } from 'lucide-react';
 
 /**
  * @fileOverview Seveso III and ARIE classification and summation logic.
+ * Consistent with the reference guide and legal requirements.
  */
 
 // Master list of all hazard categories
 export const ALL_CATEGORIES: Record<string, HazardCategory> = {
-  H1: { id: 'H1', name: 'Acuut toxisch, categorie 1 (alle routes)', group: 'health' },
-  H2: { id: 'H2', name: 'Acuut toxisch, categorie 2 (alle) & cat. 3 (inademing)', group: 'health' },
-  H3: { id: 'H3', name: 'STOT eenmalig, cat. 1', group: 'health' },
-  H4: { id: 'H4', name: 'Huidcorrosie, categorie 1A, 1B of 1C (H314)', group: 'health', displayId: 'H4' },
+  "H1": { id: 'H1', name: 'Acuut toxisch, categorie 1 (alle routes)', group: 'health', displayId: 'H1' },
+  "H2": { id: 'H2', name: 'Acuut toxisch, categorie 2 (alle) & cat. 3 (inademing)', group: 'health', displayId: 'H2' },
+  "H3": { id: 'H3', name: 'STOT eenmalig, cat. 1', group: 'health', displayId: 'H3' },
+  "H4": { id: 'H4', name: 'Huidcorrosie, categorie 1A, 1B of 1C (H314)', group: 'health', displayId: 'H4' },
   
-  P1a: { id: 'P1a', name: 'Explosieve stoffen (instabiel, 1.1, 1.2, 1.3, 1.5)', group: 'physical' },
-  P1b: { id: 'P1b', name: 'Explosieve stoffen (1.4)', group: 'physical' },
-  P2: { id: 'P2', name: 'Ontvlambare gassen, categorie 1 en 2', group: 'physical' },
-  P3a: { id: 'P3a', name: 'Ontvlambare aerosolen, cat 1 & 2 (ontvlambaar)', group: 'physical' },
-  P3b: { id: 'P3b', name: 'Ontvlambare aerosolen, cat 1 & 2 (overig)', group: 'physical' },
-  P4: { id: 'P4', name: 'Oxiderende gassen, categorie 1', group: 'physical' },
-  P5a: { id: 'P5a', name: 'Ontvlambare vloeistoffen, categorie 1', group: 'physical' },
-  P5b: { id: 'P5b', name: 'Ontvlambare vloeistoffen, cat 2/3 (onder druk/hoge T)', group: 'physical' },
-  P5c: { id: 'P5c', name: 'Ontvlambare vloeistoffen, categorie 2 en 3', group: 'physical' },
-  P6a: { id: 'P6a', name: 'Zelfontledende stoffen & Organische peroxiden, Type A/B', group: 'physical' },
-  P6b: { id: 'P6b', name: 'Zelfontledende stoffen & Organische peroxiden, Type C,D,E,F', group: 'physical' },
-  P7: { id: 'P7', name: 'Pyrofore vloeistoffen en vaste stoffen, categorie 1', group: 'physical' },
-  P8: { id: 'P8', name: 'Oxiderende vloeistoffen en vaste stoffen, cat 1, 2, 3', group: 'physical' },
+  "P1a": { id: 'P1a', name: 'Explosieve stoffen (instabiel, 1.1, 1.2, 1.3, 1.5)', group: 'physical', displayId: 'P1a' },
+  "P1b": { id: 'P1b', name: 'Explosieve stoffen (1.4)', group: 'physical', displayId: 'P1b' },
+  "P2": { id: 'P2', name: 'Ontvlambare gassen, categorie 1 en 2', group: 'physical', displayId: 'P2' },
+  "P3a": { id: 'P3a', name: 'Ontvlambare aerosolen, cat 1 & 2 (ontvlambaar)', group: 'physical', displayId: 'P3a' },
+  "P3b": { id: 'P3b', name: 'Ontvlambare aerosolen, cat 1 & 2 (overig)', group: 'physical', displayId: 'P3b' },
+  "P4": { id: 'P4', name: 'Oxiderende gassen, categorie 1', group: 'physical', displayId: 'P4' },
+  "P5a": { id: 'P5a', name: 'Ontvlambare vloeistoffen, categorie 1', group: 'physical', displayId: 'P5a' },
+  "P5b": { id: 'P5b', name: 'Ontvlambare vloeistoffen, cat 2/3 (onder druk/hoge T)', group: 'physical', displayId: 'P5b' },
+  "P5c": { id: 'P5c', name: 'Ontvlambare vloeistoffen, categorie 2 en 3', group: 'physical', displayId: 'P5c' },
+  "P6a": { id: 'P6a', name: 'Zelfontledende stoffen & Organische peroxiden, Type A/B', group: 'physical', displayId: 'P6a' },
+  "P6b": { id: 'P6b', name: 'Zelfontledende stoffen & Organische peroxiden, Type C,D,E,F', group: 'physical', displayId: 'P6b' },
+  "P7": { id: 'P7', name: 'Pyrofore vloeistoffen en vaste stoffen, categorie 1', group: 'physical', displayId: 'P7' },
+  "P8": { id: 'P8', name: 'Oxiderende vloeistoffen en vaste stoffen, cat 1, 2, 3', group: 'physical', displayId: 'P8' },
   
-  E1: { id: 'E1', name: 'Gevaarlijk voor het aquatisch milieu, acuut 1 of chronisch 1', group: 'environment' },
-  E2: { id: 'E2', name: 'Gevaarlijk voor het aquatisch milieu, chronisch 2', group: 'environment' },
+  "E1": { id: 'E1', name: 'Gevaarlijk voor het aquatisch milieu, acuut 1 of chronisch 1', group: 'environment', displayId: 'E1' },
+  "E2": { id: 'E2', name: 'Gevaarlijk voor het aquatisch milieu, chronisch 2', group: 'environment', displayId: 'E2' },
   
-  O1: { id: 'O1', name: 'Stoffen met gevarenaanduiding EUH014', group: 'other' },
-  O2: { id: 'O2', name: 'Stoffen die in contact met water ontvlambare gassen ontwikkelen (Cat 1)', group: 'other' },
-  O3: { id: 'O3', name: 'Stoffen met gevarenaanduiding EUH029', group: 'other' },
+  "O1": { id: 'O1', name: 'Stoffen met gevarenaanduiding EUH014', group: 'other', displayId: 'O1' },
+  "O2": { id: 'O2', name: 'Stoffen die in contact met water ontvlambare gassen ontwikkelen (Cat 1)', group: 'other', displayId: 'O2' },
+  "O3": { id: 'O3', name: 'Stoffen met gevarenaanduiding EUH029', group: 'other', displayId: 'O3' },
 
   'ARIE-CMR': { id: 'ARIE-CMR', name: 'Kankerverwekkend/mutageen/reprotoxisch cat 1A/1B', group: 'health', displayId: 'CMR' },
   'ARIE-O4': { id: 'ARIE-O4', name: 'Stoffen met EUH001 (in droge toestand ontplofbaar)', group: 'other', displayId: 'O4' },
@@ -83,23 +83,55 @@ export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
 
 // Seveso III Thresholds
 export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = {
-  H1: { low: 5, high: 20 }, H2: { low: 50, high: 200 }, H3: { low: 50, high: 200 },
-  P1a: { low: 10, high: 50 }, P1b: { low: 50, high: 200 }, P2: { low: 10, high: 50 },
-  P3a: { low: 150, high: 500 }, P3b: { low: 5000, high: 50000 }, P4: { low: 50, high: 200 },
-  P5a: { low: 10, high: 50 }, P5b: { low: 50, high: 200 }, P5c: { low: 5000, high: 50000 },
-  P6a: { low: 10, high: 50 }, P6b: { low: 50, high: 200 }, P7: { low: 50, high: 200 }, P8: { low: 50, high: 200 },
-  E1: { low: 100, high: 200 }, E2: { low: 200, high: 500 },
-  O1: { low: 100, high: 500 }, O2: { low: 100, high: 500 }, O3: { low: 50, high: 200 },
+  "H1": { low: 5, high: 20 },
+  "H2": { low: 50, high: 200 },
+  "H3": { low: 50, high: 200 },
+  "P1a": { low: 10, high: 50 },
+  "P1b": { low: 50, high: 200 },
+  "P2": { low: 10, high: 50 },
+  "P3a": { low: 150, high: 500 },
+  "P3b": { low: 5000, high: 50000 },
+  "P4": { low: 50, high: 200 },
+  "P5a": { low: 10, high: 50 },
+  "P5b": { low: 50, high: 200 },
+  "P5c": { low: 5000, high: 50000 },
+  "P6a": { low: 10, high: 50 },
+  "P6b": { low: 50, high: 200 },
+  "P7": { low: 50, high: 200 },
+  "P8": { low: 50, high: 200 },
+  "E1": { low: 100, high: 200 },
+  "E2": { low: 200, high: 500 },
+  "O1": { low: 100, high: 500 },
+  "O2": { low: 100, high: 500 },
+  "O3": { low: 50, high: 200 },
 };
 
 // ARIE Thresholds
 export const ARIE_THRESHOLDS: Record<string, number> = {
-  H1: 0.05, H2: 0.2, H3: 1, H4: 50, 'ARIE-CMR': 0.5,
-  P1a: 0.05, P1b: 1, P2: 5, P3a: 5, P3b: 50, P4: 5,
-  P5a: 1, P5b: 10, P5c: 100,
-  P6a: 0.05, P6b: 1, P7: 0.05, P8: 1,
-  E1: 1, E2: 2,
-  O1: 0.5, O2: 0.05, O3: 0.5, 'ARIE-O4': 0.05,
+  "H1": 0.05,
+  "H2": 0.2,
+  "H3": 1,
+  "H4": 50,
+  "ARIE-CMR": 0.5,
+  "P1a": 0.05,
+  "P1b": 1,
+  "P2": 5,
+  "P3a": 5,
+  "P3b": 50,
+  "P4": 5,
+  "P5a": 1,
+  "P5b": 10,
+  "P5c": 100,
+  "P6a": 0.05,
+  "P6b": 1,
+  "P7": 0.05,
+  "P8": 1,
+  "E1": 1,
+  "E2": 2,
+  "O1": 0.5,
+  "O2": 0.05,
+  "O3": 0.5,
+  "ARIE-O4": 0.05,
 };
 
 // Named substances (Seveso & ARIE)
@@ -154,9 +186,10 @@ export function getArieThreshold(catId: string): number | null {
 }
 
 export function classifySubstance(hStatements: string[], casNumber: string | null): { sevesoCategoryIds: string[], arieCategoryIds: string[], isNamed: boolean, namedSubstanceName: string | null } {
+  const hCodes = hStatements.map(h => h.split(' ')[0].toUpperCase());
   const allCategoryIds = new Set<string>();
-  hStatements.forEach(hStatement => {
-    const code = hStatement.split(' ')[0].toUpperCase();
+  
+  hCodes.forEach(code => {
     if (H_PHRASE_MAPPING[code]) {
       H_PHRASE_MAPPING[code].forEach(catId => allCategoryIds.add(catId));
     }
@@ -166,8 +199,14 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
   const arieCategoryIds = new Set<string>();
 
   allCategoryIds.forEach(catId => {
-    if (SEVESO_THRESHOLDS[catId]) sevesoCategoryIds.add(catId);
-    if (getArieThreshold(catId) !== null || catId.startsWith('ARIE-')) arieCategoryIds.add(catId);
+    // Seveso only if in Seveso threshold list
+    if (SEVESO_THRESHOLDS[catId]) {
+      sevesoCategoryIds.add(catId);
+    }
+    // ARIE if in ARIE threshold list OR is a special ARIE-only category
+    if (getArieThreshold(catId) !== null || catId.startsWith('ARIE-')) {
+      arieCategoryIds.add(catId);
+    }
   });
 
   let isNamed = false;
@@ -253,12 +292,17 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
   if (isHighSeveso) overallStatus = 'Hogedrempel';
   else if (isLowSeveso) overallStatus = 'Lagedrempel';
 
-  const critS = summationGroups.filter(g => g.totalRatio > 0).sort((a, b) => b.totalRatio - a.totalRatio)[0];
-  const critA = arieSummationGroups.filter(g => g.totalRatio > 0).sort((a, b) => b.totalRatio - a.totalRatio)[0];
+  const critS = [...summationGroups].sort((a, b) => b.totalRatio - a.totalRatio)[0];
+  const critA = [...arieSummationGroups].sort((a, b) => b.totalRatio - a.totalRatio)[0];
   
   return { 
-    summationGroups, arieSummationGroups, overallStatus, arieTotal: arieMaxRatio, arieExceeded: arieMaxRatio >= 1,
-    criticalGroup: critS ? critS.name : null, criticalArieGroup: critA ? critA.name : null,
+    summationGroups, 
+    arieSummationGroups, 
+    overallStatus, 
+    arieTotal: arieMaxRatio, 
+    arieExceeded: arieMaxRatio >= 1,
+    criticalGroup: critS && critS.totalRatio > 0 ? critS.name : null, 
+    criticalArieGroup: critA && critA.totalRatio > 0 ? critA.name : null,
   };
 }
 

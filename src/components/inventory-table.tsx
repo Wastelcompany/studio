@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo } from 'react';
@@ -80,21 +79,19 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
 
       const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
       const threshold = getArieThreshold(catId);
-      if (category && threshold) {
-          if (threshold > 0) {
-              const percentage = Math.round((substance.quantity / threshold) * 100);
-              results.push({
-                  key: `${substance.id}-${catId}-arie`,
-                  percentage,
-                  progressValue: Math.min(percentage, 100),
-                  categoryName: category.name,
-                  categoryId: catId,
-                  displayCategoryId: category.displayId || catId,
-                  isExceeded: percentage >= 100,
-                  type: 'ARIE',
-              });
-              addedContributions.add(key);
-          }
+      if (category && threshold && threshold > 0) {
+          const percentage = Math.round((substance.quantity / threshold) * 100);
+          results.push({
+              key: `${substance.id}-${catId}-arie`,
+              percentage,
+              progressValue: Math.min(percentage, 100),
+              categoryName: category.name,
+              categoryId: catId,
+              displayCategoryId: category.displayId || catId,
+              isExceeded: percentage >= 100,
+              type: 'ARIE',
+          });
+          addedContributions.add(key);
       }
     });
 
