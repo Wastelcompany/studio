@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Substance, HazardCategory, NamedSubstance, ThresholdMode, SummationGroup } from '@/lib/types';
@@ -84,7 +83,7 @@ export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
   '7803-51-2': { id: 'Fosfine', cas: '7803-51-2', name: 'Fosforhydride (Fosfine)', group: 'named', threshold: { low: 0.2, high: 1 }, arieThreshold: 0.2 },
   '10545-99-0': { id: 'Zwaveldichloride', cas: '10545-99-0', name: 'Zwaveldichloride', group: 'named', threshold: { low: 1, high: 1 }, arieThreshold: 1 },
   '7446-11-9': { id: 'Zwaveltrioxide', cas: '7446-11-9', name: 'Zwaveltrioxide', group: 'named', threshold: { low: 15, high: 75 }, arieThreshold: 15 },
-  '8006-61-9': { id: 'Petroleum-Benzine', cas: '8006-61-9', name: 'Petroleumproducten (Benzine)', group: 'named', threshold: { low: 2500, high: 25000 }, arieThreshold: 2500 },
+  '8006-11-1': { id: 'Petroleum-Benzine', cas: '8006-61-9', name: 'Petroleumproducten (Benzine)', group: 'named', threshold: { low: 2500, high: 25000 }, arieThreshold: 2500 },
   '68334-30-5': { id: 'Petroleum-Diesel', cas: '68334-30-5', name: 'Petroleumproducten (Diesel)', group: 'named', threshold: { low: 2500, high: 25000 }, arieThreshold: 2500 },
   '8008-20-6': { id: 'Petroleum-Kerosine', cas: '8008-20-6', name: 'Petroleumproducten (Kerosine)', group: 'named', threshold: { low: 2500, high: 25000 }, arieThreshold: 2500 },
   'Heavy-Fuel': { id: 'Zware-Stookolie', cas: 'Heavy-Fuel', name: 'Petroleumproducten (Zware stookolie)', group: 'named', threshold: { low: 2500, high: 25000 }, arieThreshold: 2500 },
@@ -156,8 +155,14 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
   const arieCategoryIds = new Set<string>();
 
   allCategoryIds.forEach(catId => {
+    // Check for Seveso thresholds
     if (SEVESO_THRESHOLDS[catId]) sevesoCategoryIds.add(catId);
-    if (ARIE_THRESHOLDS[catId]) arieCategoryIds.add(catId);
+    
+    // Check for ARIE relevance (explicit threshold or category existence)
+    const category = ALL_CATEGORIES[catId];
+    if (ARIE_THRESHOLDS[catId] || (category && category.id.startsWith('ARIE-'))) {
+        arieCategoryIds.add(catId);
+    }
   });
 
   let isNamed = false;
@@ -167,7 +172,7 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
     sevesoCategoryIds.add(named.id);
     isNamed = true;
     namedSubstanceName = named.name;
-    arieCategoryIds.add(named.id); // Named substances in Annex I Part 2 always have ARIE relevance
+    arieCategoryIds.add(named.id); 
   }
   
   return { sevesoCategoryIds: Array.from(sevesoCategoryIds), arieCategoryIds: Array.from(arieCategoryIds), isNamed, namedSubstanceName };
@@ -180,12 +185,14 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
   criticalGroup: string | null,
   arieTotal: number,
   arieExceeded: boolean,
+  criticalArieGroup: string | null,
 } {
   const sevesoGroupTotals: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0, named: 0 };
   const arieGroupTotals: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0, named: 0 };
   
   inventory.forEach(substance => {
     if (substance.quantity > 0) {
+      // Seveso Summation logic
       const perGroupMaxRatio: Record<string, number> = {};
       substance.sevesoCategoryIds.forEach(catId => {
         const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
@@ -200,9 +207,11 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
       });
       for (const group in perGroupMaxRatio) sevesoGroupTotals[group] += perGroupMaxRatio[group];
 
+      // ARIE Summation logic
       const perGroupMaxArieRatio: Record<string, number> = {};
       substance.arieCategoryIds.forEach(catId => {
         const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+        // Robust ARIE threshold lookup
         const arieThreshold = ARIE_THRESHOLDS[catId] || (category as any)?.arieThreshold || (category as any)?.threshold?.low;
         if (category && arieThreshold && arieThreshold > 0) {
           const ratio = substance.quantity / arieThreshold;
@@ -225,7 +234,8 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
     isExceeded: (arieGroupTotals[config.group] || 0) >= 1, 
   }));
 
-  const totalArieRatio = Object.values(arieGroupTotals).reduce((sum, current) => sum + current, 0);
+  // ARIE logic (Sommatieregel 4): the highest group total determines the duty
+  const highestArieGroupRatio = Math.max(...Object.values(arieGroupTotals));
   const isHighThreshold = summationGroups.some(g => g.totalRatio >= 1 && mode === 'high');
   const isLowThreshold = summationGroups.some(g => g.totalRatio >= 1);
 
@@ -234,10 +244,16 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
   else if (isLowThreshold) overallStatus = 'Lagedrempel';
 
   const mostCriticalGroup = summationGroups.filter(g => g.totalRatio > 0).sort((a, b) => b.totalRatio - a.totalRatio)[0];
+  const mostCriticalArieGroup = arieSummationGroups.filter(g => g.totalRatio > 0).sort((a, b) => b.totalRatio - a.totalRatio)[0];
   
   return { 
-    summationGroups, arieSummationGroups, overallStatus, arieTotal: totalArieRatio, arieExceeded: totalArieRatio >= 1,
+    summationGroups, 
+    arieSummationGroups, 
+    overallStatus, 
+    arieTotal: highestArieGroupRatio, 
+    arieExceeded: highestArieGroupRatio >= 1,
     criticalGroup: mostCriticalGroup ? mostCriticalGroup.name : null,
+    criticalArieGroup: mostCriticalArieGroup ? mostCriticalArieGroup.name : null,
   };
 }
 
