@@ -136,6 +136,23 @@ export const SUMMATION_GROUPS_CONFIG = [
   { name: 'Benoemde Stoffen', icon: Atom, group: 'named' },
 ] as const;
 
+/**
+ * Gets the correct ARIE threshold for a category ID.
+ */
+export function getArieThreshold(catId: string): number | null {
+  // Check explicit ARIE map first
+  if (ARIE_THRESHOLDS[catId]) return ARIE_THRESHOLDS[catId];
+  
+  // Check named substances
+  const named = Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+  if (named) return named.arieThreshold || named.threshold.low;
+  
+  // Fallback to Seveso low threshold if applicable
+  if (SEVESO_THRESHOLDS[catId]) return SEVESO_THRESHOLDS[catId].low;
+  
+  return null;
+}
+
 export function classifySubstance(hStatements: string[], casNumber: string | null): { sevesoCategoryIds: string[], arieCategoryIds: string[], isNamed: boolean, namedSubstanceName: string | null } {
   const allCategoryIds = new Set<string>();
   hStatements.forEach(hStatement => {
@@ -150,7 +167,7 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
 
   allCategoryIds.forEach(catId => {
     if (SEVESO_THRESHOLDS[catId]) sevesoCategoryIds.add(catId);
-    if (ARIE_THRESHOLDS[catId] || catId.startsWith('ARIE-')) arieCategoryIds.add(catId);
+    if (getArieThreshold(catId) !== null || catId.startsWith('ARIE-')) arieCategoryIds.add(catId);
   });
 
   let isNamed = false;
@@ -205,10 +222,9 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
       const arieMaxPerGroup: Record<string, number> = {};
       substance.arieCategoryIds.forEach(catId => {
         const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-        const arieThreshold = ARIE_THRESHOLDS[catId] || (category as any)?.arieThreshold || (category as any)?.threshold?.low;
+        const arieThreshold = getArieThreshold(catId);
         if (category && arieThreshold && arieThreshold > 0) {
           const ratio = substance.quantity / arieThreshold;
-          // For named substances, we also add to their primary hazard group if defined
           const group = (category as any).primaryGroup || category.group;
           if (!arieMaxPerGroup[group] || ratio > arieMaxPerGroup[group]) arieMaxPerGroup[group] = ratio;
         }

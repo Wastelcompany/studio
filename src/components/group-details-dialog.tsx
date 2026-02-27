@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { Substance, SummationGroup, ThresholdMode } from '@/lib/types';
-import { ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, ARIE_THRESHOLDS } from '@/lib/seveso';
+import { ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, getArieThreshold } from '@/lib/seveso';
 import { ScrollArea } from './ui/scroll-area';
 
 interface GroupDetailsDialogProps {
@@ -50,7 +50,7 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
         } else { // ARIE
             substance.arieCategoryIds.forEach(catId => {
                 const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-                const threshold = ARIE_THRESHOLDS[catId] || (category as any)?.arieThreshold || (category as any)?.threshold?.low;
+                const threshold = getArieThreshold(catId);
                 if (category && category.group === group.group && threshold && threshold > 0) {
                     contribution += substance.quantity / threshold;
                 }

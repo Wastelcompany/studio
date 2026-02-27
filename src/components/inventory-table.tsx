@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Trash2, FileSpreadsheet, Upload } from "lucide-react";
 import type { Substance, ThresholdMode } from "@/lib/types";
-import { ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, ARIE_THRESHOLDS } from "@/lib/seveso";
+import { ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, getArieThreshold } from "@/lib/seveso";
 import { Progress } from './ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -79,7 +79,7 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
       if(addedContributions.has(key)) return;
 
       const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-      const threshold = ARIE_THRESHOLDS[catId] || (category as any)?.arieThreshold || (category as any)?.threshold?.low;
+      const threshold = getArieThreshold(catId);
       if (category && threshold) {
           if (threshold > 0) {
               const percentage = Math.round((substance.quantity / threshold) * 100);
