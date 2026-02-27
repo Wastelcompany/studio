@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Substance, HazardCategory, NamedSubstance, ThresholdMode, SummationGroup } from '@/lib/types';
@@ -37,7 +38,7 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   "O3": { id: 'O3', name: 'Stoffen met gevarenaanduiding EUH029', group: 'other', displayId: 'O3' },
 
   'ARIE-CMR': { id: 'ARIE-CMR', name: 'Kankerverwekkend/mutageen/reprotoxisch cat 1A/1B', group: 'health', displayId: 'CMR' },
-  'ARIE-O4': { id: 'ARIE-O4', name: 'Stoffen met EUH001 (in droge toestand ontplofbaar)', group: 'other', displayId: 'O4' },
+  'ARIE-O4': { id: 'ARIE-O4', name: 'Stoffen met EUH001 (in droge toestand ontplofbaar)', group: 'physical', displayId: 'O4' },
 };
 
 export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
@@ -106,7 +107,7 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   "O3": { low: 50, high: 200 },
 };
 
-// ARIE Thresholds
+// ARIE Thresholds (Wettelijk bepaald)
 export const ARIE_THRESHOLDS: Record<string, number> = {
   "H1": 0.05,
   "H2": 0.2,
@@ -187,25 +188,21 @@ export function getArieThreshold(catId: string): number | null {
 
 export function classifySubstance(hStatements: string[], casNumber: string | null): { sevesoCategoryIds: string[], arieCategoryIds: string[], isNamed: boolean, namedSubstanceName: string | null } {
   const hCodes = hStatements.map(h => h.split(' ')[0].toUpperCase());
-  const allCategoryIds = new Set<string>();
-  
-  hCodes.forEach(code => {
-    if (H_PHRASE_MAPPING[code]) {
-      H_PHRASE_MAPPING[code].forEach(catId => allCategoryIds.add(catId));
-    }
-  });
-
   const sevesoCategoryIds = new Set<string>();
   const arieCategoryIds = new Set<string>();
 
-  allCategoryIds.forEach(catId => {
-    // Seveso only if in Seveso threshold list
-    if (SEVESO_THRESHOLDS[catId]) {
-      sevesoCategoryIds.add(catId);
-    }
-    // ARIE if in ARIE threshold list OR is a special ARIE-only category
-    if (getArieThreshold(catId) !== null || catId.startsWith('ARIE-')) {
-      arieCategoryIds.add(catId);
+  hCodes.forEach(code => {
+    if (H_PHRASE_MAPPING[code]) {
+      H_PHRASE_MAPPING[code].forEach(catId => {
+        // Seveso only if in Seveso threshold list
+        if (SEVESO_THRESHOLDS[catId]) {
+          sevesoCategoryIds.add(catId);
+        }
+        // ARIE if in ARIE threshold list OR is a special ARIE-only category
+        if (getArieThreshold(catId) !== null || catId.startsWith('ARIE-')) {
+          arieCategoryIds.add(catId);
+        }
+      });
     }
   });
 
