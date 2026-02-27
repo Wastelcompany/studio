@@ -26,6 +26,7 @@ export interface Customer {
   kvkNumber?: string;
   billingEmail?: string;
   createdAt?: Timestamp;
+  customerNumber?: string; // 4-digit numeric code
 }
 
 export interface Company {
