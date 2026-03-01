@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo } from 'react';
@@ -68,39 +67,41 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Details voor: {group.name} ({type.toUpperCase()})</DialogTitle>
           <DialogDescription>
             De volgende stoffen dragen bij aan de sommatie voor deze groep. Het totaal is {Math.round(group.totalRatio * 100)}%.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[60vh] pr-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Stof</TableHead>
-                <TableHead className="text-right">Voorraad (ton)</TableHead>
-                <TableHead className="text-right">Bijdrage (%)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {contributingSubstances.length > 0 ? (
-                contributingSubstances.map(sub => (
-                  <TableRow key={sub.id}>
-                    <TableCell className="font-medium">{sub.productName}</TableCell>
-                    <TableCell className="text-right">{sub.quantity.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{(sub.contribution * 100).toFixed(1)}%</TableCell>
-                  </TableRow>
-                ))
-              ) : (
+        <div className="flex-grow overflow-hidden mt-4 border rounded-md">
+          <ScrollArea className="h-[50vh]">
+            <Table>
+              <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">Geen bijdragende stoffen gevonden.</TableCell>
+                  <TableHead>Stof</TableHead>
+                  <TableHead className="text-right">Voorraad (ton)</TableHead>
+                  <TableHead className="text-right">Bijdrage (%)</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </ScrollArea>
+              </TableHeader>
+              <TableBody>
+                {contributingSubstances.length > 0 ? (
+                  contributingSubstances.map(sub => (
+                    <TableRow key={sub.id}>
+                      <TableCell className="font-medium">{sub.productName}</TableCell>
+                      <TableCell className="text-right">{sub.quantity.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{(sub.contribution * 100).toFixed(1)}%</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">Geen bijdragende stoffen gevonden.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );

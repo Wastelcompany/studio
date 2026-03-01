@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Substance, HazardCategory, NamedSubstance, ThresholdMode, SummationGroup } from '@/lib/types';
@@ -108,7 +107,7 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
 };
 
 // ARIE Thresholds (Arbeidsomstandighedenbesluit)
-// UPDATED based on user specific requirements: P5a:3, P5b:15, P5c:1500, P6a:3, P6b:15
+// UPDATED based on final requirements: P5a:3, P5b:15, P5c:1500, P6a:3, P6b:15
 export const ARIE_THRESHOLDS: Record<string, number> = {
   "H1": 0.05,
   "H2": 0.2,
@@ -121,11 +120,11 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
   "P3a": 5,
   "P3b": 50,
   "P4": 5,
-  "P5a": 3,      // UPDATED
-  "P5b": 15,     // UPDATED
-  "P5c": 1500,   // UPDATED
-  "P6a": 3,      // UPDATED
-  "P6b": 15,     // UPDATED
+  "P5a": 3,      // Corrected: 3t
+  "P5b": 15,     // Corrected: 15t
+  "P5c": 1500,   // Corrected: 1500t
+  "P6a": 3,      // Corrected: 3t
+  "P6b": 15,     // Corrected: 15t
   "P7": 0.05,
   "P8": 1,
   "E1": 1,

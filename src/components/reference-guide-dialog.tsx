@@ -74,22 +74,26 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Referentiegids: Beoordelingsmethode</DialogTitle>
-          <DialogDescription>
-            Uitleg over de methode voor de drempelwaardecheck, inclusief koppelingen tussen H-zinnen, categorieën en drempelwaarden. Gebruik de kolomfilters om te zoeken.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col p-0">
+        <div className="p-6 pb-2">
+          <DialogHeader>
+            <DialogTitle>Referentiegids: Beoordelingsmethode</DialogTitle>
+            <DialogDescription>
+              Uitleg over de methode voor de drempelwaardecheck, inclusief koppelingen tussen H-zinnen, categorieën en drempelwaarden. Gebruik de kolomfilters om te zoeken.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <Tabs defaultValue="seveso-cats" className="mt-4 flex-grow flex flex-col">
-          <TabsList className="grid w-full grid-cols-3 shrink-0">
-            <TabsTrigger value="seveso-cats">Seveso Categorieën</TabsTrigger>
-            <TabsTrigger value="seveso-named">Benoemde Stoffen</TabsTrigger>
-            <TabsTrigger value="arie">ARIE Koppelingen</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="seveso-cats" className="flex-grow flex flex-col overflow-hidden">
+          <div className="px-6">
+            <TabsList className="grid w-full grid-cols-3 shrink-0">
+              <TabsTrigger value="seveso-cats">Seveso Categorieën</TabsTrigger>
+              <TabsTrigger value="seveso-named">Benoemde Stoffen</TabsTrigger>
+              <TabsTrigger value="arie">ARIE Koppelingen</TabsTrigger>
+            </TabsList>
+          </div>
           
-          <TabsContent value="seveso-cats" className="flex-grow overflow-hidden mt-2">
+          <TabsContent value="seveso-cats" className="flex-grow overflow-hidden mt-2 px-6 pb-6">
             <div className="flex justify-end mb-2">
                 {(sevesoFilters.cat || sevesoFilters.desc || sevesoFilters.h) && (
                     <Button variant="ghost" size="sm" onClick={clearSevesoFilters} className="h-7 text-xs">
@@ -97,7 +101,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                     </Button>
                 )}
             </div>
-            <ScrollArea className="h-full">
+            <ScrollArea className="h-[calc(90vh-280px)] border rounded-md">
                 <Table>
                 <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                     <TableRow className="bg-muted/30">
@@ -163,7 +167,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="seveso-named" className="flex-grow overflow-hidden mt-2">
+          <TabsContent value="seveso-named" className="flex-grow overflow-hidden mt-2 px-6 pb-6">
             <div className="flex justify-end mb-2">
                 {(namedFilters.name || namedFilters.cas) && (
                     <Button variant="ghost" size="sm" onClick={clearNamedFilters} className="h-7 text-xs">
@@ -171,7 +175,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                     </Button>
                 )}
             </div>
-            <ScrollArea className="h-full">
+            <ScrollArea className="h-[calc(90vh-280px)] border rounded-md">
                 <Table>
                 <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                     <TableRow className="bg-muted/30">
@@ -229,7 +233,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="arie" className="flex-grow overflow-hidden mt-2">
+          <TabsContent value="arie" className="flex-grow overflow-hidden mt-2 px-6 pb-6">
             <div className="flex justify-end mb-2">
                 {(arieFilters.cat || arieFilters.desc || arieFilters.h) && (
                     <Button variant="ghost" size="sm" onClick={clearArieFilters} className="h-7 text-xs">
@@ -237,8 +241,8 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                     </Button>
                 )}
             </div>
-             <ScrollArea className="h-full">
-                <div className="space-y-6">
+             <ScrollArea className="h-[calc(90vh-280px)] border rounded-md">
+                <div className="space-y-6 p-4">
                     <div>
                         <h4 className="font-semibold text-primary mb-2 text-sm">ARIE Gevarencategorieën</h4>
                         <Table>

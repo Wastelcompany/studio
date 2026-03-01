@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -72,39 +71,41 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Onderbouwing voor Categorie {categoryId} ({categoryType.toUpperCase()})</DialogTitle>
           <DialogDescription>
             De stof '{substance.productName}' is geclassificeerd in categorie {categoryId} ({category?.name}) op basis van de volgende gegevens:
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[60vh] pr-4 mt-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Bron (H-zin / CAS)</TableHead>
-                <TableHead>Omschrijving</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {explanations.length > 0 ? (
-                explanations.map((exp, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{exp.source}</TableCell>
-                    <TableCell>{exp.description}</TableCell>
-                  </TableRow>
-                ))
-              ) : (
+        <div className="flex-grow overflow-hidden mt-4 border rounded-md">
+          <ScrollArea className="h-[50vh]">
+            <Table>
+              <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                 <TableRow>
-                  <TableCell colSpan={2} className="text-center text-muted-foreground py-8">
-                    Geen directe koppeling gevonden in de H-zinnen of als benoemde stof voor deze specifieke categorie.
-                  </TableCell>
+                  <TableHead>Bron (H-zin / CAS)</TableHead>
+                  <TableHead>Omschrijving</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </ScrollArea>
+              </TableHeader>
+              <TableBody>
+                {explanations.length > 0 ? (
+                  explanations.map((exp, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{exp.source}</TableCell>
+                      <TableCell>{exp.description}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-center text-muted-foreground py-8">
+                      Geen directe koppeling gevonden in de H-zinnen of als benoemde stof voor deze specifieke categorie.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
