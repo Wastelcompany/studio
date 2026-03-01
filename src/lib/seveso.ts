@@ -61,7 +61,7 @@ export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
   H250: 'Vat spontaan vlam bij blootstelling aan lucht',
   H260: 'In contact met water komen ontvlambare gassen vrij die spontaan kunnen ontbranden',
   H270: 'Kan brand verooraken of bevorderen; oxiderend',
-  H271: 'Kan brand of ontploffingen veroorzaken; sterk oxiderend',
+  H271: 'Kan brand of ontploffingen verooraken; sterk oxiderend',
   H272: 'Kan brand bevorderen; oxiderend',
   H300: 'Dodelijk bij inslikken',
   H301: 'Giftig bij inslikken',
@@ -108,7 +108,7 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
 };
 
 // ARIE Thresholds (Wettelijk bepaald)
-// Note: P5a is verwijderd uit deze lijst op verzoek.
+// CRITICAL: P5-categorieën (P5a, P5b, P5c) zijn hier op verzoek verwijderd.
 export const ARIE_THRESHOLDS: Record<string, number> = {
   "H1": 0.05,
   "H2": 0.2,
@@ -121,8 +121,6 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
   "P3a": 5,
   "P3b": 50,
   "P4": 5,
-  "P5b": 10,
-  "P5c": 100,
   "P6a": 0.05,
   "P6b": 1,
   "P7": 0.05,
@@ -171,6 +169,7 @@ export const SUMMATION_GROUPS_CONFIG = [
 
 /**
  * Gets the correct ARIE threshold for a category ID.
+ * Returns null if the category is not relevant for ARIE (like P5).
  */
 export function getArieThreshold(catId: string): number | null {
   // 1. Check explicit ARIE map first
@@ -180,7 +179,6 @@ export function getArieThreshold(catId: string): number | null {
   const named = Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
   if (named) return named.arieThreshold ?? named.threshold.low;
   
-  // No fallback to Seveso low threshold if we want strict ARIE definitions.
   return null;
 }
 
@@ -196,7 +194,8 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
         if (SEVESO_THRESHOLDS[catId]) {
           sevesoCategoryIds.add(catId);
         }
-        // ARIE indeling
+        // ARIE indeling: Alleen toevoegen als er een drempelwaarde is.
+        // Omdat P5-categorieën niet in ARIE_THRESHOLDS staan, worden ze hier gefilterd.
         const arieThreshold = getArieThreshold(catId);
         if (arieThreshold !== null || catId.startsWith('ARIE-')) {
           arieCategoryIds.add(catId);
