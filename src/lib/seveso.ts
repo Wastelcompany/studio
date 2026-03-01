@@ -107,7 +107,9 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
 };
 
 // ARIE Thresholds (Arbeidsomstandighedenbesluit)
-// Final requested values: P5a:3, P5b:15, P5c:1500, P6a:3, P6b:15
+// Final requested values based on Regeling ARIE and User Feedback:
+// P5a: 3, P5b: 15, P5c: 1500, P6a: 3, P6b: 15
+// Note: P1b "vervalt" in ARIE context for the summation.
 export const ARIE_THRESHOLDS: Record<string, number> = {
   "H1": 0.05,
   "H2": 0.2,
@@ -115,20 +117,17 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
   "H4": 50,
   "ARIE-CMR": 0.5,
   "P1a": 0.05,
-  "P1b": 1,
   "P2": 5,
   "P3a": 5,
   "P3b": 50,
   "P4": 5,
-  "P5a": 3,      
-  "P5b": 15,     
-  "P5c": 1500,   
-  "P6a": 3,      
-  "P6b": 15,     
+  "P5a": 3,
+  "P5b": 15,
+  "P5c": 1500,
+  "P6a": 3,
+  "P6b": 15,
   "P7": 0.05,
   "P8": 1,
-  "E1": 1,
-  "E2": 2,
   "O1": 0.5,
   "O2": 0.05,
   "O3": 0.5,
@@ -195,8 +194,9 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
         if (SEVESO_THRESHOLDS[catId]) {
           sevesoCategoryIds.add(catId);
         }
-        // ARIE classification
-        if (getArieThreshold(catId) !== null) {
+        // ARIE classification (excluding environment)
+        const cat = ALL_CATEGORIES[catId];
+        if (getArieThreshold(catId) !== null && cat?.group !== 'environment') {
           arieCategoryIds.add(catId);
         }
       });
@@ -253,10 +253,13 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
         sevesoGroupTotals[group] = (sevesoGroupTotals[group] || 0) + sevesoMaxPerGroup[group];
       }
 
-      // ARIE
+      // ARIE (Environment is EXCLUDED)
       const arieMaxPerGroup: Record<string, number> = {};
       substance.arieCategoryIds.forEach(catId => {
         const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+        // Explicitly exclude environment from ARIE summation
+        if (category && category.group === 'environment') return;
+
         const arieThreshold = getArieThreshold(catId);
         if (category && arieThreshold && arieThreshold > 0) {
           const ratio = substance.quantity / arieThreshold;
@@ -277,14 +280,15 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
     categoryContributions: {},
   }));
   
+  // For ARIE, environment should be 0 as per instructions
   const arieSummationGroups: SummationGroup[] = SUMMATION_GROUPS_CONFIG.map(config => ({
     ...config,
-    totalRatio: (arieGroupTotals[config.group] || 0),
-    isExceeded: (arieGroupTotals[config.group] || 0) >= 1, 
+    totalRatio: config.group === 'environment' ? 0 : (arieGroupTotals[config.group] || 0),
+    isExceeded: config.group !== 'environment' && (arieGroupTotals[config.group] || 0) >= 1, 
     categoryContributions: {},
   }));
 
-  const arieMaxRatio = Math.max(...Object.values(arieGroupTotals), 0);
+  const arieMaxRatio = Math.max(...Object.entries(arieGroupTotals).filter(([key]) => key !== 'environment').map(([_, v]) => v), 0);
   const isHighSeveso = summationGroups.some(g => g.totalRatio >= 1 && mode === 'high');
   const isLowSeveso = summationGroups.some(g => g.totalRatio >= 1);
 
@@ -293,7 +297,7 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
   else if (isLowSeveso) overallStatus = 'Lagedrempel';
 
   const critS = [...summationGroups].sort((a, b) => b.totalRatio - a.totalRatio)[0];
-  const critA = [...arieSummationGroups].sort((a, b) => b.totalRatio - a.totalRatio)[0];
+  const critA = [...arieSummationGroups].filter(g => g.group !== 'environment').sort((a, b) => b.totalRatio - a.totalRatio)[0];
   
   return { 
     summationGroups, 
@@ -306,18 +310,20 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
   };
 }
 
+const groupOrder = { 'health': 0, 'physical': 1, 'environment': 2, 'other': 3, 'named': 4 };
+
 export const SEVESO_CATEGORY_REFERENCE = Object.keys(SEVESO_THRESHOLDS).map(catId => {
     const cat = ALL_CATEGORIES[catId];
     const hPhrases = Object.entries(H_PHRASE_MAPPING).filter(([_, cats]) => cats.includes(catId)).map(([h]) => h).join(', ');
-    return { categoryId: cat.displayId || cat.id, categoryName: cat.name, hPhrase: hPhrases || 'Specifiek', low: SEVESO_THRESHOLDS[catId].low, high: SEVESO_THRESHOLDS[catId].high };
-}).sort((a,b) => a.categoryId.localeCompare(b.categoryId, undefined, {numeric: true}));
+    return { categoryId: cat.displayId || cat.id, categoryName: cat.name, hPhrase: hPhrases || 'Specifiek', low: SEVESO_THRESHOLDS[catId].low, high: SEVESO_THRESHOLDS[catId].high, group: cat.group };
+}).sort((a,b) => (groupOrder[a.group as keyof typeof groupOrder] - groupOrder[b.group as keyof typeof groupOrder]) || a.categoryId.localeCompare(b.categoryId, undefined, {numeric: true}));
 
 export const ARIE_REFERENCE_GUIDE_DATA = Object.keys(ARIE_THRESHOLDS).map(catId => {
     const cat = ALL_CATEGORIES[catId];
-    if (!cat) return null;
+    if (!cat || cat.group === 'environment') return null;
     const hPhrases = Object.entries(H_PHRASE_MAPPING).filter(([_, cats]) => cats.includes(catId)).map(([h]) => h).join(', ');
-    return { categoryId: cat.displayId || cat.id, categoryName: cat.name, hPhrase: hPhrases || 'Specifiek', threshold: ARIE_THRESHOLDS[catId] };
-}).filter((item): item is NonNullable<typeof item> => item !== null).sort((a,b) => a.categoryId.localeCompare(b.categoryId, undefined, {numeric: true}));
+    return { categoryId: cat.displayId || cat.id, categoryName: cat.name, hPhrase: hPhrases || 'Specifiek', threshold: ARIE_THRESHOLDS[catId], group: cat.group };
+}).filter((item): item is NonNullable<typeof item> => item !== null).sort((a,b) => (groupOrder[a.group as keyof typeof groupOrder] - groupOrder[b.group as keyof typeof groupOrder]) || a.categoryId.localeCompare(b.categoryId, undefined, {numeric: true}));
 
 export const SEVESO_NAMED_REFERENCE = Object.values(NAMED_SUBSTANCES).map(s => ({ categoryId: s.name, hPhrase: s.cas, low: s.threshold.low, high: s.threshold.high, arie: s.arieThreshold || s.threshold.low }));
 export const ARIE_NAMED_REFERENCE = Object.values(NAMED_SUBSTANCES).map(s => ({ categoryId: s.name, hPhrase: s.cas, threshold: s.arieThreshold || s.threshold.low }));
