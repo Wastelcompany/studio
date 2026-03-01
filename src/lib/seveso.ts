@@ -108,7 +108,6 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
 };
 
 // ARIE Thresholds (Wettelijk bepaald)
-// CRITICAL: P5-categorieën (P5a, P5b, P5c) zijn hier op verzoek verwijderd.
 export const ARIE_THRESHOLDS: Record<string, number> = {
   "H1": 0.05,
   "H2": 0.2,
@@ -121,6 +120,7 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
   "P3a": 5,
   "P3b": 50,
   "P4": 5,
+  "P5b": 10, // Re-added as requested
   "P6a": 0.05,
   "P6b": 1,
   "P7": 0.05,
@@ -169,7 +169,6 @@ export const SUMMATION_GROUPS_CONFIG = [
 
 /**
  * Gets the correct ARIE threshold for a category ID.
- * Returns null if the category is not relevant for ARIE (like P5).
  */
 export function getArieThreshold(catId: string): number | null {
   // 1. Check explicit ARIE map first
@@ -190,14 +189,13 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
   hCodes.forEach(code => {
     if (H_PHRASE_MAPPING[code]) {
       H_PHRASE_MAPPING[code].forEach(catId => {
-        // Seveso indeling
+        // Seveso
         if (SEVESO_THRESHOLDS[catId]) {
           sevesoCategoryIds.add(catId);
         }
-        // ARIE indeling: Alleen toevoegen als er een drempelwaarde is.
-        // Omdat P5-categorieën niet in ARIE_THRESHOLDS staan, worden ze hier gefilterd.
+        // ARIE: Alleen toevoegen als er een drempelwaarde is.
         const arieThreshold = getArieThreshold(catId);
-        if (arieThreshold !== null || catId.startsWith('ARIE-')) {
+        if (arieThreshold !== null) {
           arieCategoryIds.add(catId);
         }
       });
@@ -236,7 +234,7 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
   
   inventory.forEach(substance => {
     if (substance.quantity > 0) {
-      // Seveso Aggregation
+      // Seveso
       const sevesoMaxPerGroup: Record<string, number> = {};
       substance.sevesoCategoryIds.forEach(catId => {
         const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
@@ -254,7 +252,7 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
         sevesoGroupTotals[group] = (sevesoGroupTotals[group] || 0) + sevesoMaxPerGroup[group];
       }
 
-      // ARIE Aggregation
+      // ARIE
       const arieMaxPerGroup: Record<string, number> = {};
       substance.arieCategoryIds.forEach(catId => {
         const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
