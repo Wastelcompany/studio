@@ -5,7 +5,8 @@ import { FlaskConical, Flame, Leaf, AlertTriangle, Atom } from 'lucide-react';
 
 /**
  * @fileOverview Seveso III and ARIE classification and summation logic.
- * Consistent with the reference guide and legal requirements.
+ * Bevat drempelwaarden conform Arbo-wetgeving (ARIE) en Seveso III richtlijn.
+ * Volgorde: H (Gezondheid), P (Fysiek), E (Milieu), O (Overig).
  */
 
 // Master list of all hazard categories
@@ -28,6 +29,7 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   "P6b": { id: 'P6b', name: 'Zelfontledende stoffen & Organische peroxiden, Type C,D,E,F', group: 'physical', displayId: 'P6b' },
   "P7": { id: 'P7', name: 'Pyrofore vloeistoffen en vaste stoffen, categorie 1', group: 'physical', displayId: 'P7' },
   "P8": { id: 'P8', name: 'Oxiderende vloeistoffen en vaste stoffen, cat 1, 2, 3', group: 'physical', displayId: 'P8' },
+  "P9": { id: 'P9', name: 'Voor zelfverhitting vatbare stoffen en mengsels, cat 1 & 2', group: 'physical', displayId: 'P9' },
   
   "E1": { id: 'E1', name: 'Gevaarlijk voor het aquatisch milieu, acuut 1 of chronisch 1', group: 'environment', displayId: 'E1' },
   "E2": { id: 'E2', name: 'Gevaarlijk voor het aquatisch milieu, chronisch 2', group: 'environment', displayId: 'E2' },
@@ -37,7 +39,7 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   "O3": { id: 'O3', name: 'Stoffen met gevarenaanduiding EUH029', group: 'other', displayId: 'O3' },
 
   'ARIE-CMR': { id: 'ARIE-CMR', name: 'Kankerverwekkend/mutageen/reprotoxisch cat 1A/1B', group: 'health', displayId: 'CMR' },
-  'ARIE-O4': { id: 'ARIE-O4', name: 'Stoffen met EUH001 (in droge toestand ontplofbaar)', group: 'physical', displayId: 'O4' },
+  'ARIE-O4': { id: 'ARIE-O4', name: 'Stoffen met EUH001 (in droge toestand ontplofbaar)', group: 'other', displayId: 'O4' },
 };
 
 export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
@@ -58,6 +60,8 @@ export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
   H241: 'Brand- of ontploffingsgevaar bij verwarming',
   H242: 'Brandgevaar bij verwarming',
   H250: 'Vat spontaan vlam bij blootstelling aan lucht',
+  H251: 'Vatbaar voor zelfverhitting; kan brand veroorzaken',
+  H252: 'In grote hoeveelheden vatbaar voor zelfverhitting; kan brand veroorzaken',
   H260: 'In contact met water komen ontvlambare gassen vrij die spontaan kunnen ontbranden',
   H270: 'Kan brand verooraken of bevorderen; oxiderend',
   H271: 'Kan brand of ontploffingen verooraken; sterk oxiderend',
@@ -106,7 +110,7 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   "O3": { low: 50, high: 200 },
 };
 
-// ARIE Thresholds - EXPLICITLY UPDATED BASED ON USER REQUIREMENTS
+// ARIE Thresholds - UPDATED based on user requirements
 export const ARIE_THRESHOLDS: Record<string, number> = {
   "H1": 1.5,
   "H2": 15,
@@ -120,15 +124,16 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
   "P5c": 1500,
   "P6a": 3,
   "P6b": 15,
+  "P7": 15,
+  "P9": 15,
   "P3a": 50,
   "P3b": 500,
   "P4": 50,
-  "P7": 50,
   "P8": 50,
-  "O1": 100,
-  "O2": 100,
-  "O3": 50,
-  "ARIE-O4": 0.05,
+  "O1": 30,
+  "O2": 30,
+  "O3": 15,
+  "ARIE-O4": 15,
 };
 
 // Named substances (Seveso & ARIE)
@@ -151,7 +156,9 @@ export const H_PHRASE_MAPPING: Record<string, string[]> = {
   'H224': ['P5a'], 'H225': ['P5b'], 'H226': ['P5c'],
   'H240': ['P6a'], 'H241': ['P6a'],
   'H242': ['P6b'], 'H250': ['P7'],
-  'H271': ['P8'], 'H272': ['P8'], 'H400': ['E1'], 'H410': ['E1'], 'H411': ['E2'],
+  'H271': ['P8'], 'H272': ['P8'],
+  'H251': ['P9'], 'H252': ['P9'],
+  'H400': ['E1'], 'H410': ['E1'], 'H411': ['E2'],
   'EUH014': ['O1'], 'H260': ['O2'], 'EUH029': ['O3'],
   'H340': ['ARIE-CMR'], 'H350': ['ARIE-CMR'], 'H360': ['ARIE-CMR'],
   'EUH001': ['ARIE-O4'],

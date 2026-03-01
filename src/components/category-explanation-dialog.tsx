@@ -71,7 +71,7 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col overflow-hidden p-0">
+      <DialogContent className="sm:max-w-xl max-h-[85vh] h-[600px] flex flex-col overflow-hidden p-0">
         <div className="p-6 pb-2 shrink-0">
           <DialogHeader>
             <DialogTitle>Onderbouwing voor Categorie {categoryId} ({categoryType.toUpperCase()})</DialogTitle>
@@ -81,7 +81,7 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
           </DialogHeader>
         </div>
         <div className="flex-grow overflow-hidden m-6 mt-0 border rounded-md relative flex flex-col min-h-0">
-          <ScrollArea className="h-full w-full">
+          <ScrollArea className="flex-grow h-full w-full">
             <Table>
               <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                 <TableRow>

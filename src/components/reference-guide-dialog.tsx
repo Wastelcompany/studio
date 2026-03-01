@@ -20,7 +20,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { SEVESO_CATEGORY_REFERENCE, SEVESO_NAMED_REFERENCE, ARIE_REFERENCE_GUIDE_DATA, ARIE_NAMED_REFERENCE } from '@/lib/seveso';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Search, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ReferenceGuideDialogProps {
@@ -74,7 +74,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-5xl max-h-[90vh] h-[800px] flex flex-col p-0 overflow-hidden">
         <div className="p-6 pb-2 shrink-0">
           <DialogHeader>
             <DialogTitle>Referentiegids: Beoordelingsmethode</DialogTitle>
@@ -89,7 +89,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="seveso-cats" className="text-xs sm:text-sm">Seveso Cats</TabsTrigger>
               <TabsTrigger value="seveso-named" className="text-xs sm:text-sm">Seveso Benoemd</TabsTrigger>
-              <TabsTrigger value="arie" className="text-xs sm:text-sm">ARIE Koppelingen</TabsTrigger>
+              <TabsTrigger value="arie" className="text-xs sm:text-sm">ARIE Cats</TabsTrigger>
               <TabsTrigger value="arie-named" className="text-xs sm:text-sm">ARIE Benoemd</TabsTrigger>
             </TabsList>
           </div>
@@ -102,8 +102,8 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                     </Button>
                 )}
             </div>
-            <div className="flex-grow border rounded-md overflow-hidden relative">
-              <ScrollArea className="h-full w-full">
+            <div className="flex-grow border rounded-md overflow-hidden relative flex flex-col">
+              <ScrollArea className="flex-grow h-full w-full">
                   <Table>
                   <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                       <TableRow className="bg-muted/30">
@@ -178,8 +178,8 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                     </Button>
                 )}
             </div>
-            <div className="flex-grow border rounded-md overflow-hidden relative">
-              <ScrollArea className="h-full w-full">
+            <div className="flex-grow border rounded-md overflow-hidden relative flex flex-col">
+              <ScrollArea className="flex-grow h-full w-full">
                   <Table>
                   <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                       <TableRow className="bg-muted/30">
@@ -242,8 +242,8 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                     </Button>
                 )}
             </div>
-             <div className="flex-grow border rounded-md overflow-hidden relative">
-                <ScrollArea className="h-full w-full">
+             <div className="flex-grow border rounded-md overflow-hidden relative flex flex-col">
+                <ScrollArea className="flex-grow h-full w-full">
                     <Table>
                         <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                             <TableRow className="bg-muted/30">
@@ -314,8 +314,8 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                     </Button>
                 )}
             </div>
-            <div className="flex-grow border rounded-md overflow-hidden relative">
-              <ScrollArea className="h-full w-full">
+            <div className="flex-grow border rounded-md overflow-hidden relative flex flex-col">
+              <ScrollArea className="flex-grow h-full w-full">
                   <Table>
                       <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                           <TableRow className="bg-muted/30">
