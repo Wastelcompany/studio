@@ -120,10 +120,10 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
   "P3a": 5,
   "P3b": 50,
   "P4": 5,
-  "P5a": 1,   // Zeer licht ontvlambaar (H224)
-  "P5b": 10,  // Licht ontvlambaar (H225)
-  "P5c": 100, // Ontvlambaar (H226)
-  "P6a": 0.05,
+  "P5a": 1,
+  "P5b": 3,      // Gecorrigeerd naar 3 ton op basis van gebruikerslijst
+  "P5c": 15,     // Gecorrigeerd naar 15 ton op basis van gebruikerslijst
+  "P6a": 1500,   // Gecorrigeerd naar 1500 ton op basis van gebruikerslijst
   "P6b": 1,
   "P7": 0.05,
   "P8": 1,
