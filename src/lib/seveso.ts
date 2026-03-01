@@ -181,7 +181,11 @@ export function getArieThreshold(catId: string): number | null {
   if (named) return named.arieThreshold ?? named.threshold.low;
   
   // 3. Fallback to Seveso low threshold if applicable
-  if (SEVESO_THRESHOLDS[catId]) return SEVESO_THRESHOLDS[catId].low;
+  if (SEVESO_THRESHOLDS[catId]) {
+      // Specifically for P5c, the Seveso threshold is 5000, but ARIE is usually 100.
+      // We've defined it in ARIE_THRESHOLDS, so this fallback is for other categories.
+      return SEVESO_THRESHOLDS[catId].low;
+  }
   
   return null;
 }
@@ -252,7 +256,9 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
           }
         }
       });
-      for (const group in sevesoMaxPerGroup) sevesoGroupTotals[group] += sevesoMaxPerGroup[group];
+      for (const group in sevesoMaxPerGroup) {
+        sevesoGroupTotals[group] = (sevesoGroupTotals[group] || 0) + sevesoMaxPerGroup[group];
+      }
 
       // ARIE Aggregation
       const arieMaxPerGroup: Record<string, number> = {};
@@ -265,7 +271,9 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
           if (!arieMaxPerGroup[group] || ratio > arieMaxPerGroup[group]) arieMaxPerGroup[group] = ratio;
         }
       });
-      for (const group in arieMaxPerGroup) arieGroupTotals[group] += arieMaxPerGroup[group];
+      for (const group in arieMaxPerGroup) {
+        arieGroupTotals[group] = (arieGroupTotals[group] || 0) + arieMaxPerGroup[group];
+      }
     }
   });
 
@@ -273,15 +281,17 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
     ...config,
     totalRatio: (sevesoGroupTotals[config.group] || 0),
     isExceeded: (sevesoGroupTotals[config.group] || 0) >= 1,
+    categoryContributions: {}, // Optional for breakdown
   }));
   
   const arieSummationGroups: SummationGroup[] = SUMMATION_GROUPS_CONFIG.map(config => ({
     ...config,
     totalRatio: (arieGroupTotals[config.group] || 0),
     isExceeded: (arieGroupTotals[config.group] || 0) >= 1, 
+    categoryContributions: {},
   }));
 
-  const arieMaxRatio = Math.max(...Object.values(arieGroupTotals));
+  const arieMaxRatio = Math.max(...Object.values(arieGroupTotals), 0);
   const isHighSeveso = summationGroups.some(g => g.totalRatio >= 1 && mode === 'high');
   const isLowSeveso = summationGroups.some(g => g.totalRatio >= 1);
 

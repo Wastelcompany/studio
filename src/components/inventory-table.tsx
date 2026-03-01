@@ -150,13 +150,34 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
         </TableHeader>
         <TableBody>
           {inventory.map((substance) => {
-            const allSeveso = [...new Set(substance.sevesoCategoryIds)].map(id => ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id)).filter(Boolean);
-            const allArie = [...new Set(substance.arieCategoryIds)].map(id => ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id)).filter(Boolean);
+            const allSeveso = [...new Set(substance.sevesoCategoryIds || [])]
+              .map(id => ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))
+              .filter(Boolean);
+            const allArie = [...new Set(substance.arieCategoryIds || [])]
+              .map(id => ALL_CATEGORIES[id] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === id))
+              .filter(Boolean);
+              
             return (
               <TableRow key={substance.id}>
                 <TableCell className="font-medium">{substance.productName}<div className="text-xs text-muted-foreground">{substance.casNumber || 'N/A'}</div></TableCell>
-                <TableCell><div className="flex flex-wrap gap-1">{allSeveso.map(cat => <Badge key={cat.id} onClick={() => onShowExplanation(substance.id, cat.id, 'seveso')} className="cursor-pointer">{cat.displayId || cat.id}</Badge>)}</div></TableCell>
-                <TableCell><div className="flex flex-wrap gap-1">{allArie.map(cat => <Badge key={cat.id} onClick={() => onShowExplanation(substance.id, cat.id, 'arie')} variant="secondary" className="cursor-pointer">{cat.displayId || cat.id}</Badge>)}</div></TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {allSeveso.map(cat => (
+                      <Badge key={cat!.id} onClick={() => onShowExplanation(substance.id, cat!.id, 'seveso')} className="cursor-pointer">
+                        {cat!.displayId || cat!.id}
+                      </Badge>
+                    ))}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {allArie.map(cat => (
+                      <Badge key={cat!.id} onClick={() => onShowExplanation(substance.id, cat!.id, 'arie')} variant="secondary" className="cursor-pointer">
+                        {cat!.displayId || cat!.id}
+                      </Badge>
+                    ))}
+                  </div>
+                </TableCell>
                 <TableCell><Input type="number" value={substance.quantity} onChange={(e) => onUpdateQuantity(substance.id, parseFloat(e.target.value))} className="w-24 h-9 ml-auto text-right" min="0" /></TableCell>
                 <TableCell><Contributions substance={substance} mode={thresholdMode} /></TableCell>
                 <TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => onDelete(substance.id)}><Trash2 className="h-4 w-4 text-muted-foreground" /></Button></TableCell>
