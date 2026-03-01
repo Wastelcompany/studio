@@ -71,14 +71,16 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col overflow-hidden">
-        <DialogHeader className="shrink-0">
-          <DialogTitle>Onderbouwing voor Categorie {categoryId} ({categoryType.toUpperCase()})</DialogTitle>
-          <DialogDescription>
-            De stof '{substance.productName}' is geclassificeerd in categorie {categoryId} ({category?.name}) op basis van de volgende gegevens:
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex-grow overflow-hidden mt-4 border rounded-md relative">
+      <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col overflow-hidden p-0">
+        <div className="p-6 pb-2 shrink-0">
+          <DialogHeader>
+            <DialogTitle>Onderbouwing voor Categorie {categoryId} ({categoryType.toUpperCase()})</DialogTitle>
+            <DialogDescription>
+              De stof '{substance.productName}' is geclassificeerd op basis van de volgende gegevens:
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+        <div className="flex-grow overflow-hidden m-6 mt-0 border rounded-md relative flex flex-col min-h-0">
           <ScrollArea className="h-full w-full">
             <Table>
               <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
@@ -98,7 +100,7 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
                 ) : (
                   <TableRow>
                     <TableCell colSpan={2} className="text-center text-muted-foreground py-8">
-                      Geen directe koppeling gevonden in de H-zinnen of als benoemde stof voor deze specifieke categorie.
+                      Geen directe koppeling gevonden voor deze categorie.
                     </TableCell>
                   </TableRow>
                 )}

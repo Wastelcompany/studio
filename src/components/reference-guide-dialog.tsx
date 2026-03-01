@@ -211,9 +211,6 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                           <TableHead className="text-right py-2">
                               <span className="text-[10px] font-bold uppercase">Hoog (t)</span>
                           </TableHead>
-                          <TableHead className="text-right py-2">
-                              <span className="text-[10px] font-bold uppercase">ARIE (t)</span>
-                          </TableHead>
                       </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -224,12 +221,11 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                                   <TableCell className="text-muted-foreground text-xs">{sub.hPhrase.replace('CAS: ', '')}</TableCell>
                                   <TableCell className="text-right font-mono text-xs">{sub.low.toLocaleString('nl-NL')}</TableCell>
                                   <TableCell className="text-right font-mono text-xs">{sub.high.toLocaleString('nl-NL')}</TableCell>
-                                  <TableCell className="text-right font-mono font-bold text-primary text-xs">{sub.arie ? sub.arie.toLocaleString('nl-NL') : '-'}</TableCell>
                               </TableRow>
                           ))
                       ) : (
                           <TableRow>
-                              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Geen stoffen gevonden.</TableCell>
+                              <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Geen stoffen gevonden.</TableCell>
                           </TableRow>
                       )}
                   </TableBody>

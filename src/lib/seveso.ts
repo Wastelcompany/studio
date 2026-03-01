@@ -106,7 +106,7 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   "O3": { low: 50, high: 200 },
 };
 
-// ARIE Thresholds (Updated as per user instructions)
+// ARIE Thresholds - EXPLICITLY UPDATED BASED ON USER REQUIREMENTS
 export const ARIE_THRESHOLDS: Record<string, number> = {
   "H1": 1.5,
   "H2": 15,
@@ -120,14 +120,14 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
   "P5c": 1500,
   "P6a": 3,
   "P6b": 15,
-  "P3a": 5,
-  "P3b": 50,
-  "P4": 5,
-  "P7": 0.05,
-  "P8": 1,
-  "O1": 0.5,
-  "O2": 0.05,
-  "O3": 0.5,
+  "P3a": 50,
+  "P3b": 500,
+  "P4": 50,
+  "P7": 50,
+  "P8": 50,
+  "O1": 100,
+  "O2": 100,
+  "O3": 50,
   "ARIE-O4": 0.05,
 };
 
@@ -322,5 +322,5 @@ export const ARIE_REFERENCE_GUIDE_DATA = Object.keys(ARIE_THRESHOLDS).map(catId 
     return { categoryId: cat.displayId || cat.id, categoryName: cat.name, hPhrase: hPhrases || 'Specifiek', threshold: ARIE_THRESHOLDS[catId], group: cat.group };
 }).filter((item): item is NonNullable<typeof item> => item !== null).sort((a,b) => (groupOrder[a.group as keyof typeof groupOrder] - groupOrder[b.group as keyof typeof groupOrder]) || a.categoryId.localeCompare(b.categoryId, undefined, {numeric: true}));
 
-export const SEVESO_NAMED_REFERENCE = Object.values(NAMED_SUBSTANCES).map(s => ({ categoryId: s.name, hPhrase: s.cas, low: s.threshold.low, high: s.threshold.high, arie: s.arieThreshold || s.threshold.low }));
-export const ARIE_NAMED_REFERENCE = Object.values(NAMED_SUBSTANCES).map(s => ({ categoryId: s.name, hPhrase: s.cas, threshold: s.arieThreshold || s.threshold.low }));
+export const SEVESO_NAMED_REFERENCE = Object.values(NAMED_SUBSTANCES).map(s => ({ categoryId: s.name, hPhrase: `CAS: ${s.cas}`, low: s.threshold.low, high: s.threshold.high, arie: s.arieThreshold || s.threshold.low }));
+export const ARIE_NAMED_REFERENCE = Object.values(NAMED_SUBSTANCES).map(s => ({ categoryId: s.name, hPhrase: `CAS: ${s.cas}`, threshold: s.arieThreshold || s.threshold.low }));

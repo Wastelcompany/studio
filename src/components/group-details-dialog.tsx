@@ -67,14 +67,16 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
-        <DialogHeader className="shrink-0">
-          <DialogTitle>Details voor: {group.name} ({type.toUpperCase()})</DialogTitle>
-          <DialogDescription>
-            De volgende stoffen dragen bij aan de sommatie voor deze groep. Het totaal is {Math.round(group.totalRatio * 100)}%.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex-grow overflow-hidden mt-4 border rounded-md relative">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden p-0">
+        <div className="p-6 pb-2 shrink-0">
+          <DialogHeader>
+            <DialogTitle>Details voor: {group.name} ({type.toUpperCase()})</DialogTitle>
+            <DialogDescription>
+              De volgende stoffen dragen bij aan de sommatie voor deze groep. Het totaal is {Math.round(group.totalRatio * 100)}%.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+        <div className="flex-grow overflow-hidden m-6 mt-0 border rounded-md relative flex flex-col min-h-0">
           <ScrollArea className="h-full w-full">
             <Table>
               <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
