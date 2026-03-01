@@ -106,26 +106,23 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   "O3": { low: 50, high: 200 },
 };
 
-// ARIE Thresholds (Arbeidsomstandighedenbesluit)
-// Final requested values based on Regeling ARIE and User Feedback:
-// P5a: 3, P5b: 15, P5c: 1500, P6a: 3, P6b: 15
-// Note: P1b "vervalt" in ARIE context for the summation.
+// ARIE Thresholds (Updated as per user instructions)
 export const ARIE_THRESHOLDS: Record<string, number> = {
-  "H1": 0.05,
-  "H2": 0.2,
-  "H3": 1,
-  "H4": 50,
+  "H1": 1.5,
+  "H2": 15,
+  "H3": 15,
+  "H4": 15,
   "ARIE-CMR": 0.5,
-  "P1a": 0.05,
-  "P2": 5,
-  "P3a": 5,
-  "P3b": 50,
-  "P4": 5,
+  "P1a": 3,
+  "P2": 3,
   "P5a": 3,
   "P5b": 15,
   "P5c": 1500,
   "P6a": 3,
   "P6b": 15,
+  "P3a": 5,
+  "P3b": 50,
+  "P4": 5,
   "P7": 0.05,
   "P8": 1,
   "O1": 0.5,

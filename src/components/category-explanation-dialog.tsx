@@ -71,15 +71,15 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Onderbouwing voor Categorie {categoryId} ({categoryType.toUpperCase()})</DialogTitle>
           <DialogDescription>
             De stof '{substance.productName}' is geclassificeerd in categorie {categoryId} ({category?.name}) op basis van de volgende gegevens:
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-grow overflow-hidden mt-4 border rounded-md">
-          <ScrollArea className="h-[50vh]">
+        <div className="flex-grow overflow-hidden mt-4 border rounded-md relative">
+          <ScrollArea className="h-full w-full">
             <Table>
               <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                 <TableRow>
