@@ -60,7 +60,7 @@ export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
   H242: 'Brandgevaar bij verwarming',
   H250: 'Vat spontaan vlam bij blootstelling aan lucht',
   H260: 'In contact met water komen ontvlambare gassen vrij die spontaan kunnen ontbranden',
-  H270: 'Kan brand veroorzaken of bevorderen; oxiderend',
+  H270: 'Kan brand verooraken of bevorderen; oxiderend',
   H271: 'Kan brand of ontploffingen veroorzaken; sterk oxiderend',
   H272: 'Kan brand bevorderen; oxiderend',
   H300: 'Dodelijk bij inslikken',
@@ -108,6 +108,7 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
 };
 
 // ARIE Thresholds (Wettelijk bepaald)
+// Note: P5a is verwijderd uit deze lijst op verzoek.
 export const ARIE_THRESHOLDS: Record<string, number> = {
   "H1": 0.05,
   "H2": 0.2,
@@ -120,7 +121,6 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
   "P3a": 5,
   "P3b": 50,
   "P4": 5,
-  "P5a": 1,
   "P5b": 10,
   "P5c": 100,
   "P6a": 0.05,
@@ -180,13 +180,7 @@ export function getArieThreshold(catId: string): number | null {
   const named = Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
   if (named) return named.arieThreshold ?? named.threshold.low;
   
-  // 3. Fallback to Seveso low threshold if applicable
-  if (SEVESO_THRESHOLDS[catId]) {
-      // Specifically for P5c, the Seveso threshold is 5000, but ARIE is usually 100.
-      // We've defined it in ARIE_THRESHOLDS, so this fallback is for other categories.
-      return SEVESO_THRESHOLDS[catId].low;
-  }
-  
+  // No fallback to Seveso low threshold if we want strict ARIE definitions.
   return null;
 }
 
@@ -203,7 +197,8 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
           sevesoCategoryIds.add(catId);
         }
         // ARIE indeling
-        if (getArieThreshold(catId) !== null || catId.startsWith('ARIE-')) {
+        const arieThreshold = getArieThreshold(catId);
+        if (arieThreshold !== null || catId.startsWith('ARIE-')) {
           arieCategoryIds.add(catId);
         }
       });
@@ -281,7 +276,7 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
     ...config,
     totalRatio: (sevesoGroupTotals[config.group] || 0),
     isExceeded: (sevesoGroupTotals[config.group] || 0) >= 1,
-    categoryContributions: {}, // Optional for breakdown
+    categoryContributions: {},
   }));
   
   const arieSummationGroups: SummationGroup[] = SUMMATION_GROUPS_CONFIG.map(config => ({
