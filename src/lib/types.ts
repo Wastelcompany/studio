@@ -55,6 +55,9 @@ export interface SummationGroup {
   group: 'health' | 'physical' | 'environment' | 'other' | 'named';
   totalRatio: number;
   isExceeded: boolean;
+  // NEW: A breakdown of which categories contributed to the totalRatio
+  // Key is the category ID (e.g., 'P5a', 'H3'), value is the sum of ratios for that category
+  categoryContributions: Record<string, number>;
 }
 
 export interface UserProfile {
