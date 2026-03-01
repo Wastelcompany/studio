@@ -107,7 +107,7 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   "O3": { low: 50, high: 200 },
 };
 
-// ARIE Thresholds (Arbeidsomstandighedenbesluit)
+// ARIE Thresholds (Arbeidsomstandighedenbesluit + Tauw Specifics)
 export const ARIE_THRESHOLDS: Record<string, number> = {
   "H1": 0.05,
   "H2": 0.2,
@@ -120,10 +120,10 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
   "P3a": 5,
   "P3b": 50,
   "P4": 5,
-  "P5a": 1,
-  "P5b": 3,      // Gecorrigeerd naar 3 ton op basis van gebruikerslijst
-  "P5c": 15,     // Gecorrigeerd naar 15 ton op basis van gebruikerslijst
-  "P6a": 1500,   // Gecorrigeerd naar 1500 ton op basis van gebruikerslijst
+  "P5a": 1,      // Zeer licht ontvlambaar
+  "P5b": 3,      // Licht ontvlambaar (Gecorrigeerd naar 3t)
+  "P5c": 15,     // Ontvlambaar (Gecorrigeerd naar 15t)
+  "P6a": 1500,   // Explosief/Zelfontledend (Gecorrigeerd naar 1500t)
   "P6b": 1,
   "P7": 0.05,
   "P8": 1,
@@ -191,13 +191,12 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
   hCodes.forEach(code => {
     if (H_PHRASE_MAPPING[code]) {
       H_PHRASE_MAPPING[code].forEach(catId => {
-        // Seveso
+        // Seveso indeling
         if (SEVESO_THRESHOLDS[catId]) {
           sevesoCategoryIds.add(catId);
         }
-        // ARIE
-        const arieThreshold = getArieThreshold(catId);
-        if (arieThreshold !== null) {
+        // ARIE indeling (alleen als drempelwaarde bestaat)
+        if (getArieThreshold(catId) !== null) {
           arieCategoryIds.add(catId);
         }
       });
@@ -315,9 +314,10 @@ export const SEVESO_CATEGORY_REFERENCE = Object.keys(SEVESO_THRESHOLDS).map(catI
 
 export const ARIE_REFERENCE_GUIDE_DATA = Object.keys(ARIE_THRESHOLDS).map(catId => {
     const cat = ALL_CATEGORIES[catId];
+    if (!cat) return null;
     const hPhrases = Object.entries(H_PHRASE_MAPPING).filter(([_, cats]) => cats.includes(catId)).map(([h]) => h).join(', ');
     return { categoryId: cat.displayId || cat.id, categoryName: cat.name, hPhrase: hPhrases || 'Specifiek', threshold: ARIE_THRESHOLDS[catId] };
-}).sort((a,b) => a.categoryId.localeCompare(b.categoryId, undefined, {numeric: true}));
+}).filter((item): item is NonNullable<typeof item> => item !== null).sort((a,b) => a.categoryId.localeCompare(b.categoryId, undefined, {numeric: true}));
 
 export const SEVESO_NAMED_REFERENCE = Object.values(NAMED_SUBSTANCES).map(s => ({ categoryId: s.name, hPhrase: s.cas, low: s.threshold.low, high: s.threshold.high, arie: s.arieThreshold || s.threshold.low }));
 export const ARIE_NAMED_REFERENCE = Object.values(NAMED_SUBSTANCES).map(s => ({ categoryId: s.name, hPhrase: s.cas, threshold: s.arieThreshold || s.threshold.low }));
