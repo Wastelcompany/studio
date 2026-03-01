@@ -6,7 +6,7 @@ import { FlaskConical, Flame, Leaf, AlertTriangle, Atom } from 'lucide-react';
 
 /**
  * @fileOverview Seveso III and ARIE classification and summation logic.
- * Consistent with the reference guide and legal requirements.
+ * Consistent with the reference guide and legal requirements (Tauw/NLA).
  */
 
 // Master list of all hazard categories
@@ -22,9 +22,9 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   "P3a": { id: 'P3a', name: 'Ontvlambare aerosolen, cat 1 & 2 (ontvlambaar)', group: 'physical', displayId: 'P3a' },
   "P3b": { id: 'P3b', name: 'Ontvlambare aerosolen, cat 1 & 2 (overig)', group: 'physical', displayId: 'P3b' },
   "P4": { id: 'P4', name: 'Oxiderende gassen, categorie 1', group: 'physical', displayId: 'P4' },
-  "P5a": { id: 'P5a', name: 'Ontvlambare vloeistoffen, categorie 1', group: 'physical', displayId: 'P5a' },
-  "P5b": { id: 'P5b', name: 'Ontvlambare vloeistoffen, categorie 2 en 3 (onder druk/hoge T)', group: 'physical', displayId: 'P5b' },
-  "P5c": { id: 'P5c', name: 'Ontvlambare vloeistoffen, categorie 2 en 3 (overig)', group: 'physical', displayId: 'P5c' },
+  "P5a": { id: 'P5a', name: 'Ontvlambare vloeistoffen, categorie 1 (Zeer licht)', group: 'physical', displayId: 'P5a' },
+  "P5b": { id: 'P5b', name: 'Ontvlambare vloeistoffen, categorie 2 en 3 (Licht)', group: 'physical', displayId: 'P5b' },
+  "P5c": { id: 'P5c', name: 'Ontvlambare vloeistoffen, categorie 2 en 3 (Overig)', group: 'physical', displayId: 'P5c' },
   "P6a": { id: 'P6a', name: 'Zelfontledende stoffen & Organische peroxiden, Type A/B', group: 'physical', displayId: 'P6a' },
   "P6b": { id: 'P6b', name: 'Zelfontledende stoffen & Organische peroxiden, Type C,D,E,F', group: 'physical', displayId: 'P6b' },
   "P7": { id: 'P7', name: 'Pyrofore vloeistoffen en vaste stoffen, categorie 1', group: 'physical', displayId: 'P7' },
@@ -82,7 +82,7 @@ export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
   EUH029: 'Vormt giftig gas in contact met water',
 };
 
-// Seveso III Thresholds
+// Seveso III Thresholds (Annex I, Part 1)
 export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = {
   "H1": { low: 5, high: 20 },
   "H2": { low: 50, high: 200 },
@@ -107,7 +107,7 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   "O3": { low: 50, high: 200 },
 };
 
-// ARIE Thresholds (Wettelijk bepaald)
+// ARIE Thresholds (Arbeidsomstandighedenbesluit)
 export const ARIE_THRESHOLDS: Record<string, number> = {
   "H1": 0.05,
   "H2": 0.2,
@@ -120,9 +120,9 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
   "P3a": 5,
   "P3b": 50,
   "P4": 5,
-  "P5a": 1,   // Toegevoegd: Zeer licht ontvlambaar
-  "P5b": 10,  // Licht ontvlambaar
-  "P5c": 100, // Ontvlambaar
+  "P5a": 1,   // Zeer licht ontvlambaar (H224)
+  "P5b": 10,  // Licht ontvlambaar (H225)
+  "P5c": 100, // Ontvlambaar (H226)
   "P6a": 0.05,
   "P6b": 1,
   "P7": 0.05,
@@ -195,7 +195,7 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
         if (SEVESO_THRESHOLDS[catId]) {
           sevesoCategoryIds.add(catId);
         }
-        // ARIE: Alleen toevoegen als er een drempelwaarde is.
+        // ARIE
         const arieThreshold = getArieThreshold(catId);
         if (arieThreshold !== null) {
           arieCategoryIds.add(catId);
