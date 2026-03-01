@@ -70,7 +70,7 @@ export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
   H314: 'Veroorzaakt ernstige brandwonden en oogletsel',
   H330: 'Dodelijk bij inademing',
   H331: 'Giftig bij inademing',
-  H340: 'Kan genetische defecten veroorzaken',
+  H340: 'Kan genetische defecten verooraken',
   H350: 'Kan kanker veroorzaken',
   H360: 'Kan de vruchtbaarheid of het ongeboren kind schaden',
   H370: 'Veroorzaakt schade aan organen',
@@ -120,7 +120,9 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
   "P3a": 5,
   "P3b": 50,
   "P4": 5,
-  "P5b": 10, // Re-added as requested
+  "P5a": 1,   // Toegevoegd: Zeer licht ontvlambaar
+  "P5b": 10,  // Licht ontvlambaar
+  "P5c": 100, // Ontvlambaar
   "P6a": 0.05,
   "P6b": 1,
   "P7": 0.05,
