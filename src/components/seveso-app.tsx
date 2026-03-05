@@ -83,7 +83,7 @@ export default function SevesoApp() {
         const stats = calculateSummations(localInventory, thresholdMode);
         const primaryColor = [22, 80, 91]; // Deep Teal (#16505B)
         const dateStr = format(new Date(), 'd-M-yyyy');
-        const rapportNummer = `${user.uid}.${type === 'full' ? 'SERIE' : 'SEV'}.${format(new Date(), 'yyMMdd')}`;
+        const rapportNummer = `${user.uid.substring(0, 10)}.${type === 'full' ? 'SERIE' : 'SEV'}.${format(new Date(), 'yyMMdd')}`;
 
         // --- PAGINA 1: VOORBLAD ---
         // Header Balk
@@ -110,12 +110,12 @@ export default function SevesoApp() {
         doc.setTextColor(60, 60, 60);
         doc.text("Bedrijf:", 20, 115);
         doc.setFont('helvetica', 'bold');
-        doc.text(selectedCompany.name, 40, 115);
+        doc.text(selectedCompany.name, 45, 115);
         
         doc.setFont('helvetica', 'normal');
         doc.text("Locatie:", 20, 123);
         doc.setFont('helvetica', 'bold');
-        doc.text(selectedCompany.address || 'Geen adres opgegeven', 40, 123);
+        doc.text(selectedCompany.address || 'Geen adres opgegeven', 45, 123);
 
         // Footer Metadata op Voorblad
         doc.setFont('helvetica', 'bold');
@@ -124,10 +124,8 @@ export default function SevesoApp() {
         doc.text(`Datum: ${dateStr}`, 20, 275);
         doc.text(`Rapportnummer: ${rapportNummer}`, 20, 282);
 
-        // --- PAGINA 2: INHOUD ---
+        // --- PAGINA 2: SEVESO ANALYSE ---
         doc.addPage();
-        
-        // Hoofdstuk 1: Seveso
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(18);
         doc.setTextColor(22, 80, 91);
@@ -143,14 +141,12 @@ export default function SevesoApp() {
             head: [['Gevarengroep', 'Sommatie Ratio (%)', 'Status']],
             body: stats.summationGroups.map(g => [
                 g.name, 
-                `${Math.round(g.totalRatio * 100)}%`, 
+                `${g.totalRatio.toFixed(2)} / ${Math.round(g.totalRatio * 100)}%`, 
                 g.totalRatio >= 1 ? 'DREMPEL OVERSCHREDEN' : 'Binnen drempel'
             ]),
             headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold' },
             styles: { fontSize: 10, cellPadding: 4 },
-            columnStyles: {
-                2: { fontStyle: 'bold' }
-            },
+            columnStyles: { 2: { fontStyle: 'bold' } },
             didParseCell: (data) => {
                 if (data.section === 'body' && data.column.index === 2 && data.cell.text[0] === 'DREMPEL OVERSCHREDEN') {
                     data.cell.styles.textColor = [190, 0, 0];
@@ -158,41 +154,144 @@ export default function SevesoApp() {
             }
         });
 
-        let currentY = (doc as any).lastAutoTable.finalY + 20;
-
-        // Hoofdstuk 2: ARIE (indien van toepassing)
+        // --- PAGINA 3: ARIE ANALYSE ---
         if (type === 'full') {
-            if (currentY > 230) { doc.addPage(); currentY = 30; }
-            
+            doc.addPage();
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(18);
             doc.setTextColor(22, 80, 91);
-            doc.text("2. ARIE Sommatieoverzicht", 20, currentY);
+            doc.text("2. ARIE Sommatieoverzicht", 20, 30);
             
             autoTable(doc, {
-                startY: currentY + 10,
+                startY: 45,
                 head: [['Gevarengroep', 'Ratio (%)', 'Status']],
                 body: stats.arieSummationGroups.map(g => [
                     g.name, 
-                    `${Math.round(g.totalRatio * 100)}%`, 
+                    `${g.totalRatio.toFixed(2)} / ${Math.round(g.totalRatio * 100)}%`, 
                     g.totalRatio >= 1 ? 'ARIE PLICHTIG' : 'Niet ARIE plichtig'
                 ]),
                 headStyles: { fillColor: [50, 50, 50], textColor: [255, 255, 255], fontStyle: 'bold' },
                 styles: { fontSize: 10, cellPadding: 4 },
-                columnStyles: {
-                    2: { fontStyle: 'bold' }
+                columnStyles: { 2: { fontStyle: 'bold' } },
+                didParseCell: (data) => {
+                    if (data.section === 'body' && data.column.index === 2 && data.cell.text[0] === 'ARIE PLICHTIG') {
+                        data.cell.styles.textColor = [190, 0, 0];
+                    }
                 }
             });
-            
-            currentY = (doc as any).lastAutoTable.finalY + 20;
         }
 
-        // Hoofdstuk 3: Stoffenoverzicht
+        // --- PAGINA 4: RESULTATEN (Visueel) ---
         doc.addPage();
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(18);
         doc.setTextColor(22, 80, 91);
-        doc.text(`${type === 'full' ? '3' : '2'}. Gedetailleerd Stoffenoverzicht`, 20, 30);
+        doc.text("3. Resultaten", 20, 30);
+
+        // Status Kaarten
+        const cardWidth = 85;
+        const cardHeight = 35;
+        
+        // Seveso Card
+        doc.setDrawColor(230, 230, 230);
+        doc.roundedRect(20, 45, cardWidth, cardHeight, 3, 3, 'S');
+        doc.setFontSize(10);
+        doc.setTextColor(120, 120, 120);
+        doc.text("Seveso Status", 30, 55);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        const sevStatusColor = stats.overallStatus === 'Geen' ? [22, 80, 91] : [190, 0, 0];
+        doc.setTextColor(sevStatusColor[0], sevStatusColor[1], sevStatusColor[2]);
+        doc.text(stats.overallStatus === 'Geen' ? 'Geen Seveso-inrichting' : `${stats.overallStatus}-inrichting`, 30, 68);
+
+        // ARIE Card
+        doc.setDrawColor(230, 230, 230);
+        doc.roundedRect(20 + cardWidth + 10, 45, cardWidth, cardHeight, 3, 3, 'S');
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(120, 120, 120);
+        doc.text("ARIE Status", 20 + cardWidth + 20, 55);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        const arieStatusColor = stats.arieExceeded ? [190, 0, 0] : [22, 80, 91];
+        doc.setTextColor(arieStatusColor[0], arieStatusColor[1], arieStatusColor[2]);
+        doc.text(stats.arieExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig', 20 + cardWidth + 20, 68);
+
+        // Sommatie Progress Bars
+        doc.setFontSize(14);
+        doc.setTextColor(22, 80, 91);
+        doc.text("Seveso Sommatie", 20, 95);
+        doc.text("ARIE Sommatie", 115, 95);
+
+        const drawProgress = (x: number, y: number, label: string, ratio: number, isArie = false) => {
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(80, 80, 80);
+            doc.text(label, x, y);
+            doc.setFont('helvetica', 'bold');
+            const exceeded = ratio >= 1;
+            doc.setTextColor(exceeded ? 190 : 80, exceeded ? 0 : 80, exceeded ? 0 : 80);
+            doc.text(`${ratio.toFixed(2)} / ${Math.round(ratio * 100)}%`, x + 65, y, { align: 'right' });
+            
+            // Background
+            doc.setFillColor(245, 245, 245);
+            doc.rect(x, y + 2, 75, 2, 'F');
+            // Foreground
+            const color = exceeded ? [190, 0, 0] : (isArie ? [50, 50, 50] : [22, 80, 91]);
+            doc.setFillColor(color[0], color[1], color[2]);
+            doc.rect(x, y + 2, Math.min(ratio * 75, 75), 2, 'F');
+        };
+
+        stats.summationGroups.forEach((g, i) => drawProgress(20, 105 + (i * 15), g.name, g.totalRatio));
+        stats.arieSummationGroups.forEach((g, i) => drawProgress(115, 105 + (i * 15), g.name, g.totalRatio, true));
+
+        // --- PAGINA 5: CONCLUSIE ---
+        doc.addPage();
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.setTextColor(22, 80, 91);
+        doc.text("4. Conclusie", 20, 30);
+
+        // 4.1 Seveso
+        doc.setFontSize(12);
+        doc.text("4.1 Seveso", 20, 45);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        
+        let sevText = "";
+        if (stats.overallStatus === 'Geen') {
+            sevText = "De inrichting wordt niet aangemerkt als een Seveso-inrichting. De sommatie van de gevaarlijke stoffen blijft voor alle categorieën onder de drempelwaarden.";
+        } else {
+            const critG = stats.summationGroups.find(g => g.name === stats.criticalGroup);
+            sevText = `De inrichting wordt op basis van de vigerende Seveso III-richtlijn aangemerkt als een ${stats.overallStatus}-inrichting. Voor de gevarengroep ${stats.criticalGroup} bedraagt het resultaat van de sommatie ${critG?.totalRatio.toFixed(2)} (${Math.round((critG?.totalRatio || 0) * 100)}%), waarmee de wettelijke drempelwaarde van 1.00 wordt overschreden.\n\nOmdat de Seveso-regeling primair is ontworpen om zware ongevallen met gevaarlijke stoffen te voorkomen en de gevolgen daarvan voor de menselijke gezondheid en het milieu te beperken, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen en rapportageverplichtingen wettelijk verplicht zijn.`;
+        }
+        doc.text(doc.splitTextToSize(sevText, 170), 20, 55);
+
+        // 4.2 ARIE
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(22, 80, 91);
+        doc.text("4.2 ARIE", 20, 105);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+
+        let arieText = "";
+        if (!stats.arieExceeded) {
+            arieText = "De inrichting wordt niet aangemerkt als ARIE-plichtig op basis van de vigerende Arbo-wetgeving. De sommatie van de gevaarlijke stoffen blijft voor alle categorieën onder de drempelwaarden.";
+        } else {
+            const critA = stats.arieSummationGroups.find(g => g.name === stats.criticalArieGroup);
+            arieText = `De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Voor de gevarengroep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${critA?.totalRatio.toFixed(2)} (${Math.round((critA?.totalRatio || 0) * 100)}%), waarmee de wettelijke drempelwaarde van 1.00 wordt overschreden.\n\nOmdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen de gevolgen van zware ongevallen met gevaarlijke stoffen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn conform het Arbobesluit. Voor de hieruit voortvloeiende actiepunten wordt verwezen naar de inventarisatie in Hoofdstuk 5.`;
+        }
+        doc.text(doc.splitTextToSize(arieText, 170), 20, 115);
+
+        // --- PAGINA 6: STOFFENLIST ---
+        doc.addPage();
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.setTextColor(22, 80, 91);
+        doc.text("5. Gedetailleerd Stoffenoverzicht", 20, 30);
         
         autoTable(doc, {
             startY: 40,
