@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -11,8 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Users, UserCog, Building2, Briefcase, BrainCircuit, BarChart3, Plus, ShieldCheck, ShieldAlert as ShieldAlertIcon } from "lucide-react";
-import { format } from 'date-fns';
+import { Loader2, LogOut, Users, UserCog, Building2, Briefcase, BrainCircuit, BarChart3, Plus, ShieldCheck } from "lucide-react";
+import { format, startOfMonth } from 'date-fns';
+import { nl } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -53,7 +53,7 @@ export default function AdminPage() {
 
   const aiLogsQuery = useMemoFirebase(() => {
     if (!user || !isAdmin) return null;
-    return query(collection(db, 'ai_usage_logs'), orderBy('timestamp', 'desc'), limit(100));
+    return query(collection(db, 'ai_usage_logs'), orderBy('timestamp', 'desc'), limit(500));
   }, [user, isAdmin, db]);
 
   const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
@@ -62,13 +62,33 @@ export default function AdminPage() {
   const { data: aiLogs, isLoading: isLoadingAiLogs } = useCollection<any>(aiLogsQuery);
 
   const aiStats = useMemo(() => {
-    if (!aiLogs) return { totalCalls: 0, estimatedCost: 0, extractionCount: 0, kvkCount: 0 };
-    return aiLogs.reduce((acc, log) => ({
+    if (!aiLogs) return { totalCalls: 0, estimatedCost: 0, extractionCount: 0, kvkCount: 0, monthlyBreakdown: [] };
+    
+    const totals = aiLogs.reduce((acc, log) => ({
       totalCalls: acc.totalCalls + 1,
       estimatedCost: acc.estimatedCost + (log.estimatedCost || 0),
       extractionCount: acc.extractionCount + (log.type === 'SDS_EXTRACTION' ? 1 : 0),
       kvkCount: acc.kvkCount + (log.type === 'KVK_SEARCH' ? 1 : 0),
     }), { totalCalls: 0, estimatedCost: 0, extractionCount: 0, kvkCount: 0 });
+
+    // Group costs by month
+    const monthlyGroups: Record<string, number> = {};
+    aiLogs.forEach(log => {
+      if (!log.timestamp?.toDate) return;
+      const date = log.timestamp.toDate();
+      const monthKey = format(startOfMonth(date), 'yyyy-MM');
+      monthlyGroups[monthKey] = (monthlyGroups[monthKey] || 0) + (log.estimatedCost || 0);
+    });
+
+    const monthlyBreakdown = Object.entries(monthlyGroups)
+      .map(([key, cost]) => ({
+        key,
+        display: format(new Date(key), 'MMMM yyyy', { locale: nl }),
+        cost
+      }))
+      .sort((a, b) => b.key.localeCompare(a.key));
+
+    return { ...totals, monthlyBreakdown };
   }, [aiLogs]);
 
   const handleLogout = () => {
@@ -122,7 +142,7 @@ export default function AdminPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Totale Aanroepen</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Totaal Aanroepen</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{aiStats.totalCalls}</div>
@@ -130,7 +150,7 @@ export default function AdminPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Geschatte Kosten</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Totaal Kosten (est.)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${aiStats.estimatedCost.toFixed(2)}</div>
@@ -154,44 +174,78 @@ export default function AdminPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" /> Recent Verbruik
-          </CardTitle>
-          <CardDescription>Overzicht van de laatste 100 AI-interacties.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[400px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" /> Kosten per Maand
+            </CardTitle>
+            <CardDescription>Overzicht van AI-kosten per kalendermaand.</CardDescription>
+          </CardHeader>
+          <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Tijdstip</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead className="text-right">Kosten (est.)</TableHead>
+                  <TableHead>Maand</TableHead>
+                  <TableHead className="text-right">Kosten</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {aiLogs?.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="text-xs">
-                      {log.timestamp?.toDate ? format(log.timestamp.toDate(), 'dd-MM-yyyy HH:mm:ss') : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[10px]">
-                        {log.type === 'SDS_EXTRACTION' ? 'SDS Extractie' : 'KVK Zoek'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-[10px] text-muted-foreground font-mono">{log.model}</TableCell>
-                    <TableCell className="text-right font-mono text-xs">${log.estimatedCost?.toFixed(3)}</TableCell>
+                {aiStats.monthlyBreakdown.map((m) => (
+                  <TableRow key={m.key}>
+                    <TableCell className="capitalize">{m.display}</TableCell>
+                    <TableCell className="text-right font-mono font-bold">${m.cost.toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
+                {aiStats.monthlyBreakdown.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-center py-4 text-muted-foreground text-xs">Geen verbruikshistorie.</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BrainCircuit className="h-5 w-5" /> Recent Verbruik
+            </CardTitle>
+            <CardDescription>De laatste 500 AI-interacties.</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="h-[400px]">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                  <TableRow>
+                    <TableHead>Tijdstip</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Model</TableHead>
+                    <TableHead className="text-right">Kosten</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {aiLogs?.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-xs">
+                        {log.timestamp?.toDate ? format(log.timestamp.toDate(), 'dd-MM-yyyy HH:mm') : '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px]">
+                          {log.type === 'SDS_EXTRACTION' ? 'SDS Extractie' : 'KVK Zoek'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-[10px] text-muted-foreground font-mono">{log.model}</TableCell>
+                      <TableCell className="text-right font-mono text-xs">${log.estimatedCost?.toFixed(3)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 
@@ -221,9 +275,9 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 p-4 md:p-8 flex flex-col">
-      <div className="max-w-7xl mx-auto space-y-6 w-full flex-grow flex flex-col">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+    <div className="min-h-screen bg-muted/30 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Beheercentrum</h1>
                 <p className="text-muted-foreground">Klanten, Vestigingen en AI-verbruik.</p>
@@ -231,8 +285,8 @@ export default function AdminPage() {
             <Button variant="outline" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4" /> Uitloggen</Button>
         </div>
 
-        <Tabs defaultValue="customers" className="w-full flex-grow flex flex-col min-h-0">
-            <TabsList className="grid w-full grid-cols-4 max-w-[600px] shrink-0">
+        <Tabs defaultValue="customers" className="w-full">
+            <TabsList className="grid w-full grid-cols-4 max-w-[600px]">
                 <TabsTrigger value="customers" className="flex items-center gap-2">
                     <Briefcase className="h-4 w-4" /> Klanten
                 </TabsTrigger>
@@ -247,20 +301,21 @@ export default function AdminPage() {
                 </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="customers" className="mt-6 flex-grow flex flex-col min-h-0">
-                <Card className="flex-grow flex flex-col min-h-0">
-                    <CardHeader className="flex flex-row items-center justify-between shrink-0">
+            <TabsContent value="customers" className="mt-6">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Klanten (Facturatie-entiteiten)</CardTitle>
                         <Button onClick={() => setIsCustomerDialogOpen(true)}><Plus className="mr-2 h-4 w-4" /> Klant Toevoegen</Button>
                     </CardHeader>
-                    <CardContent className="flex-grow min-h-0 p-0">
-                      <ScrollArea className="h-full">
+                    <CardContent className="p-0">
+                      <ScrollArea className="h-[500px]">
                         <Table>
-                          <TableHeader className="sticky top-0 bg-background z-10">
+                          <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                             <TableRow>
                               <TableHead>Klantnaam</TableHead>
                               <TableHead>KVK</TableHead>
                               <TableHead>Adres</TableHead>
+                              <TableHead>Aangemaakt op</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -269,6 +324,9 @@ export default function AdminPage() {
                                 <TableCell className="font-medium">{customer.name}</TableCell>
                                 <TableCell>{customer.kvkNumber || '-'}</TableCell>
                                 <TableCell className="text-muted-foreground text-xs">{customer.address || '-'}</TableCell>
+                                <TableCell className="text-xs">
+                                  {customer.createdAt?.toDate ? format(customer.createdAt.toDate(), 'dd-MM-yyyy') : '-'}
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -278,15 +336,16 @@ export default function AdminPage() {
                 </Card>
             </TabsContent>
 
-            <TabsContent value="companies" className="mt-6 flex-grow flex flex-col min-h-0">
-                <Card className="flex-grow flex flex-col min-h-0">
-                    <CardHeader className="shrink-0">
+            <TabsContent value="companies" className="mt-6">
+                <Card>
+                    <CardHeader>
                         <CardTitle>Vestigingen / Bedrijven</CardTitle>
+                        <CardDescription>Overzicht van alle geregistreerde locaties.</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex-grow min-h-0 p-0">
-                      <ScrollArea className="h-full">
+                    <CardContent className="p-0">
+                      <ScrollArea className="h-[500px]">
                         <Table>
-                          <TableHeader className="sticky top-0 bg-background z-10">
+                          <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                             <TableRow>
                               <TableHead>Bedrijfsnaam</TableHead>
                               <TableHead>Klant</TableHead>
@@ -308,16 +367,16 @@ export default function AdminPage() {
                 </Card>
             </TabsContent>
 
-            <TabsContent value="users" className="mt-6 flex-grow flex flex-col min-h-0">
-                <Card className="flex-grow flex flex-col min-h-0">
-                    <CardHeader className="shrink-0">
+            <TabsContent value="users" className="mt-6">
+                <Card>
+                    <CardHeader>
                         <CardTitle>Gebruikersbeheer</CardTitle>
-                        <CardDescription>Beheer rollen en toegangsrechten.</CardDescription>
+                        <CardDescription>Beheer rollen en toegangsrechten voor alle gebruikers.</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex-grow min-h-0 p-0">
-                      <ScrollArea className="h-full">
+                    <CardContent className="p-0">
+                      <ScrollArea className="h-[500px]">
                         <Table>
-                          <TableHeader className="sticky top-0 bg-background z-10">
+                          <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                             <TableRow>
                               <TableHead>E-mail</TableHead>
                               <TableHead>Klantgroep</TableHead>
@@ -344,7 +403,7 @@ export default function AdminPage() {
                                 </TableCell>
                                 <TableCell className="text-right space-x-2">
                                   <Button size="sm" variant="outline" onClick={() => handleToggleAdmin(u)} disabled={u.email === 'post@wastelcompany.eu'}>
-                                    {u.role === 'admin' ? 'Verwijder Admin' : 'Maak Admin'}
+                                    {u.role === 'admin' ? 'Maak User' : 'Maak Admin'}
                                   </Button>
                                   <Button size="sm" variant={u.disabled ? 'default' : 'destructive'} onClick={() => handleToggleDisabled(u)} disabled={u.email === 'post@wastelcompany.eu'}>
                                     {u.disabled ? 'Activeer' : 'Blokkeer'}
@@ -359,7 +418,7 @@ export default function AdminPage() {
                 </Card>
             </TabsContent>
 
-            <TabsContent value="ai" className="mt-6 shrink-0">
+            <TabsContent value="ai" className="mt-6">
                 {renderAiUsageTab()}
             </TabsContent>
         </Tabs>
@@ -370,17 +429,17 @@ export default function AdminPage() {
           <DialogHeader>
             <DialogTitle>Klant Toevoegen</DialogTitle>
             <DialogDescription>
-              Voeg handmatig een nieuwe facturatie-entiteit toe.
+              Voeg handmatig een nieuwe facturatie-entiteit toe aan het systeem.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Klantnaam</Label>
-              <Input id="name" value={newCustomerName} onChange={(e) => setNewCustomerName(e.target.value)} placeholder="Bijv. Bedrijf BV" />
+              <Label htmlFor="name">Klantnaam (Juridische naam)</Label>
+              <Input id="name" value={newCustomerName} onChange={(e) => setNewCustomerName(e.target.value)} placeholder="Bijv. ChemSupply BV" />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="address">Adres</Label>
-              <Input id="address" value={newCustomerAddress} onChange={(e) => setNewCustomerAddress(e.target.value)} placeholder="Straat 1, Stad" />
+              <Label htmlFor="address">Factuuradres</Label>
+              <Input id="address" value={newCustomerAddress} onChange={(e) => setNewCustomerAddress(e.target.value)} placeholder="Straat 12, 1234 AB Stad" />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="kvk">KVK Nummer</Label>
@@ -391,7 +450,7 @@ export default function AdminPage() {
             <Button variant="outline" onClick={() => setIsCustomerDialogOpen(false)}>Annuleren</Button>
             <Button onClick={handleCreateCustomer} disabled={isCreatingCustomer || !newCustomerName}>
               {isCreatingCustomer ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : null}
-              Toevoegen
+              Klant Opslaan
             </Button>
           </DialogFooter>
         </DialogContent>
