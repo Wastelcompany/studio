@@ -50,7 +50,7 @@ export default function HistoryDialog({ isOpen, onOpenChange, substance, company
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md h-[70vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-md h-[80vh] flex flex-col p-0 overflow-hidden">
         <div className="p-6 shrink-0">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">

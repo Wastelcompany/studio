@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -76,50 +75,99 @@ export default function SevesoApp() {
     try {
         const doc = new jsPDF('p', 'mm', 'a4');
         const stats = calculateSummations(localInventory, thresholdMode);
+        const primaryColor = [22, 80, 91]; // Deep Teal
         
+        // Header
         doc.setFontSize(22);
         doc.setTextColor(22, 80, 91);
         doc.text(type === 'full' ? "Seveso & ARIE Rapport" : "Seveso Rapport", 20, 30);
+        
         doc.setFontSize(10);
         doc.setTextColor(80, 80, 80);
         doc.text(`Bedrijf: ${selectedCompany.name}`, 20, 40);
-        doc.text(`Datum: ${new Date().toLocaleDateString('nl-NL')}`, 20, 45);
+        doc.text(`Locatie: ${selectedCompany.address || 'Geen adres opgegeven'}`, 20, 45);
+        doc.text(`Datum: ${new Date().toLocaleDateString('nl-NL')}`, 20, 50);
+        doc.text(`Drempelwaarde-modus: ${thresholdMode === 'high' ? 'Hoge drempels' : 'Lage drempels'}`, 20, 55);
 
+        // Seveso Section
         doc.setFontSize(14);
         doc.setTextColor(22, 80, 91);
-        doc.text("Seveso III Sommatieoverzicht", 20, 60);
+        doc.text("1. Seveso III Sommatieoverzicht", 20, 70);
+        
         autoTable(doc, {
-            startY: 65,
-            head: [['Gevarengroep', 'Ratio (%)', 'Status']],
-            body: stats.summationGroups.map(g => [g.name, `${Math.round(g.totalRatio * 100)}%`, g.totalRatio >= 1 ? 'DREMPEL OVERSCHREDEN' : 'Binnen drempel']),
-            headStyles: { fillColor: [22, 80, 91] },
+            startY: 75,
+            head: [['Gevarengroep', 'Sommatie Ratio (%)', 'Status']],
+            body: stats.summationGroups.map(g => [
+                g.name, 
+                `${Math.round(g.totalRatio * 100)}%`, 
+                g.totalRatio >= 1 ? 'DREMPEL OVERSCHREDEN' : 'Binnen drempel'
+            ]),
+            headStyles: { fillColor: primaryColor },
+            styles: { fontSize: 9 },
+            columnStyles: {
+                2: { fontStyle: 'bold' }
+            },
+            didParseCell: (data) => {
+                if (data.section === 'body' && data.column.index === 2 && data.cell.text[0] === 'DREMPEL OVERSCHREDEN') {
+                    data.cell.styles.textColor = [190, 0, 0];
+                }
+            }
         });
 
+        const lastY = (doc as any).lastAutoTable.finalY || 120;
+        
+        // ARIE Section
         if (type === 'full') {
-            const lastY = (doc as any).lastAutoTable.finalY || 120;
-            doc.text("ARIE Sommatieoverzicht", 20, lastY + 15);
+            doc.setFontSize(14);
+            doc.setTextColor(22, 80, 91);
+            doc.text("2. ARIE Sommatieoverzicht", 20, lastY + 15);
+            
             autoTable(doc, {
                 startY: lastY + 20,
                 head: [['Gevarengroep', 'Ratio (%)', 'Status']],
-                body: stats.arieSummationGroups.map(g => [g.name, `${Math.round(g.totalRatio * 100)}%`, g.totalRatio >= 1 ? 'ARIE PLICHTIG' : 'Niet ARIE plichtig']),
+                body: stats.arieSummationGroups.map(g => [
+                    g.name, 
+                    `${Math.round(g.totalRatio * 100)}%`, 
+                    g.totalRatio >= 1 ? 'ARIE PLICHTIG' : 'Niet ARIE plichtig'
+                ]),
                 headStyles: { fillColor: [50, 50, 50] },
+                styles: { fontSize: 9 },
+                columnStyles: {
+                    2: { fontStyle: 'bold' }
+                }
             });
         }
 
+        // Inventory Section
         doc.addPage();
-        doc.text("Stoffenoverzicht", 20, 20);
+        doc.setFontSize(14);
+        doc.setTextColor(22, 80, 91);
+        doc.text("3. Gedetailleerd Stoffenoverzicht", 20, 20);
+        
         autoTable(doc, {
             startY: 25,
-            head: [['Stof', 'CAS', 'Voorraad (t)', 'Seveso Cat.', 'ARIE Cat.']],
-            body: localInventory.map(s => [s.productName, s.casNumber || '-', s.quantity.toFixed(2), s.sevesoCategoryIds.join(', '), s.arieCategoryIds.join(', ')]),
-            headStyles: { fillColor: [22, 80, 91] },
+            head: [['Stofnaam', 'CAS', 'Voorraad (t)', 'Seveso Cat.', 'ARIE Cat.']],
+            body: localInventory.map(s => [
+                s.productName, 
+                s.casNumber || '-', 
+                s.quantity.toFixed(2), 
+                s.sevesoCategoryIds.join(', '), 
+                s.arieCategoryIds.join(', ')
+            ]),
+            headStyles: { fillColor: primaryColor },
+            styles: { fontSize: 8 },
+            columnStyles: {
+                0: { cellWidth: 60 },
+                1: { cellWidth: 30 },
+                2: { cellWidth: 25, halign: 'right' }
+            }
         });
 
         doc.save(generateFileName('pdf'));
-        toast({ title: "Rapport opgeslagen" });
+        toast({ title: "Rapport succesvol opgeslagen" });
     } catch (error) {
         console.error("PDF generation failed:", error);
-        toast({ variant: "destructive", title: "Fout bij PDF maken" });
+        toast({ variant: "destructive", title: "Fout bij genereren van rapport" });
     } finally {
         setIsSavingPdf(false);
     }
