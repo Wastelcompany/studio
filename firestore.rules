@@ -19,14 +19,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isOwner(docData) {
-      return isSignedIn() && "userId" in docData && request.auth.uid == docData.userId;
-    }
-    
-    function isCreatingAsOwner() {
-      return isSignedIn() && request.auth.uid == request.resource.data.userId;
-    }
-
     function isAdmin() {
       // Robust admin check based on the dedicated admin email
       return isSignedIn() && request.auth.token.email == 'post@wastelcompany.eu';
@@ -54,27 +46,22 @@ service cloud.firestore {
     }
 
     match /customers/{customerId} {
-      // Admins have full access to the customers collection
       allow read, write: if isAdmin();
-      // Users can only read their own customer data
       allow get: if isSignedIn() && getUserCustomerId(request.auth.uid) == customerId;
     }
 
     match /companies/{companyId} {
       allow read, write: if isAdmin();
-      // List is allowed if signed in; individual get is restricted by customerId
       allow list: if isSignedIn() && isNotDisabled(request.auth.uid);
-      allow get: if !isAdmin() && isSignedIn() && isNotDisabled(request.auth.uid) && 
+      allow get: if isSignedIn() && isNotDisabled(request.auth.uid) && 
                     resource.data.customerId == getUserCustomerId(request.auth.uid);
 
-      allow create: if !isAdmin() && isSignedIn() && isCreatingAsOwner() && isNotDisabled(request.auth.uid);
-      allow update: if !isAdmin() && isSignedIn() && isOwner(resource.data) && isNotDisabled(request.auth.uid) && request.resource.data.userId == resource.data.userId;
-      allow delete: if !isAdmin() && isSignedIn() && isOwner(resource.data) && isNotDisabled(request.auth.uid);
+      allow create: if isSignedIn() && isNotDisabled(request.auth.uid);
+      allow update, delete: if isSignedIn() && request.auth.uid == resource.data.userId && isNotDisabled(request.auth.uid);
 
       match /inventory/{substanceId} {
         allow read, write: if isAdmin() ||
                              (
-                               !isAdmin() &&
                                isSignedIn() &&
                                isNotDisabled(request.auth.uid) &&
                                get(/databases/$(database)/documents/companies/$(companyId)).data.customerId ==
@@ -84,7 +71,9 @@ service cloud.firestore {
     }
 
     match /ai_usage_logs/{logId} {
-      allow read: if isAdmin();
+      // Admin can list and read logs for the dashboard
+      allow read, list: if isAdmin();
+      // Any signed in user can create a log entry when using AI features
       allow create: if isSignedIn();
     }
   }

@@ -74,7 +74,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-5xl h-[90vh] max-h-[90vh] flex flex-col p-0 overflow-hidden">
         <div className="p-6 shrink-0">
           <DialogHeader>
             <DialogTitle>Referentiegids: Beoordelingsmethode</DialogTitle>
