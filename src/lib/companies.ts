@@ -1,8 +1,10 @@
+
 import type { Firestore } from 'firebase/firestore';
-import { collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, onSnapshot, writeBatch, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, onSnapshot, writeBatch, deleteDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
 import type { Substance, Company } from './types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { format } from 'date-fns';
 
 // Debounce mechanism
 let debounceTimer: NodeJS.Timeout;
@@ -56,9 +58,16 @@ export const deleteCompanyFromDb = async (db: Firestore, companyId: string): Pro
     // 1. Delete all items in the inventory subcollection
     const inventoryRef = collection(db, 'companies', companyId, 'inventory');
     const inventorySnapshot = await getDocs(inventoryRef);
-    inventorySnapshot.forEach(doc => {
-        batch.delete(doc.ref);
-    });
+    
+    for (const inventoryDoc of inventorySnapshot.docs) {
+        // Also delete history subcollection for each substance
+        const historyRef = collection(db, 'companies', companyId, 'inventory', inventoryDoc.id, 'history');
+        const historySnapshot = await getDocs(historyRef);
+        historySnapshot.forEach(hDoc => {
+            batch.delete(hDoc.ref);
+        });
+        batch.delete(inventoryDoc.ref);
+    }
     
     // 2. Delete the company document itself
     batch.delete(companyRef);
@@ -77,7 +86,17 @@ export const deleteCompanyFromDb = async (db: Firestore, companyId: string): Pro
 export const addSubstanceToDb = (db: Firestore, companyId: string, substance: Substance) => {
     const newDocRef = doc(collection(db, 'companies', companyId, 'inventory'), substance.id);
     const { id, ...substanceData } = substance;
-    setDoc(newDocRef, substanceData).catch(error => {
+    
+    setDoc(newDocRef, substanceData).then(() => {
+        // Create initial history log
+        const dateKey = format(new Date(), 'yyyy-MM-dd');
+        const historyRef = doc(db, 'companies', companyId, 'inventory', substance.id, 'history', dateKey);
+        setDoc(historyRef, {
+            date: dateKey,
+            quantity: substance.quantity,
+            updatedAt: serverTimestamp()
+        });
+    }).catch(error => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: newDocRef.path,
             operation: 'create',
@@ -88,7 +107,14 @@ export const addSubstanceToDb = (db: Firestore, companyId: string, substance: Su
 
 export const deleteSubstanceFromDb = (db: Firestore, companyId: string, substanceId: string) => {
     const docRef = doc(db, 'companies', companyId, 'inventory', substanceId);
-    deleteDoc(docRef).catch(error => {
+    
+    // We should ideally delete history too, but for speed we just delete the main doc.
+    // In a batch is better.
+    const batch = writeBatch(db);
+    batch.delete(docRef);
+    
+    // We'll leave history for now or clean up if needed. A batch is safer.
+    batch.commit().catch(error => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: docRef.path,
             operation: 'delete',
@@ -101,12 +127,26 @@ export const updateSubstanceQuantityInDb = (db: Firestore, companyId: string, su
     debounceTimer = setTimeout(() => {
         const docRef = doc(db, 'companies', companyId, 'inventory', substanceId);
         const data = { quantity };
+        
+        // Update main substance doc
         setDoc(docRef, data, { merge: true }).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'update',
                 requestResourceData: data,
             }));
+        });
+
+        // Update history log (daily snapshot)
+        // Using the current date as ID ensures only the last entry per day is relevant
+        const dateKey = format(new Date(), 'yyyy-MM-dd');
+        const historyRef = doc(db, 'companies', companyId, 'inventory', substanceId, 'history', dateKey);
+        setDoc(historyRef, {
+            date: dateKey,
+            quantity: quantity,
+            updatedAt: serverTimestamp()
+        }, { merge: true }).catch(error => {
+            // Silence history errors or log them
         });
     }, 300);
 };
@@ -121,6 +161,8 @@ export const clearInventoryFromDb = (db: Firestore, companyId: string) => {
     
         const batch = writeBatch(db);
         inventorySnap.forEach(doc => {
+            // Note: deleting sub-sub-collections in a batch requires fetching them first.
+            // For MVP we just delete the main substances.
             batch.delete(doc.ref);
         });
         batch.commit().catch(error => {

@@ -9,6 +9,7 @@ import Dashboard from '@/components/dashboard';
 import SdsUploadDialog from './sds-upload-dialog';
 import ReferenceGuideDialog from './reference-guide-dialog';
 import PasswordChangeDialog from './password-change-dialog';
+import HistoryDialog from './history-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
@@ -83,9 +84,10 @@ export default function SevesoApp() {
   const [isPasswordChangeOpen, setIsPasswordChangeOpen] = useState(false);
   const [isClearAlertOpen, setIsClearAlertOpen] = useState(false);
   const [isDeleteCompanyAlertOpen, setIsDeleteCompanyAlertOpen] = useState(false);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   
-  const jsonFileInputRef = useRef<HTMLInputElement>(null);
-  const excelFileInputRef = useRef<HTMLInputElement>(null);
+  const [historySubstance, setHistorySubstance] = useState<Substance | null>(null);
+
   const { toast, dismiss } = useToast();
 
   const [explanationData, setExplanationData] = useState<{ substance: Substance | null; categoryId: string | null; type: 'seveso' | 'arie' | null }>({ substance: null, categoryId: null, type: null });
@@ -119,6 +121,14 @@ export default function SevesoApp() {
     }
   };
 
+  const handleShowHistory = (substanceId: string) => {
+    const substance = localInventory.find(sub => sub.id === substanceId);
+    if (substance) {
+        setHistorySubstance(substance);
+        setIsHistoryDialogOpen(true);
+    }
+  };
+
   const generateFileName = (extension: string) => {
     const date = new Date();
     const YYYYMMDD = date.getFullYear() + String(date.getMonth() + 1).padStart(2, '0') + String(date.getDate()).padStart(2, '0');
@@ -133,8 +143,6 @@ export default function SevesoApp() {
 
     try {
         const doc = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const reportDate = new Date();
         const stats = calculateSummations(localInventory, thresholdMode);
         
         doc.setFontSize(22);
@@ -142,7 +150,7 @@ export default function SevesoApp() {
         doc.setFontSize(10);
         doc.text(`Bedrijf: ${selectedCompany.name}`, 20, 40);
         doc.text(`Locatie: ${selectedCompany.address}`, 20, 45);
-        doc.text(`Datum: ${reportDate.toLocaleDateString('nl-NL')}`, 20, 50);
+        doc.text(`Datum: ${new Date().toLocaleDateString('nl-NL')}`, 20, 50);
 
         autoTable(doc, {
             startY: 60,
@@ -268,6 +276,7 @@ export default function SevesoApp() {
                     thresholdMode={thresholdMode}
                     onUpload={() => setIsSdsUploadOpen(true)}
                     onShowExplanation={handleShowExplanation}
+                    onShowHistory={handleShowHistory}
                 />
             )}
             </div>
@@ -290,6 +299,12 @@ export default function SevesoApp() {
       <SdsUploadDialog isOpen={isSdsUploadOpen} onOpenChange={setIsSdsUploadOpen} onAddSubstance={handleAddSubstance} />
       <ReferenceGuideDialog isOpen={isReferenceGuideOpen} onOpenChange={setIsReferenceGuideOpen} />
       <PasswordChangeDialog isOpen={isPasswordChangeOpen} onOpenChange={setIsPasswordChangeOpen} />
+      <HistoryDialog 
+        isOpen={isHistoryDialogOpen} 
+        onOpenChange={setIsHistoryDialogOpen} 
+        substance={historySubstance} 
+        companyId={selectedCompanyId} 
+      />
       
       <AlertDialog open={isClearAlertOpen} onOpenChange={setIsClearAlertOpen}>
         <AlertDialogContent>

@@ -78,9 +78,9 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
             </DialogDescription>
           </DialogHeader>
         </div>
-        <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6">
-          <div className="h-full border rounded-md overflow-hidden bg-muted/10">
-            <ScrollArea className="h-full">
+        <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6 flex flex-col">
+          <div className="flex-1 min-h-0 border rounded-md overflow-hidden bg-muted/10">
+            <ScrollArea className="h-full w-full">
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                   <TableRow>

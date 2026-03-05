@@ -49,6 +49,13 @@ export interface Substance {
   quantity: number; // in tons
 }
 
+export interface QuantityLog {
+  id: string;
+  date: string; // YYYY-MM-DD
+  quantity: number;
+  updatedAt: Timestamp;
+}
+
 export interface SummationGroup {
   name: string;
   icon: React.ComponentType<{ className?: string }>;

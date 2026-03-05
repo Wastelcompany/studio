@@ -261,7 +261,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                               <TableHead className="py-2">
                                   <div className="space-y-1">
                                       <span className="text-[10px] font-bold uppercase">CAS</span>
-                                      <Input placeholder="Filter..." value={namedFilters.cas} onChange={(e) => setNamedFilters(prev => ({ ...prev, hPhrase: e.target.value }))} className="h-7 text-xs" />
+                                      <Input placeholder="Filter..." value={namedFilters.cas} onChange={(e) => setNamedFilters(prev => ({ ...prev, cas: e.target.value }))} className="h-7 text-xs" />
                                   </div>
                               </TableHead>
                               <TableHead className="text-right py-2"><span className="text-[10px] font-bold uppercase">Drempel (t)</span></TableHead>
