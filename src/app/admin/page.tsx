@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -14,7 +15,6 @@ import { Loader2, LogOut, Users, UserCog, Building2, Briefcase, BrainCircuit, Ba
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from '@/hooks/use-toast';
 
 export default function AdminPage() {
   const router = useRouter();

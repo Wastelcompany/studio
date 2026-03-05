@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -94,7 +95,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
           </div>
           
           <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6 flex flex-col">
-            <TabsContent value="seveso-cats" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex">
+            <TabsContent value="seveso-cats" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1 data-[state=active]:flex">
               <div className="flex justify-end mb-2 shrink-0">
                   {(sevesoFilters.cat || sevesoFilters.desc || sevesoFilters.h) && (
                       <Button variant="ghost" size="sm" onClick={clearSevesoFilters} className="h-7 text-xs">
@@ -103,7 +104,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                   )}
               </div>
               <div className="flex-1 min-h-0 border rounded-md overflow-hidden bg-muted/10">
-                <ScrollArea className="h-full">
+                <ScrollArea className="h-full w-full">
                   <Table>
                     <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                         <TableRow className="bg-muted/30">
@@ -145,7 +146,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
               </div>
             </TabsContent>
 
-            <TabsContent value="seveso-named" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex">
+            <TabsContent value="seveso-named" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1 data-[state=active]:flex">
               <div className="flex justify-end mb-2 shrink-0">
                   {(namedFilters.name || namedFilters.cas) && (
                       <Button variant="ghost" size="sm" onClick={clearNamedFilters} className="h-7 text-xs">
@@ -154,7 +155,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                   )}
               </div>
               <div className="flex-1 min-h-0 border rounded-md overflow-hidden bg-muted/10">
-                <ScrollArea className="h-full">
+                <ScrollArea className="h-full w-full">
                   <Table>
                     <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                         <TableRow className="bg-muted/30">
@@ -189,7 +190,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
               </div>
             </TabsContent>
 
-            <TabsContent value="arie" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex">
+            <TabsContent value="arie" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1 data-[state=active]:flex">
               <div className="flex justify-end mb-2 shrink-0">
                   {(arieFilters.cat || arieFilters.desc || arieFilters.h) && (
                       <Button variant="ghost" size="sm" onClick={clearArieFilters} className="h-7 text-xs">
@@ -198,7 +199,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                   )}
               </div>
               <div className="flex-1 min-h-0 border rounded-md overflow-hidden bg-muted/10">
-                <ScrollArea className="h-full">
+                <ScrollArea className="h-full w-full">
                   <Table>
                       <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                           <TableRow className="bg-muted/30">
@@ -238,7 +239,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
               </div>
             </TabsContent>
 
-            <TabsContent value="arie-named" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex">
+            <TabsContent value="arie-named" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1 data-[state=active]:flex">
               <div className="flex justify-end mb-2 shrink-0">
                   {(namedFilters.name || namedFilters.cas) && (
                       <Button variant="ghost" size="sm" onClick={clearNamedFilters} className="h-7 text-xs">
@@ -247,7 +248,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                   )}
               </div>
               <div className="flex-1 min-h-0 border rounded-md overflow-hidden bg-muted/10">
-                <ScrollArea className="h-full">
+                <ScrollArea className="h-full w-full">
                   <Table>
                       <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                           <TableRow className="bg-muted/30">

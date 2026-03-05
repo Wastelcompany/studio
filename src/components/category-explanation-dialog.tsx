@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -71,7 +72,7 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-xl h-[85vh] flex flex-col p-0 overflow-hidden">
         <div className="p-6 shrink-0">
           <DialogHeader>
             <DialogTitle>Onderbouwing voor Categorie {categoryId} ({categoryType.toUpperCase()})</DialogTitle>
@@ -80,9 +81,9 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
             </DialogDescription>
           </DialogHeader>
         </div>
-        <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6">
-          <div className="h-full border rounded-md overflow-hidden bg-muted/10">
-            <ScrollArea className="h-full">
+        <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6 flex flex-col">
+          <div className="flex-1 min-h-0 border rounded-md overflow-hidden bg-muted/10">
+            <ScrollArea className="h-full w-full">
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                   <TableRow>
