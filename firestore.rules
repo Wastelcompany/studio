@@ -20,8 +20,12 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // Robust admin check based on the dedicated admin email
-      return isSignedIn() && request.auth.token.email == 'post@wastelcompany.eu';
+      // Check if user is the master admin OR has the admin role in their profile
+      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return isSignedIn() && (
+        request.auth.token.email == 'post@wastelcompany.eu' ||
+        (exists(userPath) && get(userPath).data.role == 'admin')
+      );
     }
 
     function isNotDisabled(uid) {
@@ -71,9 +75,7 @@ service cloud.firestore {
     }
 
     match /ai_usage_logs/{logId} {
-      // Admin can list and read logs for the dashboard
       allow read, list: if isAdmin();
-      // Any signed in user can create a log entry when using AI features
       allow create: if isSignedIn();
     }
   }

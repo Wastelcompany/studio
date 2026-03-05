@@ -1,6 +1,6 @@
 
-import type { Firestore, UserProfile, Company, Customer } from '@/lib/types';
-import { collection, doc, getDocs, query, updateDoc, where, writeBatch, deleteDoc, Timestamp, addDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDocs, query, updateDoc, where, writeBatch, deleteDoc, Timestamp, addDoc, setDoc, serverTimestamp, type Firestore } from 'firebase/firestore';
+import type { UserProfile, Company, Customer } from '@/lib/types';
 
 /**
  * Toggles the disabled status of a user in Firestore.
@@ -9,6 +9,16 @@ export const toggleUserDisabledStatus = async (db: Firestore, uid: string, curre
     const userDocRef = doc(db, 'users', uid);
     await updateDoc(userDocRef, {
         disabled: !currentStatus
+    });
+};
+
+/**
+ * Updates a user's role (admin/user).
+ */
+export const updateUserRole = async (db: Firestore, uid: string, newRole: 'admin' | 'user'): Promise<void> => {
+    const userDocRef = doc(db, 'users', uid);
+    await updateDoc(userDocRef, {
+        role: newRole
     });
 };
 
@@ -52,36 +62,10 @@ export const updateUserGroup = async (db: Firestore, userToUpdate: UserProfile, 
     await batch.commit();
 };
 
-
 /**
- * Deletes a user's profile and all associated data.
+ * Creates a new Customer record manually or from KVK data.
  */
-export const deleteUserAndData = async (db: Firestore, userToDelete: UserProfile): Promise<void> => {
-    const batch = writeBatch(db);
-    const companiesRef = collection(db, 'companies');
-
-    const companiesQuery = query(companiesRef, where('userId', '==', userToDelete.uid));
-    const companiesSnapshot = await getDocs(companiesQuery);
-
-    for (const companyDoc of companiesSnapshot.docs) {
-        const inventoryRef = collection(db, 'companies', companyDoc.id, 'inventory');
-        const inventorySnapshot = await getDocs(inventoryRef);
-        inventorySnapshot.forEach(inventoryDoc => {
-            batch.delete(inventoryDoc.ref);
-        });
-        batch.delete(companyDoc.ref);
-    }
-    
-    const userDocRef = doc(db, 'users', userToDelete.uid);
-    batch.delete(userDocRef);
-    
-    await batch.commit();
-};
-
-/**
- * Creates a new Customer record from KVK data.
- */
-export const createCustomerFromKvk = async (db: Firestore, customerInfo: { name: string, address: string, kvkNumber: string }): Promise<string> => {
+export const createCustomerRecord = async (db: Firestore, customerInfo: { name: string, address: string, kvkNumber: string }): Promise<string> => {
     const customersColRef = collection(db, 'customers');
     const newCustomerDoc = doc(customersColRef);
     await setDoc(newCustomerDoc, {
@@ -95,45 +79,11 @@ export const createCustomerFromKvk = async (db: Firestore, customerInfo: { name:
 };
 
 /**
- * Creates a new company record associated with a customer.
- */
-export const createCompanyForCustomer = async (db: Firestore, adminUid: string, customerId: string, companyInfo: { name: string, address: string }): Promise<void> => {
-    const companiesColRef = collection(db, 'companies');
-    await addDoc(companiesColRef, {
-        userId: adminUid,
-        customerId: customerId,
-        name: companyInfo.name,
-        address: companyInfo.address,
-        createdAt: serverTimestamp(),
-    });
-};
-
-/**
- * Renames a customer group globally.
- */
-export const renameCustomerGroup = async (db: Firestore, customerId: string, newName: string): Promise<void> => {
-    const batch = writeBatch(db);
-    
-    const usersRef = collection(db, 'users');
-    const usersQuery = query(usersRef, where('customerId', '==', customerId));
-    const usersSnapshot = await getDocs(usersQuery);
-    usersSnapshot.forEach(userDoc => {
-        batch.update(userDoc.ref, { customerName: newName });
-    });
-
-    const customersRef = collection(db, 'customers');
-    const customerDocRef = doc(customersRef, customerId);
-    batch.set(customerDocRef, { name: newName }, { merge: true });
-    
-    await batch.commit();
-};
-
-/**
  * Logs AI usage for analytics.
  */
 export const logAiUsage = async (db: Firestore, userId: string, type: 'SDS_EXTRACTION' | 'KVK_SEARCH'): Promise<void> => {
   const logsRef = collection(db, 'ai_usage_logs');
-  const estimatedCost = type === 'SDS_EXTRACTION' ? 0.015 : 0.002; // Simple estimation
+  const estimatedCost = type === 'SDS_EXTRACTION' ? 0.015 : 0.002;
   await addDoc(logsRef, {
     userId,
     type,
