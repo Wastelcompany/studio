@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Trash2, FileSpreadsheet, Upload, History } from "lucide-react";
+import { Trash2, FileSpreadsheet, Upload, History, FileText } from "lucide-react";
 import type { Substance, ThresholdMode } from "@/lib/types";
 import { ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, getArieThreshold } from "@/lib/seveso";
 import { Progress } from './ui/progress';
@@ -125,6 +125,15 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
 }
 
 export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, thresholdMode, onUpload, onShowExplanation, onShowHistory }: InventoryTableProps) {
+  
+  const handleViewSds = (sdsUri?: string) => {
+    if (!sdsUri) return;
+    const win = window.open();
+    if (win) {
+        win.document.write(`<iframe src="${sdsUri}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+    }
+  };
+
   if (inventory.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-16 px-4 border-2 border-dashed rounded-lg">
@@ -183,6 +192,9 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                 <TableCell><Contributions substance={substance} mode={thresholdMode} /></TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
+                    {substance.sdsUri && (
+                        <Button variant="ghost" size="icon" onClick={() => handleViewSds(substance.sdsUri)} title="Bekijk SDS Document"><FileText className="h-4 w-4 text-primary" /></Button>
+                    )}
                     <Button variant="ghost" size="icon" onClick={() => onShowHistory(substance.id)} title="Historie bekijken"><History className="h-4 w-4 text-muted-foreground" /></Button>
                     <Button variant="ghost" size="icon" onClick={() => onDelete(substance.id)} title="Stof verwijderen"><Trash2 className="h-4 w-4 text-muted-foreground" /></Button>
                   </div>

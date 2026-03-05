@@ -108,12 +108,10 @@ export const addSubstanceToDb = (db: Firestore, companyId: string, substance: Su
 export const deleteSubstanceFromDb = (db: Firestore, companyId: string, substanceId: string) => {
     const docRef = doc(db, 'companies', companyId, 'inventory', substanceId);
     
-    // We should ideally delete history too, but for speed we just delete the main doc.
-    // In a batch is better.
+    // We should ideally delete history too
     const batch = writeBatch(db);
     batch.delete(docRef);
     
-    // We'll leave history for now or clean up if needed. A batch is safer.
     batch.commit().catch(error => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: docRef.path,
@@ -138,7 +136,6 @@ export const updateSubstanceQuantityInDb = (db: Firestore, companyId: string, su
         });
 
         // Update history log (daily snapshot)
-        // Using the current date as ID ensures only the last entry per day is relevant
         const dateKey = format(new Date(), 'yyyy-MM-dd');
         const historyRef = doc(db, 'companies', companyId, 'inventory', substanceId, 'history', dateKey);
         setDoc(historyRef, {
@@ -146,7 +143,7 @@ export const updateSubstanceQuantityInDb = (db: Firestore, companyId: string, su
             quantity: quantity,
             updatedAt: serverTimestamp()
         }, { merge: true }).catch(error => {
-            // Silence history errors or log them
+            // Silence history errors
         });
     }, 300);
 };
@@ -161,8 +158,6 @@ export const clearInventoryFromDb = (db: Firestore, companyId: string) => {
     
         const batch = writeBatch(db);
         inventorySnap.forEach(doc => {
-            // Note: deleting sub-sub-collections in a batch requires fetching them first.
-            // For MVP we just delete the main substances.
             batch.delete(doc.ref);
         });
         batch.commit().catch(error => {

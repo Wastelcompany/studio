@@ -90,6 +90,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
               arieCategoryIds,
               isNamedSubstance: isNamed,
               namedSubstanceName: namedSubstanceName,
+              sdsUri: dataUri, // Store the original document
           });
           
           if (db && user) {

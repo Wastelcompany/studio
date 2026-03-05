@@ -69,7 +69,7 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-lg h-[85vh] flex flex-col p-0 overflow-hidden">
         <div className="p-6 shrink-0">
           <DialogHeader>
             <DialogTitle>Details voor: {group.name} ({type.toUpperCase()})</DialogTitle>

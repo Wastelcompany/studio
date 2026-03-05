@@ -26,7 +26,6 @@ export interface Customer {
   kvkNumber?: string;
   billingEmail?: string;
   createdAt?: Timestamp;
-  customerNumber?: string; // 4-digit numeric code
 }
 
 export interface Company {
@@ -47,6 +46,7 @@ export interface Substance {
   isNamedSubstance: boolean;
   namedSubstanceName: string | null;
   quantity: number; // in tons
+  sdsUri?: string; // Base64 data URI of the SDS document
 }
 
 export interface QuantityLog {
