@@ -10,11 +10,13 @@ import SdsUploadDialog from './sds-upload-dialog';
 import ReferenceGuideDialog from './reference-guide-dialog';
 import PasswordChangeDialog from './password-change-dialog';
 import HistoryDialog from './history-dialog';
+import ReportOptionsDialog from './report-options-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { PDFDocument } from 'pdf-lib';
 import CompanySelector from './company-selector';
 import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
@@ -85,6 +87,7 @@ export default function SevesoApp() {
   const [isClearAlertOpen, setIsClearAlertOpen] = useState(false);
   const [isDeleteCompanyAlertOpen, setIsDeleteCompanyAlertOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [isReportOptionsOpen, setIsReportOptionsOpen] = useState(false);
   
   const [historySubstance, setHistorySubstance] = useState<Substance | null>(null);
 
@@ -136,7 +139,7 @@ export default function SevesoApp() {
     return `${sanitizedName}.${YYYYMMDD}.${extension}`;
   };
 
-  const handleSaveAsPdf = async (reportType: 'full' | 'seveso') => {
+  const handleGenerateReport = async (options: { type: 'full' | 'seveso'; includeSds: boolean }) => {
     if (!selectedCompany) return;
     setIsSavingPdf(true);
     const { id: toastId } = toast({ title: "Rapport genereren...", description: "PDF wordt samengesteld." });
@@ -145,29 +148,136 @@ export default function SevesoApp() {
         const doc = new jsPDF('p', 'mm', 'a4');
         const stats = calculateSummations(localInventory, thresholdMode);
         
+        // Header
         doc.setFontSize(22);
-        doc.text(reportType === 'full' ? "Seveso & ARIE Rapport" : "Seveso Rapport", 20, 30);
+        doc.setTextColor(22, 80, 91); // #16505B
+        doc.text(options.type === 'full' ? "Seveso & ARIE Rapport" : "Seveso Rapport", 20, 30);
         doc.setFontSize(10);
+        doc.setTextColor(80, 80, 80);
         doc.text(`Bedrijf: ${selectedCompany.name}`, 20, 40);
         doc.text(`Locatie: ${selectedCompany.address}`, 20, 45);
         doc.text(`Datum: ${new Date().toLocaleDateString('nl-NL')}`, 20, 50);
 
+        // Seveso Summation Table
+        doc.setFontSize(14);
+        doc.setTextColor(22, 80, 91);
+        doc.text("Seveso III Sommatieoverzicht", 20, 65);
         autoTable(doc, {
-            startY: 60,
-            head: [['Gevarengroep', 'Seveso Ratio', 'ARIE Ratio']],
-            body: stats.summationGroups.map((g, i) => [
+            startY: 70,
+            head: [['Gevarengroep', 'Ratio (%)', 'Status']],
+            body: stats.summationGroups.map(g => [
                 g.name,
                 `${Math.round(g.totalRatio * 100)}%`,
-                `${Math.round(stats.arieSummationGroups[i].totalRatio * 100)}%`
-            ])
+                g.totalRatio >= 1 ? 'DREMPEL OVERSCHREDEN' : 'Binnen drempel'
+            ]),
+            headStyles: { fillStyle: 'fill', fillColor: [22, 80, 91] },
         });
 
-        doc.save(generateFileName('pdf'));
+        // ARIE Summation Table (only if full report)
+        if (options.type === 'full') {
+            const lastY = (doc as any).lastAutoTable.cursor.y;
+            doc.setFontSize(14);
+            doc.setTextColor(22, 80, 91);
+            doc.text("ARIE Sommatieoverzicht", 20, lastY + 15);
+            autoTable(doc, {
+                startY: lastY + 20,
+                head: [['Gevarengroep', 'Ratio (%)', 'Status']],
+                body: stats.arieSummationGroups.map(g => [
+                    g.name,
+                    `${Math.round(g.totalRatio * 100)}%`,
+                    g.totalRatio >= 1 ? 'ARIE PLICHTIG' : 'Niet ARIE plichtig'
+                ]),
+                headStyles: { fillStyle: 'fill', fillColor: [50, 50, 50] },
+            });
+        }
+
+        // Inventory Table
+        const finalY = (doc as any).lastAutoTable.cursor.y;
+        doc.setFontSize(14);
+        doc.setTextColor(22, 80, 91);
+        doc.text("Stoffenoverzicht", 20, finalY + 15);
+        autoTable(doc, {
+            startY: finalY + 20,
+            head: [['Stof', 'CAS', 'Voorraad (t)', 'Seveso Cat.', 'ARIE Cat.']],
+            body: localInventory.map(s => [
+                s.productName,
+                s.casNumber || '-',
+                s.quantity.toFixed(2),
+                s.sevesoCategoryIds.join(', '),
+                s.arieCategoryIds.join(', ')
+            ]),
+            headStyles: { fillStyle: 'fill', fillColor: [22, 80, 91] },
+        });
+
+        // Get Main Report Bytes
+        const mainReportBytes = doc.output('arraybuffer');
+        
+        let finalPdfBytes: Uint8Array = new Uint8Array(mainReportBytes);
+
+        // Append SDS Documents if requested
+        if (options.includeSds) {
+            const mergedPdf = await PDFDocument.create();
+            
+            // 1. Add Main Report pages
+            const mainDoc = await PDFDocument.load(mainReportBytes);
+            const mainPages = await mergedPdf.copyPages(mainDoc, mainDoc.getPageIndices());
+            mainPages.forEach(p => mergedPdf.addPage(p));
+
+            // 2. Add each SDS
+            for (const substance of localInventory) {
+                if (substance.sdsUri) {
+                    try {
+                        const base64Data = substance.sdsUri.split(',')[1];
+                        const mimeType = substance.sdsUri.split(';')[0].split(':')[1];
+                        
+                        if (mimeType === 'application/pdf') {
+                            const sdsDoc = await PDFDocument.load(Buffer.from(base64Data, 'base64'));
+                            const sdsPages = await mergedPdf.copyPages(sdsDoc, sdsDoc.getPageIndices());
+                            
+                            // Add separator page
+                            const sepPage = mergedPdf.addPage();
+                            sepPage.drawText(`SDS BIJLAGE: ${substance.productName}`, { x: 50, y: 750, size: 18 });
+                            
+                            sdsPages.forEach(p => mergedPdf.addPage(p));
+                        } else if (mimeType.startsWith('image/')) {
+                            // Add separator + image page
+                            const imgPage = mergedPdf.addPage();
+                            imgPage.drawText(`SDS BIJLAGE (Afbeelding): ${substance.productName}`, { x: 50, y: 750, size: 18 });
+                            
+                            const image = mimeType === 'image/jpeg' 
+                                ? await mergedPdf.embedJpg(Buffer.from(base64Data, 'base64'))
+                                : await mergedPdf.embedPng(Buffer.from(base64Data, 'base64'));
+                            
+                            const dims = image.scaleToFit(imgPage.getWidth() - 100, imgPage.getHeight() - 150);
+                            imgPage.drawImage(image, {
+                                x: 50,
+                                y: imgPage.getHeight() - 100 - dims.height,
+                                width: dims.width,
+                                height: dims.height,
+                            });
+                        }
+                    } catch (e) {
+                        console.error(`Error adding SDS for ${substance.productName}:`, e);
+                    }
+                }
+            }
+            finalPdfBytes = await mergedPdf.save();
+        }
+
+        // Trigger Download
+        const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = generateFileName('pdf');
+        link.click();
+
         dismiss(toastId);
-        toast({ title: "PDF opgeslagen" });
+        toast({ title: "Rapport opgeslagen" });
+        setIsReportOptionsOpen(false);
     } catch (error) {
+        console.error('PDF Generation Error:', error);
         dismiss(toastId);
-        toast({ variant: "destructive", title: "Fout bij PDF maken" });
+        toast({ variant: "destructive", title: "Fout bij PDF maken", description: "Kon het rapport niet bundelen." });
     } finally {
         setIsSavingPdf(false);
     }
@@ -247,7 +357,7 @@ export default function SevesoApp() {
         onShowReference={() => setIsReferenceGuideOpen(true)}
         onImport={() => {}}
         onExport={handleExport}
-        onSaveAsPdf={handleSaveAsPdf}
+        onSaveAsPdf={() => setIsReportOptionsOpen(true)}
         onPasswordChange={() => setIsPasswordChangeOpen(true)}
         isSavingPdf={isSavingPdf}
         disabled={!selectedCompanyId}
@@ -299,6 +409,12 @@ export default function SevesoApp() {
       <SdsUploadDialog isOpen={isSdsUploadOpen} onOpenChange={setIsSdsUploadOpen} onAddSubstance={handleAddSubstance} />
       <ReferenceGuideDialog isOpen={isReferenceGuideOpen} onOpenChange={setIsReferenceGuideOpen} />
       <PasswordChangeDialog isOpen={isPasswordChangeOpen} onOpenChange={setIsPasswordChangeOpen} />
+      <ReportOptionsDialog 
+        isOpen={isReportOptionsOpen} 
+        onOpenChange={setIsReportOptionsOpen} 
+        onGenerate={handleGenerateReport} 
+        isGenerating={isSavingPdf} 
+      />
       <HistoryDialog 
         isOpen={isHistoryDialogOpen} 
         onOpenChange={setIsHistoryDialogOpen} 
