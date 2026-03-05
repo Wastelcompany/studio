@@ -1,5 +1,4 @@
-
-"use client";
+'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import type { Substance, ThresholdMode, Company, UserProfile, Customer } from '@/lib/types';
@@ -16,7 +15,6 @@ import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { PDFDocument } from 'pdf-lib';
 import CompanySelector from './company-selector';
 import { calculateSummations } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
@@ -205,62 +203,14 @@ export default function SevesoApp() {
             headStyles: { fillColor: [22, 80, 91] },
         });
 
-        if (options.includeSds) {
-            const mainReportArrayBuffer = doc.output('arraybuffer');
-            const mergedPdf = await PDFDocument.create();
-            const mainDoc = await PDFDocument.load(mainReportArrayBuffer);
-            const mainPages = await mergedPdf.copyPages(mainDoc, mainDoc.getPageIndices());
-            mainPages.forEach(p => mergedPdf.addPage(p));
-
-            for (const substance of localInventory) {
-                if (substance.sdsUri) {
-                    try {
-                        const response = await fetch(substance.sdsUri);
-                        const bytes = new Uint8Array(await response.arrayBuffer());
-                        const mimeType = substance.sdsUri.split(';')[0].split(':')[1];
-                        
-                        if (mimeType === 'application/pdf') {
-                            const sdsDoc = await PDFDocument.load(bytes);
-                            const sdsPages = await mergedPdf.copyPages(sdsDoc, sdsDoc.getPageIndices());
-                            const sepPage = mergedPdf.addPage();
-                            sepPage.drawText(`BIJLAGE: ${substance.productName}`, { x: 50, y: 750, size: 20 });
-                            sdsPages.forEach(p => mergedPdf.addPage(p));
-                        } else if (mimeType.startsWith('image/')) {
-                            const imgPage = mergedPdf.addPage();
-                            imgPage.drawText(`BIJLAGE (Afbeelding): ${substance.productName}`, { x: 50, y: 750, size: 20 });
-                            const image = mimeType === 'image/jpeg' || mimeType === 'image/jpg'
-                                ? await mergedPdf.embedJpg(bytes)
-                                : await mergedPdf.embedPng(bytes);
-                            const dims = image.scaleToFit(imgPage.getWidth() - 100, imgPage.getHeight() - 150);
-                            imgPage.drawImage(image, {
-                                x: 50,
-                                y: imgPage.getHeight() - 120 - dims.height,
-                                width: dims.width,
-                                height: dims.height,
-                            });
-                        }
-                    } catch (e) {
-                        console.warn(`Error adding SDS for ${substance.productName}:`, e);
-                    }
-                }
-            }
-            const finalPdfBytes = await mergedPdf.save();
-            const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = generateFileName('pdf');
-            link.click();
-        } else {
-            doc.save(generateFileName('pdf'));
-        }
-
+        doc.save(generateFileName('pdf'));
         dismiss(toastId);
         toast({ title: "Rapport opgeslagen" });
         setIsReportOptionsOpen(false);
     } catch (error) {
         console.error('PDF Generation Error:', error);
         dismiss(toastId);
-        toast({ variant: "destructive", title: "Fout bij PDF maken", description: "Kon het rapport niet bundelen." });
+        toast({ variant: "destructive", title: "Fout bij PDF maken", description: "Kon het rapport niet genereren." });
     } finally {
         setIsSavingPdf(false);
     }

@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Substance, HazardCategory, NamedSubstance, ThresholdMode, SummationGroup } from '@/lib/types';
@@ -7,7 +6,6 @@ import { FlaskConical, Flame, Leaf, AlertTriangle, Atom } from 'lucide-react';
 /**
  * @fileOverview Seveso III and ARIE classification and summation logic.
  * Bevat drempelwaarden conform Arbo-wetgeving (ARIE) en Seveso III richtlijn.
- * Volgorde: H (Gezondheid), P (Fysiek), E (Milieu), O (Overig).
  */
 
 export const ALL_CATEGORIES: Record<string, HazardCategory> = {

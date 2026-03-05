@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -83,8 +82,9 @@ export default function AdminPage() {
 
     const monthlyGroups: Record<string, number> = {};
     aiLogs.forEach(log => {
-      if (!log.timestamp?.toDate) return;
-      const date = log.timestamp.toDate();
+      const ts = log.timestamp;
+      if (!ts) return;
+      const date = ts.toDate ? ts.toDate() : new Date(ts);
       const monthKey = format(startOfMonth(date), 'yyyy-MM');
       monthlyGroups[monthKey] = (monthlyGroups[monthKey] || 0) + (log.estimatedCost || 0);
     });
