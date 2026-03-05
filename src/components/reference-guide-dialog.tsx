@@ -147,30 +147,13 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
             </TabsContent>
 
             <TabsContent value="seveso-named" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1 data-[state=active]:flex">
-              <div className="flex justify-end mb-2 shrink-0">
-                  {(namedFilters.name || namedFilters.cas) && (
-                      <Button variant="ghost" size="sm" onClick={clearNamedFilters} className="h-7 text-xs">
-                          <X className="mr-2 h-3 w-3" /> Filters wissen
-                      </Button>
-                  )}
-              </div>
               <div className="flex-1 min-h-0 border rounded-md overflow-hidden bg-muted/10">
                 <ScrollArea className="h-full w-full">
                   <Table>
                     <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                         <TableRow className="bg-muted/30">
-                            <TableHead className="py-2">
-                                <div className="space-y-1">
-                                    <span className="text-[10px] font-bold uppercase">Stofnaam</span>
-                                    <Input placeholder="Filter..." value={namedFilters.name} onChange={(e) => setNamedFilters(prev => ({ ...prev, name: e.target.value }))} className="h-7 text-xs" />
-                                </div>
-                            </TableHead>
-                            <TableHead className="py-2">
-                                <div className="space-y-1">
-                                    <span className="text-[10px] font-bold uppercase">CAS</span>
-                                    <Input placeholder="Filter..." value={namedFilters.cas} onChange={(e) => setNamedFilters(prev => ({ ...prev, cas: e.target.value }))} className="h-7 text-xs" />
-                                </div>
-                            </TableHead>
+                            <TableHead className="py-2"><span className="text-[10px] font-bold uppercase">Stofnaam</span></TableHead>
+                            <TableHead className="py-2"><span className="text-[10px] font-bold uppercase">CAS</span></TableHead>
                             <TableHead className="text-right py-2"><span className="text-[10px] font-bold uppercase">Laag (t)</span></TableHead>
                             <TableHead className="text-right py-2"><span className="text-[10px] font-bold uppercase">Hoog (t)</span></TableHead>
                         </TableRow>
@@ -191,36 +174,14 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
             </TabsContent>
 
             <TabsContent value="arie" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1 data-[state=active]:flex">
-              <div className="flex justify-end mb-2 shrink-0">
-                  {(arieFilters.cat || arieFilters.desc || arieFilters.h) && (
-                      <Button variant="ghost" size="sm" onClick={clearArieFilters} className="h-7 text-xs">
-                          <X className="mr-2 h-3 w-3" /> Filters wissen
-                      </Button>
-                  )}
-              </div>
               <div className="flex-1 min-h-0 border rounded-md overflow-hidden bg-muted/10">
                 <ScrollArea className="h-full w-full">
                   <Table>
                       <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                           <TableRow className="bg-muted/30">
-                              <TableHead className="py-2">
-                                  <div className="space-y-1">
-                                      <span className="text-[10px] font-bold uppercase">Cat.</span>
-                                      <Input placeholder="Filter..." value={arieFilters.cat} onChange={(e) => setArieFilters(prev => ({ ...prev, cat: e.target.value }))} className="h-7 text-xs" />
-                                  </div>
-                              </TableHead>
-                              <TableHead className="py-2">
-                                  <div className="space-y-1">
-                                      <span className="text-[10px] font-bold uppercase">Omschrijving</span>
-                                      <Input placeholder="Filter..." value={arieFilters.desc} onChange={(e) => setArieFilters(prev => ({ ...prev, desc: e.target.value }))} className="h-7 text-xs" />
-                                  </div>
-                              </TableHead>
-                              <TableHead className="py-2">
-                                  <div className="space-y-1">
-                                      <span className="text-[10px] font-bold uppercase">H-Zinnen</span>
-                                      <Input placeholder="Filter..." value={arieFilters.h} onChange={(e) => setArieFilters(prev => ({ ...prev, h: e.target.value }))} className="h-7 text-xs" />
-                                  </div>
-                              </TableHead>
+                              <TableHead className="py-2"><span className="text-[10px] font-bold uppercase">Cat.</span></TableHead>
+                              <TableHead className="py-2"><span className="text-[10px] font-bold uppercase">Omschrijving</span></TableHead>
+                              <TableHead className="py-2"><span className="text-[10px] font-bold uppercase">H-Zinnen</span></TableHead>
                               <TableHead className="text-right py-2"><span className="text-[10px] font-bold uppercase">Drempel (t)</span></TableHead>
                           </TableRow>
                       </TableHeader>
@@ -240,30 +201,13 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
             </TabsContent>
 
             <TabsContent value="arie-named" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1 data-[state=active]:flex">
-              <div className="flex justify-end mb-2 shrink-0">
-                  {(namedFilters.name || namedFilters.cas) && (
-                      <Button variant="ghost" size="sm" onClick={clearNamedFilters} className="h-7 text-xs">
-                          <X className="mr-2 h-3 w-3" /> Filters wissen
-                      </Button>
-                  )}
-              </div>
               <div className="flex-1 min-h-0 border rounded-md overflow-hidden bg-muted/10">
                 <ScrollArea className="h-full w-full">
                   <Table>
                       <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                           <TableRow className="bg-muted/30">
-                              <TableHead className="py-2">
-                                  <div className="space-y-1">
-                                      <span className="text-[10px] font-bold uppercase">Naam</span>
-                                      <Input placeholder="Filter..." value={namedFilters.name} onChange={(e) => setNamedFilters(prev => ({ ...prev, name: e.target.value }))} className="h-7 text-xs" />
-                                  </div>
-                              </TableHead>
-                              <TableHead className="py-2">
-                                  <div className="space-y-1">
-                                      <span className="text-[10px] font-bold uppercase">CAS</span>
-                                      <Input placeholder="Filter..." value={namedFilters.cas} onChange={(e) => setNamedFilters(prev => ({ ...prev, cas: e.target.value }))} className="h-7 text-xs" />
-                                  </div>
-                              </TableHead>
+                              <TableHead className="py-2"><span className="text-[10px] font-bold uppercase">Naam</span></TableHead>
+                              <TableHead className="py-2"><span className="text-[10px] font-bold uppercase">CAS</span></TableHead>
                               <TableHead className="text-right py-2"><span className="text-[10px] font-bold uppercase">Drempel (t)</span></TableHead>
                           </TableRow>
                       </TableHeader>

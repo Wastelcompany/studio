@@ -1,26 +1,13 @@
 
-/**
- * # Firestore Security Rules
- *
- * ## Core Philosophy
- * This ruleset enforces a strict user-ownership model for writing data, but allows
- * for group-based reading of data. A user's access can be disabled by an admin.
- * The admin role has full read/write access to all data for management purposes.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ------------------------------------------------------------------------
-    // Helper Functions
-    // ------------------------------------------------------------------------
 
     function isSignedIn() {
       return request.auth != null;
     }
 
     function isAdmin() {
-      // Check if user is the master admin OR has the admin role in their profile
       let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
       return isSignedIn() && (
         request.auth.token.email == 'post@wastelcompany.eu' ||
@@ -29,7 +16,6 @@ service cloud.firestore {
     }
 
     function isNotDisabled(uid) {
-      // Check if user document exists and if disabled is false
       let userPath = /databases/$(database)/documents/users/$(uid);
       return !exists(userPath) || get(userPath).data.disabled == false;
     }
@@ -39,10 +25,6 @@ service cloud.firestore {
         return exists(userPath) ? get(userPath).data.customerId : null;
     }
 
-    // ------------------------------------------------------------------------
-    // Collection Rules
-    // ------------------------------------------------------------------------
-    
     match /users/{userId} {
       allow read, write: if isAdmin();
       allow create: if request.auth.uid == userId;
@@ -61,7 +43,7 @@ service cloud.firestore {
                     resource.data.customerId == getUserCustomerId(request.auth.uid);
 
       allow create: if isSignedIn() && isNotDisabled(request.auth.uid);
-      allow update, delete: if isSignedIn() && request.auth.uid == resource.data.userId && isNotDisabled(request.auth.uid);
+      allow update, delete: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin()) && isNotDisabled(request.auth.uid);
 
       match /inventory/{substanceId} {
         allow read, write: if isAdmin() ||

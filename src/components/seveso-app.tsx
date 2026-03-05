@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Substance, ThresholdMode, Company, UserProfile, Customer } from '@/lib/types';
 import SevesoHeader from '@/components/seveso-header';
 import InventoryTable from '@/components/inventory-table';
@@ -18,13 +18,13 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { PDFDocument } from 'pdf-lib';
 import CompanySelector from './company-selector';
-import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES } from '@/lib/seveso';
+import { calculateSummations } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
 import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc, useAuth } from '@/firebase';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb, deleteCompanyFromDb } from '@/lib/companies';
-import { Loader2, UserX, LogOut, Building2 } from 'lucide-react';
+import { Loader2, UserX, Building2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useRouter } from 'next/navigation';
 
@@ -170,7 +170,7 @@ export default function SevesoApp() {
                 `${Math.round(g.totalRatio * 100)}%`,
                 g.totalRatio >= 1 ? 'DREMPEL OVERSCHREDEN' : 'Binnen drempel'
             ]),
-            headStyles: { fillStyle: 'fill', fillColor: [22, 80, 91] },
+            headStyles: { fillColor: [22, 80, 91] },
         });
 
         // ARIE Summation Table (only if full report)
@@ -187,7 +187,7 @@ export default function SevesoApp() {
                     `${Math.round(g.totalRatio * 100)}%`,
                     g.totalRatio >= 1 ? 'ARIE PLICHTIG' : 'Niet ARIE plichtig'
                 ]),
-                headStyles: { fillStyle: 'fill', fillColor: [50, 50, 50] },
+                headStyles: { fillColor: [50, 50, 50] },
             });
         }
 
@@ -206,7 +206,7 @@ export default function SevesoApp() {
                 s.sevesoCategoryIds.join(', '),
                 s.arieCategoryIds.join(', ')
             ]),
-            headStyles: { fillStyle: 'fill', fillColor: [22, 80, 91] },
+            headStyles: { fillColor: [22, 80, 91] },
         });
 
         // Get Main Report Bytes
@@ -234,13 +234,11 @@ export default function SevesoApp() {
                             const sdsDoc = await PDFDocument.load(Buffer.from(base64Data, 'base64'));
                             const sdsPages = await mergedPdf.copyPages(sdsDoc, sdsDoc.getPageIndices());
                             
-                            // Add separator page
                             const sepPage = mergedPdf.addPage();
                             sepPage.drawText(`SDS BIJLAGE: ${substance.productName}`, { x: 50, y: 750, size: 18 });
                             
                             sdsPages.forEach(p => mergedPdf.addPage(p));
                         } else if (mimeType.startsWith('image/')) {
-                            // Add separator + image page
                             const imgPage = mergedPdf.addPage();
                             imgPage.drawText(`SDS BIJLAGE (Afbeelding): ${substance.productName}`, { x: 50, y: 750, size: 18 });
                             
@@ -264,7 +262,6 @@ export default function SevesoApp() {
             finalPdfBytes = await mergedPdf.save();
         }
 
-        // Trigger Download
         const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -341,7 +338,7 @@ export default function SevesoApp() {
   if (userProfile?.disabled) {
     return (
         <div className="flex flex-col items-center justify-center h-screen text-center p-4">
-            <UserX className="h-16 w-16 text-destructive mb-4" />
+            <Building2 className="h-16 w-16 text-destructive mb-4" />
             <h1 className="text-2xl font-bold">Account Gedeactiveerd</h1>
             <p className="text-muted-foreground mt-2">Neem contact op met de beheerder.</p>
             <Button variant="outline" className="mt-8" onClick={() => signOut(auth)}>Uitloggen</Button>

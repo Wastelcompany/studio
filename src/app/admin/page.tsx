@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Users, UserCog, Building2, Briefcase, BrainCircuit, BarChart3, Plus, ShieldCheck, UserPlus } from "lucide-react";
+import { Loader2, LogOut, Users, UserCog, Building2, Briefcase, BrainCircuit, Plus, ShieldCheck, UserPlus } from "lucide-react";
 import { format, startOfMonth } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
