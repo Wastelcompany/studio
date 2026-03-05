@@ -118,7 +118,7 @@ export default function SevesoApp() {
         doc.text(`Datum: ${dateStr}`, 20, 275);
         doc.text(`Rapportnummer: ${rapportNummer}`, 20, 282);
 
-        // --- PAGINA 2: HOOFDSTUK 1 & 2 (Inleiding) ---
+        // --- PAGINA 2: HOOFDSTUK 1 & 2 (Inleiding & Methodiek) ---
         doc.addPage();
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(18);
@@ -266,12 +266,72 @@ export default function SevesoApp() {
             : `De inrichting wordt op basis van de vigerende Arbo-wetgeving aangemerkt als ARIE-plichtig. Voor de gevarengroep ${stats.criticalArieGroup} bedraagt het resultaat van de sommatie ${stats.arieSummationGroups.find(g => g.name === stats.criticalArieGroup)?.totalRatio.toFixed(2)} (${Math.round((stats.arieSummationGroups.find(g => g.name === stats.criticalArieGroup)?.totalRatio || 0) * 100)}%), waarmee de wettelijke drempelwaarde van 1.00 wordt overschreden.\n\nOmdat de ARIE-regeling primair is ontworpen om werknemers te beschermen tegen de gevolgen van zware ongevallen met gevaarlijke stoffen, impliceert deze overschrijding dat aanvullende specifieke beheersmaatregelen wettelijk verplicht zijn conform het Arbobesluit.`;
         doc.text(doc.splitTextToSize(arieText, 170), 20, 115);
 
-        // --- PAGINA 5: STOFFENLIJST ---
+        // --- PAGINA 5: WETTELIJKE VERVOLGSTAPPEN (CONDITIONEEL) ---
+        let nextChapterNum = 5;
+        const thresholdExceeded = stats.overallStatus !== 'Geen' || stats.arieExceeded;
+        
+        if (thresholdExceeded) {
+          doc.addPage();
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(18);
+          doc.setTextColor(22, 80, 91);
+          doc.text("5. Wettelijke Vervolgstappen", 20, 30);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(10);
+          doc.setTextColor(60, 60, 60);
+          const vervolgIntro = "De vastgestelde status van de inrichting brengt een reeks dwingende wettelijke verplichtingen met zich mee. Om compliant te blijven aan de vigerende wet- en regelgeving, dienen onderstaande actiepunten binnen de gestelde termijnen te worden uitgevoerd en geborgd in de bedrijfsvoering.";
+          doc.text(doc.splitTextToSize(vervolgIntro, 170), 20, 40);
+
+          let currentY = 55;
+
+          // 5.1 Seveso Verplichtingen
+          if (stats.overallStatus !== 'Geen') {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.setTextColor(22, 80, 91);
+            doc.text("5.1 Seveso: Verplichtingen", 20, currentY);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.setTextColor(60, 60, 60);
+            const sevesoSteps = "Indien de drempelwaarden van de Seveso-richtlijn (geïmplementeerd in de Omgevingswet en het Besluit activiteiten leefomgeving) worden overschreden, is de inrichting gehouden aan de volgende verplichtingen:\n\n" +
+              "• Formele Kennisgeving: De exploitant is verplicht een officiële kennisgeving in te dienen bij de relevante bevoegde gezagsinstanties (zoals de Omgevingsdienst en de Veiligheidsregio).\n" +
+              "• Preventiebeleid Zware Ongevallen (PBZO): Er dient een schriftelijk document te worden opgesteld waarin de algemene doelstellingen en de beginselen van het beleid van de exploitant ter voorkoming van zware ongevallen zijn vastgelegd.\n" +
+              "• Veiligheidsbeheerssysteem (VBS): Ter uitvoering van het PBZO moet een integraal Veiligheidsbeheerssysteem worden geïmplementeerd.\n" +
+              "• Dominosituatie-onderzoek: Er dient een onderzoek te worden verricht naar mogelijke 'domino-effecten' bij naburige inrichtingen.";
+            
+            const splitSteps = doc.splitTextToSize(sevesoSteps, 170);
+            doc.text(splitSteps, 20, currentY + 7);
+            currentY += (splitSteps.length * 5) + 15;
+          }
+
+          // 5.2 ARIE Actiepunten
+          if (stats.arieExceeded) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.setTextColor(22, 80, 91);
+            doc.text("5.2 ARIE-plicht: Actiepunten", 20, currentY);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.setTextColor(60, 60, 60);
+            const arieSteps = "Voor inrichtingen die onder de ARIE-regeling vallen, gelden specifieke verplichtingen vanuit de Arbeidsomstandighedenwetgeving:\n\n" +
+              "• Melding aan de Nederlandse Arbeidsinspectie (NLA): De inrichting moet formeel worden aangemeld bij de NLA.\n" +
+              "• Aanvullende RI&E (ARIE): Naast de reguliere RI&E is een specifieke verdieping noodzakelijk die zich richt op de scenario's van zware ongevallen.\n" +
+              "• Implementatie van PBZO en VBS: Ook voor de ARIE-plicht is de methodiek van het PBZO en VBS verplicht conform het Arbobesluit.\n" +
+              "• Informatie, Onderricht en Instructie: Werknemers moeten aantoonbaar instructie hebben ontvangen over de risico's en noodprocedures.";
+            
+            const splitArieSteps = doc.splitTextToSize(arieSteps, 170);
+            doc.text(splitArieSteps, 20, currentY + 7);
+          }
+          nextChapterNum = 6;
+        }
+
+        // --- PAGINA [5/6]: STOFFENLIJST ---
         doc.addPage();
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(18);
         doc.setTextColor(22, 80, 91);
-        doc.text("5. Gedetailleerd Stoffenoverzicht", 20, 30);
+        doc.text(`${nextChapterNum}. Gedetailleerd Stoffenoverzicht`, 20, 30);
 
         autoTable(doc, {
             startY: 40,
