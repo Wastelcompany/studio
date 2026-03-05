@@ -139,7 +139,7 @@ export default function SevesoApp() {
     return `${sanitizedName}.${YYYYMMDD}.${extension}`;
   };
 
-  // Helper for browser base64 to Uint8Array
+  // Browser-compatible Base64 to Uint8Array
   const base64ToUint8 = (base64: string): Uint8Array => {
     const binaryString = window.atob(base64);
     const bytes = new Uint8Array(binaryString.length);
@@ -248,7 +248,7 @@ export default function SevesoApp() {
                             const sepPage = mergedPdf.addPage();
                             sepPage.drawText(`SDS BIJLAGE: ${substance.productName}`, { x: 50, y: 750, size: 18 });
                             
-                            sPages.forEach(p => mergedPdf.addPage(p));
+                            sdsPages.forEach(p => mergedPdf.addPage(p));
                         } else if (mimeType.startsWith('image/')) {
                             const imgPage = mergedPdf.addPage();
                             imgPage.drawText(`SDS BIJLAGE (Afbeelding): ${substance.productName}`, { x: 50, y: 750, size: 18 });
