@@ -24,6 +24,8 @@ import { collection, query, where, doc } from 'firebase/firestore';
 import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb, deleteCompanyFromDb } from '@/lib/companies';
 import { Loader2, Building2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
+import { nl } from 'date-fns/locale';
 
 export default function SevesoApp() {
   const { user, isUserLoading: isAuthLoading } = useUser();
@@ -74,40 +76,78 @@ export default function SevesoApp() {
   };
 
   const handleGenerateReport = (type: 'full' | 'seveso') => {
-    if (!selectedCompany) return;
+    if (!selectedCompany || !user) return;
     setIsSavingPdf(true);
     try {
         const doc = new jsPDF('p', 'mm', 'a4');
         const stats = calculateSummations(localInventory, thresholdMode);
-        const primaryColor = [22, 80, 91]; // Deep Teal
+        const primaryColor = [22, 80, 91]; // Deep Teal (#16505B)
+        const dateStr = format(new Date(), 'd-M-yyyy');
+        const rapportNummer = `${user.uid}.${type === 'full' ? 'SERIE' : 'SEV'}.${format(new Date(), 'yyMMdd')}`;
+
+        // --- PAGINA 1: VOORBLAD ---
+        // Header Balk
+        doc.setFillColor(22, 80, 91);
+        doc.rect(0, 0, 210, 55, 'F');
         
-        // Header
-        doc.setFontSize(22);
+        // Logo / Naam in Header
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(26);
+        doc.setTextColor(255, 255, 255);
+        doc.text("ChemStats", 20, 25);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text("Gevaarlijke Stoffen Analyse", 20, 33);
+
+        // Grote Titel
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(32);
         doc.setTextColor(22, 80, 91);
-        doc.text(type === 'full' ? "Seveso & ARIE Rapport" : "Seveso Rapport", 20, 30);
+        doc.text("Seveso III & ARIE Rapportage", 20, 90);
+
+        // Bedrijfsgegevens
+        doc.setFontSize(12);
+        doc.setTextColor(60, 60, 60);
+        doc.text("Bedrijf:", 20, 115);
+        doc.setFont('helvetica', 'bold');
+        doc.text(selectedCompany.name, 40, 115);
+        
+        doc.setFont('helvetica', 'normal');
+        doc.text("Locatie:", 20, 123);
+        doc.setFont('helvetica', 'bold');
+        doc.text(selectedCompany.address || 'Geen adres opgegeven', 40, 123);
+
+        // Footer Metadata op Voorblad
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Datum: ${dateStr}`, 20, 275);
+        doc.text(`Rapportnummer: ${rapportNummer}`, 20, 282);
+
+        // --- PAGINA 2: INHOUD ---
+        doc.addPage();
+        
+        // Hoofdstuk 1: Seveso
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.setTextColor(22, 80, 91);
+        doc.text("1. Seveso III Sommatieoverzicht", 20, 30);
         
         doc.setFontSize(10);
-        doc.setTextColor(80, 80, 80);
-        doc.text(`Bedrijf: ${selectedCompany.name}`, 20, 40);
-        doc.text(`Locatie: ${selectedCompany.address || 'Geen adres opgegeven'}`, 20, 45);
-        doc.text(`Datum: ${new Date().toLocaleDateString('nl-NL')}`, 20, 50);
-        doc.text(`Drempelwaarde-modus: ${thresholdMode === 'high' ? 'Hoge drempels' : 'Lage drempels'}`, 20, 55);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Drempelwaarde-modus: ${thresholdMode === 'high' ? 'Hoge drempels' : 'Lage drempels'}`, 20, 38);
 
-        // Seveso Section
-        doc.setFontSize(14);
-        doc.setTextColor(22, 80, 91);
-        doc.text("1. Seveso III Sommatieoverzicht", 20, 70);
-        
         autoTable(doc, {
-            startY: 75,
+            startY: 45,
             head: [['Gevarengroep', 'Sommatie Ratio (%)', 'Status']],
             body: stats.summationGroups.map(g => [
                 g.name, 
                 `${Math.round(g.totalRatio * 100)}%`, 
                 g.totalRatio >= 1 ? 'DREMPEL OVERSCHREDEN' : 'Binnen drempel'
             ]),
-            headStyles: { fillColor: primaryColor },
-            styles: { fontSize: 9 },
+            headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold' },
+            styles: { fontSize: 10, cellPadding: 4 },
             columnStyles: {
                 2: { fontStyle: 'bold' }
             },
@@ -118,38 +158,44 @@ export default function SevesoApp() {
             }
         });
 
-        const lastY = (doc as any).lastAutoTable.finalY || 120;
-        
-        // ARIE Section
+        let currentY = (doc as any).lastAutoTable.finalY + 20;
+
+        // Hoofdstuk 2: ARIE (indien van toepassing)
         if (type === 'full') {
-            doc.setFontSize(14);
+            if (currentY > 230) { doc.addPage(); currentY = 30; }
+            
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
             doc.setTextColor(22, 80, 91);
-            doc.text("2. ARIE Sommatieoverzicht", 20, lastY + 15);
+            doc.text("2. ARIE Sommatieoverzicht", 20, currentY);
             
             autoTable(doc, {
-                startY: lastY + 20,
+                startY: currentY + 10,
                 head: [['Gevarengroep', 'Ratio (%)', 'Status']],
                 body: stats.arieSummationGroups.map(g => [
                     g.name, 
                     `${Math.round(g.totalRatio * 100)}%`, 
                     g.totalRatio >= 1 ? 'ARIE PLICHTIG' : 'Niet ARIE plichtig'
                 ]),
-                headStyles: { fillColor: [50, 50, 50] },
-                styles: { fontSize: 9 },
+                headStyles: { fillColor: [50, 50, 50], textColor: [255, 255, 255], fontStyle: 'bold' },
+                styles: { fontSize: 10, cellPadding: 4 },
                 columnStyles: {
                     2: { fontStyle: 'bold' }
                 }
             });
+            
+            currentY = (doc as any).lastAutoTable.finalY + 20;
         }
 
-        // Inventory Section
+        // Hoofdstuk 3: Stoffenoverzicht
         doc.addPage();
-        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
         doc.setTextColor(22, 80, 91);
-        doc.text("3. Gedetailleerd Stoffenoverzicht", 20, 20);
+        doc.text(`${type === 'full' ? '3' : '2'}. Gedetailleerd Stoffenoverzicht`, 20, 30);
         
         autoTable(doc, {
-            startY: 25,
+            startY: 40,
             head: [['Stofnaam', 'CAS', 'Voorraad (t)', 'Seveso Cat.', 'ARIE Cat.']],
             body: localInventory.map(s => [
                 s.productName, 
@@ -158,10 +204,10 @@ export default function SevesoApp() {
                 s.sevesoCategoryIds.join(', '), 
                 s.arieCategoryIds.join(', ')
             ]),
-            headStyles: { fillColor: primaryColor },
-            styles: { fontSize: 8 },
+            headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold' },
+            styles: { fontSize: 9, cellPadding: 3 },
             columnStyles: {
-                0: { cellWidth: 60 },
+                0: { cellWidth: 55 },
                 1: { cellWidth: 30 },
                 2: { cellWidth: 25, halign: 'right' }
             }
