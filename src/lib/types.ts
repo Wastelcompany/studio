@@ -46,7 +46,6 @@ export interface Substance {
   isNamedSubstance: boolean;
   namedSubstanceName: string | null;
   quantity: number; // in tons
-  sdsUri?: string; // Base64 data URI of the SDS document
 }
 
 export interface QuantityLog {

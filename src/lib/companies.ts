@@ -1,6 +1,6 @@
 
 import type { Firestore } from 'firebase/firestore';
-import { collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, onSnapshot, writeBatch, deleteDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc, addDoc, writeBatch, Timestamp, serverTimestamp } from 'firebase/firestore';
 import type { Substance, Company } from './types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -95,7 +95,7 @@ export const addSubstanceToDb = (db: Firestore, companyId: string, substance: Su
             date: dateKey,
             quantity: substance.quantity,
             updatedAt: serverTimestamp()
-        });
+        }, { merge: true });
     }).catch(error => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: newDocRef.path,
@@ -108,7 +108,6 @@ export const addSubstanceToDb = (db: Firestore, companyId: string, substance: Su
 export const deleteSubstanceFromDb = (db: Firestore, companyId: string, substanceId: string) => {
     const docRef = doc(db, 'companies', companyId, 'inventory', substanceId);
     
-    // We should ideally delete history too
     const batch = writeBatch(db);
     batch.delete(docRef);
     
@@ -126,7 +125,6 @@ export const updateSubstanceQuantityInDb = (db: Firestore, companyId: string, su
         const docRef = doc(db, 'companies', companyId, 'inventory', substanceId);
         const data = { quantity };
         
-        // Update main substance doc
         setDoc(docRef, data, { merge: true }).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: docRef.path,
@@ -135,16 +133,13 @@ export const updateSubstanceQuantityInDb = (db: Firestore, companyId: string, su
             }));
         });
 
-        // Update history log (daily snapshot)
         const dateKey = format(new Date(), 'yyyy-MM-dd');
         const historyRef = doc(db, 'companies', companyId, 'inventory', substanceId, 'history', dateKey);
         setDoc(historyRef, {
             date: dateKey,
             quantity: quantity,
             updatedAt: serverTimestamp()
-        }, { merge: true }).catch(error => {
-            // Silence history errors
-        });
+        }, { merge: true }).catch(() => {});
     }, 300);
 };
 
@@ -152,14 +147,9 @@ export const clearInventoryFromDb = (db: Firestore, companyId: string) => {
     const inventoryColRef = collection(db, 'companies', companyId, 'inventory');
     
     getDocs(inventoryColRef).then(inventorySnap => {
-        if (inventorySnap.empty) {
-            return;
-        }
-    
+        if (inventorySnap.empty) return;
         const batch = writeBatch(db);
-        inventorySnap.forEach(doc => {
-            batch.delete(doc.ref);
-        });
+        inventorySnap.forEach(doc => batch.delete(doc.ref));
         batch.commit().catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: inventoryColRef.path,
