@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import type { Substance, ThresholdMode, Company, UserProfile, Customer } from '@/lib/types';
+import type { Substance, ThresholdMode, Company, UserProfile } from '@/lib/types';
 import SevesoHeader from '@/components/seveso-header';
 import InventoryTable from '@/components/inventory-table';
 import Dashboard from '@/components/dashboard';
@@ -10,7 +10,7 @@ import SdsUploadDialog from './sds-upload-dialog';
 import ReferenceGuideDialog from './reference-guide-dialog';
 import PasswordChangeDialog from './password-change-dialog';
 import HistoryDialog from './history-dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
 import { jsPDF } from 'jspdf';
@@ -20,10 +20,8 @@ import { calculateSummations } from '@/lib/seveso';
 import * as XLSX from 'xlsx';
 import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc, useAuth } from '@/firebase';
 import { collection, query, where, doc } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
 import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb, deleteCompanyFromDb } from '@/lib/companies';
 import { Loader2, Building2 } from 'lucide-react';
-import { Button } from './ui/button';
 import { useRouter } from 'next/navigation';
 
 export default function SevesoApp() {
@@ -60,7 +58,7 @@ export default function SevesoApp() {
   const [isDeleteCompanyAlertOpen, setIsDeleteCompanyAlertOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [historySubstance, setHistorySubstance] = useState<Substance | null>(null);
-  const { toast, dismiss } = useToast();
+  const { toast } = useToast();
   const [explanationData, setExplanationData] = useState<{ substance: Substance | null; categoryId: string | null; type: 'seveso' | 'arie' | null }>({ substance: null, categoryId: null, type: null });
   const [isSavingPdf, setIsSavingPdf] = useState(false);
 
@@ -98,7 +96,7 @@ export default function SevesoApp() {
         });
 
         if (type === 'full') {
-            const lastY = (doc as any).lastAutoTable.cursor.y;
+            const lastY = (doc as any).lastAutoTable.finalY || 120;
             doc.text("ARIE Sommatieoverzicht", 20, lastY + 15);
             autoTable(doc, {
                 startY: lastY + 20,
@@ -108,10 +106,10 @@ export default function SevesoApp() {
             });
         }
 
-        const finalY = (doc as any).lastAutoTable.cursor.y;
-        doc.text("Stoffenoverzicht", 20, finalY + 15);
+        doc.addPage();
+        doc.text("Stoffenoverzicht", 20, 20);
         autoTable(doc, {
-            startY: finalY + 20,
+            startY: 25,
             head: [['Stof', 'CAS', 'Voorraad (t)', 'Seveso Cat.', 'ARIE Cat.']],
             body: localInventory.map(s => [s.productName, s.casNumber || '-', s.quantity.toFixed(2), s.sevesoCategoryIds.join(', '), s.arieCategoryIds.join(', ')]),
             headStyles: { fillColor: [22, 80, 91] },
@@ -120,6 +118,7 @@ export default function SevesoApp() {
         doc.save(generateFileName('pdf'));
         toast({ title: "Rapport opgeslagen" });
     } catch (error) {
+        console.error("PDF generation failed:", error);
         toast({ variant: "destructive", title: "Fout bij PDF maken" });
     } finally {
         setIsSavingPdf(false);
