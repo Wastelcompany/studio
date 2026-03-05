@@ -71,6 +71,16 @@ service cloud.firestore {
                                get(/databases/$(database)/documents/companies/$(companyId)).data.customerId ==
                                getUserCustomerId(request.auth.uid)
                              );
+        
+        match /history/{logId} {
+          allow read, write: if isAdmin() ||
+                               (
+                                 isSignedIn() &&
+                                 isNotDisabled(request.auth.uid) &&
+                                 get(/databases/$(database)/documents/companies/$(companyId)).data.customerId ==
+                                 getUserCustomerId(request.auth.uid)
+                               );
+        }
       }
     }
 
