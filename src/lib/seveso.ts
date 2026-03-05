@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Substance, HazardCategory, NamedSubstance, ThresholdMode, SummationGroup } from '@/lib/types';
@@ -9,7 +10,6 @@ import { FlaskConical, Flame, Leaf, AlertTriangle, Atom } from 'lucide-react';
  * Volgorde: H (Gezondheid), P (Fysiek), E (Milieu), O (Overig).
  */
 
-// Master list of all hazard categories
 export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   "H1": { id: 'H1', name: 'Acuut toxisch, categorie 1 (alle routes)', group: 'health', displayId: 'H1' },
   "H2": { id: 'H2', name: 'Acuut toxisch, categorie 2 (alle) & cat. 3 (inademing)', group: 'health', displayId: 'H2' },
@@ -19,8 +19,8 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   "P1a": { id: 'P1a', name: 'Explosieve stoffen (instabiel, 1.1, 1.2, 1.3, 1.5)', group: 'physical', displayId: 'P1a' },
   "P1b": { id: 'P1b', name: 'Explosieve stoffen (1.4)', group: 'physical', displayId: 'P1b' },
   "P2": { id: 'P2', name: 'Ontvlambare gassen, categorie 1 en 2', group: 'physical', displayId: 'P2' },
-  "P3a": { id: 'P3a', name: 'Ontvlambare aerosolen, cat 1 & 2 (ontvlambaar)', group: 'physical', displayId: 'P3a' },
-  "P3b": { id: 'P3b', name: 'Ontvlambare aerosolen, cat 1 & 2 (overig)', group: 'physical', displayId: 'P3b' },
+  "P3a": { id: 'P3a', name: 'Ontvlambare gassen, categorie 1 en 2', group: 'physical', displayId: 'P3a' },
+  "P3b": { id: 'P3b', name: 'Ontvlambare aerosolen, cat 1 & 2', group: 'physical', displayId: 'P3b' },
   "P4": { id: 'P4', name: 'Oxiderende gassen, categorie 1', group: 'physical', displayId: 'P4' },
   "P5a": { id: 'P5a', name: 'Ontvlambare vloeistoffen, categorie 1 (Zeer licht)', group: 'physical', displayId: 'P5a' },
   "P5b": { id: 'P5b', name: 'Ontvlambare vloeistoffen, categorie 2 en 3 (Licht)', group: 'physical', displayId: 'P5b' },
@@ -37,8 +37,6 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   "O1": { id: 'O1', name: 'Stoffen met gevarenaanduiding EUH014', group: 'other', displayId: 'O1' },
   "O2": { id: 'O2', name: 'Stoffen die in contact met water ontvlambare gassen ontwikkelen (Cat 1)', group: 'other', displayId: 'O2' },
   "O3": { id: 'O3', name: 'Stoffen met gevarenaanduiding EUH029', group: 'other', displayId: 'O3' },
-
-  'ARIE-CMR': { id: 'ARIE-CMR', name: 'Kankerverwekkend/mutageen/reprotoxisch cat 1A/1B', group: 'health', displayId: 'CMR' },
   'ARIE-O4': { id: 'ARIE-O4', name: 'Stoffen met EUH001 (in droge toestand ontplofbaar)', group: 'other', displayId: 'O4' },
 };
 
@@ -73,10 +71,6 @@ export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
   H314: 'Veroorzaakt ernstige brandwonden en oogletsel',
   H330: 'Dodelijk bij inademing',
   H331: 'Giftig bij inademing',
-  H340: 'Kan genetische defecten verooraken',
-  H350: 'Kan kanker verooraken',
-  H360: 'Kan de vruchtbaarheid of het ongeboren kind schaden',
-  H370: 'Veroorzaakt schade aan organen',
   H400: 'Zeer giftig voor in het water levende organismen',
   H410: 'Zeer giftig voor in het water levende organismen, met langdurige gevolgen',
   H411: 'Giftig voor in het water levende organismen, met langdurige gevolgen',
@@ -85,7 +79,6 @@ export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
   EUH029: 'Vormt giftig gas in contact met water',
 };
 
-// Seveso III Thresholds (Annex I, Part 1)
 export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = {
   "H1": { low: 5, high: 20 },
   "H2": { low: 50, high: 200 },
@@ -110,13 +103,11 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   "O3": { low: 50, high: 200 },
 };
 
-// ARIE Thresholds - UPDATED based on user requirements
 export const ARIE_THRESHOLDS: Record<string, number> = {
   "H1": 1.5,
   "H2": 15,
   "H3": 15,
   "H4": 15,
-  "ARIE-CMR": 0.5,
   "P1a": 3,
   "P2": 3,
   "P5a": 3,
@@ -126,17 +117,12 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
   "P6b": 15,
   "P7": 15,
   "P9": 15,
-  "P3a": 50,
-  "P3b": 500,
-  "P4": 50,
-  "P8": 50,
   "O1": 30,
   "O2": 30,
   "O3": 15,
   "ARIE-O4": 15,
 };
 
-// Named substances (Seveso & ARIE)
 export const NAMED_SUBSTANCES: Record<string, NamedSubstance & { primaryGroup: string }> = {
   '6484-52-2-5000': { id: 'Ammoniumnitraat-5000', cas: '6484-52-2', name: 'Ammoniumnitraat (meststoffen, groep 1)', group: 'named', primaryGroup: 'other', threshold: { low: 5000, high: 10000 }, arieThreshold: 1250 },
   '67-56-1': { id: 'Methanol', cas: '67-56-1', name: 'Methanol', group: 'named', primaryGroup: 'physical', threshold: { low: 500, high: 5000 }, arieThreshold: 500 },
@@ -145,7 +131,6 @@ export const NAMED_SUBSTANCES: Record<string, NamedSubstance & { primaryGroup: s
   '68476-85-7': { id: 'LPG', cas: '68476-85-7', name: 'Vloeibare gassen (LPG)', group: 'named', primaryGroup: 'physical', threshold: { low: 50, high: 200 }, arieThreshold: 50 },
 };
 
-// H-phrase Mapping
 export const H_PHRASE_MAPPING: Record<string, string[]> = {
   'H300': ['H1'], 'H310': ['H1'], 'H330': ['H1'],
   'H301': ['H2'], 'H311': ['H2'], 'H331': ['H2'],
@@ -154,14 +139,10 @@ export const H_PHRASE_MAPPING: Record<string, string[]> = {
   'H204': ['P1b'], 'H220': ['P2'], 'H221': ['P2'],
   'H222': ['P3a'], 'H223': ['P3a'], 'H270': ['P4'],
   'H224': ['P5a'], 'H225': ['P5b'], 'H226': ['P5c'],
-  'H240': ['P6a'], 'H241': ['P6a'],
-  'H242': ['P6b'], 'H250': ['P7'],
-  'H271': ['P8'], 'H272': ['P8'],
-  'H251': ['P9'], 'H252': ['P9'],
+  'H240': ['P6a'], 'H241': ['P6a'], 'H242': ['P6b'], 
+  'H250': ['P7'], 'H271': ['P8'], 'H272': ['P8'], 'H251': ['P9'], 'H252': ['P9'],
   'H400': ['E1'], 'H410': ['E1'], 'H411': ['E2'],
-  'EUH014': ['O1'], 'H260': ['O2'], 'EUH029': ['O3'],
-  'H340': ['ARIE-CMR'], 'H350': ['ARIE-CMR'], 'H360': ['ARIE-CMR'],
-  'EUH001': ['ARIE-O4'],
+  'EUH014': ['O1'], 'H260': ['O2'], 'EUH029': ['O3'], 'EUH001': ['ARIE-O4'],
 };
 
 export const SUMMATION_GROUPS_CONFIG = [
@@ -172,17 +153,10 @@ export const SUMMATION_GROUPS_CONFIG = [
   { name: 'Benoemde Stoffen', icon: Atom, group: 'named' },
 ] as const;
 
-/**
- * Gets the correct ARIE threshold for a category ID.
- */
 export function getArieThreshold(catId: string): number | null {
-  // 1. Check explicit ARIE map first
   if (ARIE_THRESHOLDS[catId] !== undefined) return ARIE_THRESHOLDS[catId];
-  
-  // 2. Check named substances
   const named = Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
   if (named) return named.arieThreshold ?? named.threshold.low;
-  
   return null;
 }
 
@@ -194,15 +168,9 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
   hCodes.forEach(code => {
     if (H_PHRASE_MAPPING[code]) {
       H_PHRASE_MAPPING[code].forEach(catId => {
-        // Seveso classification
-        if (SEVESO_THRESHOLDS[catId]) {
-          sevesoCategoryIds.add(catId);
-        }
-        // ARIE classification (excluding environment)
+        if (SEVESO_THRESHOLDS[catId]) sevesoCategoryIds.add(catId);
         const cat = ALL_CATEGORIES[catId];
-        if (getArieThreshold(catId) !== null && cat?.group !== 'environment') {
-          arieCategoryIds.add(catId);
-        }
+        if (getArieThreshold(catId) !== null && cat?.group !== 'environment') arieCategoryIds.add(catId);
       });
     }
   });
@@ -217,12 +185,7 @@ export function classifySubstance(hStatements: string[], casNumber: string | nul
     namedSubstanceName = named.name;
   }
   
-  return { 
-    sevesoCategoryIds: Array.from(sevesoCategoryIds), 
-    arieCategoryIds: Array.from(arieCategoryIds), 
-    isNamed, 
-    namedSubstanceName 
-  };
+  return { sevesoCategoryIds: Array.from(sevesoCategoryIds), arieCategoryIds: Array.from(arieCategoryIds), isNamed, namedSubstanceName };
 }
 
 export function calculateSummations(inventory: Substance[], mode: ThresholdMode): { 
@@ -239,7 +202,6 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
   
   inventory.forEach(substance => {
     if (substance.quantity > 0) {
-      // Seveso
       const sevesoMaxPerGroup: Record<string, number> = {};
       substance.sevesoCategoryIds.forEach(catId => {
         const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
@@ -248,22 +210,16 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
           const threshold = thresholdInfo[mode];
           if (threshold > 0) {
             const ratio = substance.quantity / threshold;
-            const group = category.group;
-            if (!sevesoMaxPerGroup[group] || ratio > sevesoMaxPerGroup[group]) sevesoMaxPerGroup[group] = ratio;
+            if (!sevesoMaxPerGroup[category.group] || ratio > sevesoMaxPerGroup[category.group]) sevesoMaxPerGroup[category.group] = ratio;
           }
         }
       });
-      for (const group in sevesoMaxPerGroup) {
-        sevesoGroupTotals[group] = (sevesoGroupTotals[group] || 0) + sevesoMaxPerGroup[group];
-      }
+      for (const group in sevesoMaxPerGroup) sevesoGroupTotals[group] += sevesoMaxPerGroup[group];
 
-      // ARIE (Environment is EXCLUDED)
       const arieMaxPerGroup: Record<string, number> = {};
       substance.arieCategoryIds.forEach(catId => {
         const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-        // Explicitly exclude environment from ARIE summation
         if (category && category.group === 'environment') return;
-
         const arieThreshold = getArieThreshold(catId);
         if (category && arieThreshold && arieThreshold > 0) {
           const ratio = substance.quantity / arieThreshold;
@@ -271,9 +227,7 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
           if (!arieMaxPerGroup[group] || ratio > arieMaxPerGroup[group]) arieMaxPerGroup[group] = ratio;
         }
       });
-      for (const group in arieMaxPerGroup) {
-        arieGroupTotals[group] = (arieGroupTotals[group] || 0) + arieMaxPerGroup[group];
-      }
+      for (const group in arieMaxPerGroup) arieGroupTotals[group] += arieMaxPerGroup[group];
     }
   });
 
@@ -284,7 +238,6 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
     categoryContributions: {},
   }));
   
-  // For ARIE, environment should be 0 as per instructions
   const arieSummationGroups: SummationGroup[] = SUMMATION_GROUPS_CONFIG.map(config => ({
     ...config,
     totalRatio: config.group === 'environment' ? 0 : (arieGroupTotals[config.group] || 0),

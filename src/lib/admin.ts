@@ -1,6 +1,6 @@
 
 import type { Firestore, UserProfile, Company, Customer } from '@/lib/types';
-import { collection, doc, getDocs, query, updateDoc, where, writeBatch, deleteDoc, Timestamp, addDoc, setDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, query, updateDoc, where, writeBatch, deleteDoc, Timestamp, addDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 /**
  * Toggles the disabled status of a user in Firestore.
@@ -89,7 +89,7 @@ export const createCustomerFromKvk = async (db: Firestore, customerInfo: { name:
         name: customerInfo.name,
         address: customerInfo.address,
         kvkNumber: customerInfo.kvkNumber,
-        createdAt: Timestamp.now(),
+        createdAt: serverTimestamp(),
     });
     return newCustomerDoc.id;
 };
@@ -104,7 +104,7 @@ export const createCompanyForCustomer = async (db: Firestore, adminUid: string, 
         customerId: customerId,
         name: companyInfo.name,
         address: companyInfo.address,
-        createdAt: Timestamp.now(),
+        createdAt: serverTimestamp(),
     });
 };
 
@@ -126,4 +126,19 @@ export const renameCustomerGroup = async (db: Firestore, customerId: string, new
     batch.set(customerDocRef, { name: newName }, { merge: true });
     
     await batch.commit();
+};
+
+/**
+ * Logs AI usage for analytics.
+ */
+export const logAiUsage = async (db: Firestore, userId: string, type: 'SDS_EXTRACTION' | 'KVK_SEARCH'): Promise<void> => {
+  const logsRef = collection(db, 'ai_usage_logs');
+  const estimatedCost = type === 'SDS_EXTRACTION' ? 0.015 : 0.002; // Simple estimation
+  await addDoc(logsRef, {
+    userId,
+    type,
+    model: 'gemini-2.5-flash-lite',
+    timestamp: serverTimestamp(),
+    estimatedCost
+  });
 };

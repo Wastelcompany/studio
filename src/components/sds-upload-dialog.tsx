@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useTransition } from 'react';
@@ -17,6 +18,8 @@ import { Loader2, UploadCloud } from 'lucide-react';
 import { aiMsdsDataExtraction } from '@/ai/flows/ai-msds-data-extraction';
 import { classifySubstance } from '@/lib/seveso';
 import type { Substance } from '@/lib/types';
+import { useFirestore, useUser } from '@/firebase';
+import { logAiUsage } from '@/lib/admin';
 
 interface SdsUploadDialogProps {
   isOpen: boolean;
@@ -30,6 +33,8 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
   const [files, setFiles] = useState<File[] | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast, dismiss } = useToast();
+  const db = useFirestore();
+  const { user } = useUser();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -86,16 +91,17 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
               isNamedSubstance: isNamed,
               namedSubstanceName: namedSubstanceName,
           });
+          
+          if (db && user) {
+            logAiUsage(db, user.uid, 'SDS_EXTRACTION');
+          }
+          
           successCount++;
 
         } catch (error) {
-          dismiss(toastId); // Dismiss the progress toast on error
+          dismiss(toastId);
           console.error('SDS Extraction Error:', error);
           let errorMessage = error instanceof Error ? error.message : 'Er is een onbekende fout opgetreden.';
-          if (errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
-            errorMessage = 'De API-limiet (per minuut of per dag) is overschreden. Wacht alstublieft en probeer het later opnieuw met minder bestanden.';
-          }
-          
           toast({
               variant: 'destructive',
               title: `Analyse Mislukt voor ${file.name}`,
@@ -105,9 +111,8 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
             dismiss(toastId);
         }
         
-        // Add a delay between API calls to avoid rate limiting, but not after the last file.
         if (fileIndex < totalFiles) {
-            await sleep(5000); // 5 seconds delay
+            await sleep(3000); // Small delay to avoid burst limits
         }
       }
 

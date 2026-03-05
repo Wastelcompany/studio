@@ -9,7 +9,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Customer (often same as the primary user's UID or a generated ID)."
+          "description": "Unique identifier for the Customer."
         },
         "name": {
           "type": "string",
@@ -169,7 +169,7 @@
         },
         "customerName": {
           "type": "string",
-          "description": "Display name for the customer group (legal name)."
+          "description": "Display name for the customer group."
         },
         "disabled": {
           "type": "boolean",
@@ -184,6 +184,21 @@
         "customerName",
         "disabled"
       ]
+    },
+    "AiUsageLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AI Usage Log",
+      "type": "object",
+      "description": "Tracks AI model usage for billing and analytics.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["SDS_EXTRACTION", "KVK_SEARCH"] },
+        "model": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "estimatedCost": { "type": "number", "description": "Estimated cost in USD." }
+      },
+      "required": ["id", "userId", "type", "timestamp"]
     }
   },
   "auth": {
@@ -232,8 +247,18 @@
           },
           "description": "Contains chemical substances belonging to a specific company facility."
         }
+      },
+      {
+        "path": "/ai_usage_logs/{logId}",
+        "definition": {
+          "entityName": "AiUsageLog",
+          "schema": {
+            "$ref": "#/backend/entities/AiUsageLog"
+          },
+          "description": "Logs of AI model usage."
+        }
       }
     ],
-    "reasoning": "The structure now explicitly separates Customers (billing entities) from Companies (physical facilities). A customer can have multiple users and multiple facilities. All companies and users are grouped by customerId for billing and sharing purposes."
+    "reasoning": "The structure separates billing entities from physical facilities and adds an AI usage tracking collection."
   }
 }
