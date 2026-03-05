@@ -14,7 +14,7 @@ import ReportOptionsDialog from './report-options-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
-import jsPDF from 'jspdf';
+import jspdf from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { PDFDocument } from 'pdf-lib';
 import CompanySelector from './company-selector';
@@ -139,13 +139,23 @@ export default function SevesoApp() {
     return `${sanitizedName}.${YYYYMMDD}.${extension}`;
   };
 
+  // Helper for browser base64 to Uint8Array
+  const base64ToUint8 = (base64: string): Uint8Array => {
+    const binaryString = window.atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+  };
+
   const handleGenerateReport = async (options: { type: 'full' | 'seveso'; includeSds: boolean }) => {
     if (!selectedCompany) return;
     setIsSavingPdf(true);
     const { id: toastId } = toast({ title: "Rapport genereren...", description: "PDF wordt samengesteld." });
 
     try {
-        const doc = new jsPDF('p', 'mm', 'a4');
+        const doc = new jspdf('p', 'mm', 'a4');
         const stats = calculateSummations(localInventory, thresholdMode);
         
         // Header
@@ -212,7 +222,7 @@ export default function SevesoApp() {
         // Get Main Report Bytes
         const mainReportBytes = doc.output('arraybuffer');
         
-        let finalPdfBytes: Uint8Array = new Uint8Array(mainReportBytes);
+        let finalPdfBytes: Uint8Array;
 
         // Append SDS Documents if requested
         if (options.includeSds) {
@@ -227,24 +237,26 @@ export default function SevesoApp() {
             for (const substance of localInventory) {
                 if (substance.sdsUri) {
                     try {
-                        const base64Data = substance.sdsUri.split(',')[1];
-                        const mimeType = substance.sdsUri.split(';')[0].split(':')[1];
+                        const parts = substance.sdsUri.split(';');
+                        const mimeType = parts[0].split(':')[1];
+                        const base64Data = parts[1].split(',')[1];
                         
                         if (mimeType === 'application/pdf') {
-                            const sdsDoc = await PDFDocument.load(Buffer.from(base64Data, 'base64'));
+                            const sdsDoc = await PDFDocument.load(base64ToUint8(base64Data));
                             const sdsPages = await mergedPdf.copyPages(sdsDoc, sdsDoc.getPageIndices());
                             
                             const sepPage = mergedPdf.addPage();
                             sepPage.drawText(`SDS BIJLAGE: ${substance.productName}`, { x: 50, y: 750, size: 18 });
                             
-                            sdsPages.forEach(p => mergedPdf.addPage(p));
+                            sPages.forEach(p => mergedPdf.addPage(p));
                         } else if (mimeType.startsWith('image/')) {
                             const imgPage = mergedPdf.addPage();
                             imgPage.drawText(`SDS BIJLAGE (Afbeelding): ${substance.productName}`, { x: 50, y: 750, size: 18 });
                             
+                            const bytes = base64ToUint8(base64Data);
                             const image = mimeType === 'image/jpeg' 
-                                ? await mergedPdf.embedJpg(Buffer.from(base64Data, 'base64'))
-                                : await mergedPdf.embedPng(Buffer.from(base64Data, 'base64'));
+                                ? await mergedPdf.embedJpg(bytes)
+                                : await mergedPdf.embedPng(bytes);
                             
                             const dims = image.scaleToFit(imgPage.getWidth() - 100, imgPage.getHeight() - 150);
                             imgPage.drawImage(image, {
@@ -260,6 +272,8 @@ export default function SevesoApp() {
                 }
             }
             finalPdfBytes = await mergedPdf.save();
+        } else {
+            finalPdfBytes = new Uint8Array(mainReportBytes);
         }
 
         const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
