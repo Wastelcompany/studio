@@ -29,7 +29,7 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   "P6b": { id: 'P6b', name: 'Zelfontledende stoffen & Organische peroxiden, Type C,D,E,F', group: 'physical', displayId: 'P6b' },
   "P7": { id: 'P7', name: 'Pyrofore vloeistoffen en vaste stoffen, categorie 1', group: 'physical', displayId: 'P7' },
   "P8": { id: 'P8', name: 'Oxiderende vloeistoffen en vaste stoffen, cat 1, 2, 3', group: 'physical', displayId: 'P8' },
-  "P9": { id: 'P9', name: 'Voor zelfverhitting vatbare stoffen en mengsels, cat 1 & 2', group: 'physical', displayId: 'P9' },
+  "P9": { id: 'P9', name: 'Voor zelfverhitting vatbare stoffen, cat 1 & 2', group: 'physical', displayId: 'P9' },
   
   "E1": { id: 'E1', name: 'Gevaarlijk voor het aquatisch milieu, acuut 1 of chronisch 1', group: 'environment', displayId: 'E1' },
   "E2": { id: 'E2', name: 'Gevaarlijk voor het aquatisch milieu, chronisch 2', group: 'environment', displayId: 'E2' },

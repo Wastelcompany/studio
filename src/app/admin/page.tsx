@@ -1,16 +1,19 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useCollection, useMemoFirebase, useFirestore, useAuth } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
+import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { signOut, getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { initializeApp, deleteApp } from 'firebase/app';
+import { firebaseConfig } from '@/firebase/config';
 import type { UserProfile, Company, Customer } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Users, UserCog, Building2, Briefcase, BrainCircuit, BarChart3, Plus, ShieldCheck } from "lucide-react";
+import { Loader2, LogOut, Users, UserCog, Building2, Briefcase, BrainCircuit, BarChart3, Plus, ShieldCheck, UserPlus } from "lucide-react";
 import { format, startOfMonth } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -18,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { createCustomerRecord, toggleUserDisabledStatus, updateUserRole } from "@/lib/admin";
 
@@ -33,6 +37,12 @@ export default function AdminPage() {
   const [newCustomerAddress, setNewCustomerAddress] = useState('');
   const [newCustomerKvk, setNewCustomerKvk] = useState('');
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserCustomerId, setNewUserCustomerId] = useState('');
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
 
   const isAdmin = user?.email === 'post@wastelcompany.eu' || (user as any)?.role === 'admin';
 
@@ -71,7 +81,6 @@ export default function AdminPage() {
       kvkCount: acc.kvkCount + (log.type === 'KVK_SEARCH' ? 1 : 0),
     }), { totalCalls: 0, estimatedCost: 0, extractionCount: 0, kvkCount: 0 });
 
-    // Group costs by month
     const monthlyGroups: Record<string, number> = {};
     aiLogs.forEach(log => {
       if (!log.timestamp?.toDate) return;
@@ -118,6 +127,44 @@ export default function AdminPage() {
     }
   };
 
+  const handleAddUser = async () => {
+    if (!newUserEmail || !newUserPassword || !newUserCustomerId) {
+      toast({ variant: "destructive", title: "Incomplete gegevens", description: "Vul alle velden in." });
+      return;
+    }
+    
+    setIsCreatingUser(true);
+    const tempAppName = `temp-app-${Date.now()}`;
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
+    const tempAuth = getAuth(tempApp);
+
+    try {
+      const userCred = await createUserWithEmailAndPassword(tempAuth, newUserEmail, newUserPassword);
+      const customer = customers?.find(c => c.id === newUserCustomerId);
+      
+      await setDoc(doc(db, 'users', userCred.user.uid), {
+        uid: userCred.user.uid,
+        email: newUserEmail,
+        customerId: newUserCustomerId,
+        customerName: customer?.name || newUserEmail,
+        disabled: false,
+        role: 'user',
+        createdAt: serverTimestamp()
+      });
+
+      toast({ title: "Gebruiker aangemaakt", description: `${newUserEmail} is succesvol toegevoegd.` });
+      setIsUserDialogOpen(false);
+      setNewUserEmail('');
+      setNewUserPassword('');
+      setNewUserCustomerId('');
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Fout bij aanmaken", description: error.message });
+    } finally {
+      await deleteApp(tempApp);
+      setIsCreatingUser(false);
+    }
+  };
+
   const handleToggleAdmin = async (u: UserProfile) => {
     const newRole = u.role === 'admin' ? 'user' : 'admin';
     try {
@@ -137,118 +184,6 @@ export default function AdminPage() {
     }
   };
 
-  const renderAiUsageTab = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Totaal Aanroepen</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{aiStats.totalCalls}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Totaal Kosten (est.)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${aiStats.estimatedCost.toFixed(2)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase">SDS Analyses</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{aiStats.extractionCount}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase">KVK Zoekopdrachten</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{aiStats.kvkCount}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" /> Kosten per Maand
-            </CardTitle>
-            <CardDescription>Overzicht van AI-kosten per kalendermaand.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Maand</TableHead>
-                  <TableHead className="text-right">Kosten</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {aiStats.monthlyBreakdown.map((m) => (
-                  <TableRow key={m.key}>
-                    <TableCell className="capitalize">{m.display}</TableCell>
-                    <TableCell className="text-right font-mono font-bold">${m.cost.toFixed(2)}</TableCell>
-                  </TableRow>
-                ))}
-                {aiStats.monthlyBreakdown.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={2} className="text-center py-4 text-muted-foreground text-xs">Geen verbruikshistorie.</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BrainCircuit className="h-5 w-5" /> Recent Verbruik
-            </CardTitle>
-            <CardDescription>De laatste 500 AI-interacties.</CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-[400px]">
-              <Table>
-                <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                  <TableRow>
-                    <TableHead>Tijdstip</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Model</TableHead>
-                    <TableHead className="text-right">Kosten</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {aiLogs?.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell className="text-xs">
-                        {log.timestamp?.toDate ? format(log.timestamp.toDate(), 'dd-MM-yyyy HH:mm') : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-[10px]">
-                          {log.type === 'SDS_EXTRACTION' ? 'SDS Extractie' : 'KVK Zoek'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-[10px] text-muted-foreground font-mono">{log.model}</TableCell>
-                      <TableCell className="text-right font-mono text-xs">${log.estimatedCost?.toFixed(3)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-
   if (isUserLoading || (isAdmin && (isLoadingUsers || isLoadingCompanies || isLoadingCustomers))) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -259,9 +194,9 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background p-4">
+      <div className="flex h-screen items-center justify-center bg-background p-4 text-center">
         <Card className="max-w-md w-full">
-            <CardHeader className="text-center">
+            <CardHeader>
                 <UserCog className="w-12 h-12 text-destructive mx-auto mb-4" />
                 <CardTitle>Geen Toegang</CardTitle>
                 <CardDescription>U heeft geen beheerdersrechten.</CardDescription>
@@ -280,31 +215,26 @@ export default function AdminPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Beheercentrum</h1>
-                <p className="text-muted-foreground">Klanten, Vestigingen en AI-verbruik.</p>
+                <p className="text-muted-foreground">Beheer van klanten, gebruikers en AI-verbruik.</p>
             </div>
             <Button variant="outline" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4" /> Uitloggen</Button>
         </div>
 
         <Tabs defaultValue="customers" className="w-full">
             <TabsList className="grid w-full grid-cols-4 max-w-[600px]">
-                <TabsTrigger value="customers" className="flex items-center gap-2">
-                    <Briefcase className="h-4 w-4" /> Klanten
-                </TabsTrigger>
-                <TabsTrigger value="companies" className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4" /> Vestigingen
-                </TabsTrigger>
-                <TabsTrigger value="users" className="flex items-center gap-2">
-                    <Users className="h-4 w-4" /> Gebruikers
-                </TabsTrigger>
-                <TabsTrigger value="ai" className="flex items-center gap-2">
-                    <BrainCircuit className="h-4 w-4" /> AI Verbruik
-                </TabsTrigger>
+                <TabsTrigger value="customers"><Briefcase className="h-4 w-4 mr-2" /> Klanten</TabsTrigger>
+                <TabsTrigger value="companies"><Building2 className="h-4 w-4 mr-2" /> Vestigingen</TabsTrigger>
+                <TabsTrigger value="users"><Users className="h-4 w-4 mr-2" /> Gebruikers</TabsTrigger>
+                <TabsTrigger value="ai"><BrainCircuit className="h-4 w-4 mr-2" /> AI Verbruik</TabsTrigger>
             </TabsList>
 
             <TabsContent value="customers" className="mt-6">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Klanten (Facturatie-entiteiten)</CardTitle>
+                        <div>
+                          <CardTitle>Klanten</CardTitle>
+                          <CardDescription>Facturatie-entiteiten in het systeem.</CardDescription>
+                        </div>
                         <Button onClick={() => setIsCustomerDialogOpen(true)}><Plus className="mr-2 h-4 w-4" /> Klant Toevoegen</Button>
                     </CardHeader>
                     <CardContent className="p-0">
@@ -340,7 +270,7 @@ export default function AdminPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Vestigingen / Bedrijven</CardTitle>
-                        <CardDescription>Overzicht van alle geregistreerde locaties.</CardDescription>
+                        <CardDescription>Alle locaties gekoppeld aan klanten.</CardDescription>
                     </CardHeader>
                     <CardContent className="p-0">
                       <ScrollArea className="h-[500px]">
@@ -369,9 +299,12 @@ export default function AdminPage() {
 
             <TabsContent value="users" className="mt-6">
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Gebruikersbeheer</CardTitle>
-                        <CardDescription>Beheer rollen en toegangsrechten voor alle gebruikers.</CardDescription>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                          <CardTitle>Gebruikersbeheer</CardTitle>
+                          <CardDescription>Beheer rollen en toegang voor alle gebruikers.</CardDescription>
+                        </div>
+                        <Button onClick={() => setIsUserDialogOpen(true)}><UserPlus className="mr-2 h-4 w-4" /> Gebruiker Toevoegen</Button>
                     </CardHeader>
                     <CardContent className="p-0">
                       <ScrollArea className="h-[500px]">
@@ -419,40 +352,49 @@ export default function AdminPage() {
             </TabsContent>
 
             <TabsContent value="ai" className="mt-6">
-                {renderAiUsageTab()}
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card><CardContent className="pt-6"><div className="text-sm font-medium text-muted-foreground mb-1 uppercase">Aanroepen</div><div className="text-2xl font-bold">{aiStats.totalCalls}</div></CardContent></Card>
+                    <Card><CardContent className="pt-6"><div className="text-sm font-medium text-muted-foreground mb-1 uppercase">Kosten (est.)</div><div className="text-2xl font-bold">${aiStats.estimatedCost.toFixed(2)}</div></CardContent></Card>
+                    <Card><CardContent className="pt-6"><div className="text-sm font-medium text-muted-foreground mb-1 uppercase">SDS Analyses</div><div className="text-2xl font-bold">{aiStats.extractionCount}</div></CardContent></Card>
+                    <Card><CardContent className="pt-6"><div className="text-sm font-medium text-muted-foreground mb-1 uppercase">KVK Zoeks</div><div className="text-2xl font-bold">{aiStats.kvkCount}</div></CardContent></Card>
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <Card><CardHeader><CardTitle className="text-lg">Kosten per Maand</CardTitle></CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Maand</TableHead><TableHead className="text-right">Kosten</TableHead></TableRow></TableHeader><TableBody>{aiStats.monthlyBreakdown.map(m => (<TableRow key={m.key}><TableCell className="capitalize">{m.display}</TableCell><TableCell className="text-right font-mono font-bold">${m.cost.toFixed(2)}</TableCell></TableRow>))}</TableBody></Table></CardContent></Card>
+                    <Card className="lg:col-span-2"><CardHeader><CardTitle className="text-lg">Recent Verbruik</CardTitle></CardHeader><CardContent className="p-0"><ScrollArea className="h-[400px]"><Table><TableHeader className="sticky top-0 bg-background z-10"><TableRow><TableHead>Tijdstip</TableHead><TableHead>Type</TableHead><TableHead className="text-right">Kosten</TableHead></TableRow></TableHeader><TableBody>{aiLogs?.map(log => (<TableRow key={log.id}><TableCell className="text-xs">{log.timestamp?.toDate ? format(log.timestamp.toDate(), 'dd-MM HH:mm') : '-'}</TableCell><TableCell><Badge variant="outline" className="text-[10px]">{log.type}</Badge></TableCell><TableCell className="text-right font-mono text-xs">${log.estimatedCost?.toFixed(3)}</TableCell></TableRow>))}</TableBody></Table></ScrollArea></CardContent></Card>
+                  </div>
+                </div>
             </TabsContent>
         </Tabs>
       </div>
 
       <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Klant Toevoegen</DialogTitle>
-            <DialogDescription>
-              Voeg handmatig een nieuwe facturatie-entiteit toe aan het systeem.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Klant Toevoegen</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="grid gap-2"><Label>Klantnaam</Label><Input value={newCustomerName} onChange={(e) => setNewCustomerName(e.target.value)} /></div>
+            <div className="grid gap-2"><Label>Adres</Label><Input value={newCustomerAddress} onChange={(e) => setNewCustomerAddress(e.target.value)} /></div>
+            <div className="grid gap-2"><Label>KVK</Label><Input value={newCustomerKvk} onChange={(e) => setNewCustomerKvk(e.target.value)} /></div>
+          </div>
+          <DialogFooter><Button onClick={handleCreateCustomer} disabled={isCreatingCustomer}>{isCreatingCustomer && <Loader2 className="animate-spin h-4 w-4 mr-2" />} Opslaan</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Gebruiker Toevoegen</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2"><Label>E-mail</Label><Input type="email" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} /></div>
+            <div className="grid gap-2"><Label>Tijdelijk Wachtwoord</Label><Input type="password" value={newUserPassword} onChange={(e) => setNewUserPassword(e.target.value)} /></div>
             <div className="grid gap-2">
-              <Label htmlFor="name">Klantnaam (Juridische naam)</Label>
-              <Input id="name" value={newCustomerName} onChange={(e) => setNewCustomerName(e.target.value)} placeholder="Bijv. ChemSupply BV" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="address">Factuuradres</Label>
-              <Input id="address" value={newCustomerAddress} onChange={(e) => setNewCustomerAddress(e.target.value)} placeholder="Straat 12, 1234 AB Stad" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="kvk">KVK Nummer</Label>
-              <Input id="kvk" value={newCustomerKvk} onChange={(e) => setNewCustomerKvk(e.target.value)} placeholder="12345678" />
+              <Label>Koppelen aan Klant</Label>
+              <Select value={newUserCustomerId} onValueChange={setNewUserCustomerId}>
+                <SelectTrigger><SelectValue placeholder="Selecteer klant..." /></SelectTrigger>
+                <SelectContent>{customers?.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
+              </Select>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCustomerDialogOpen(false)}>Annuleren</Button>
-            <Button onClick={handleCreateCustomer} disabled={isCreatingCustomer || !newCustomerName}>
-              {isCreatingCustomer ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : null}
-              Klant Opslaan
-            </Button>
-          </DialogFooter>
+          <DialogFooter><Button onClick={handleAddUser} disabled={isCreatingUser}>{isCreatingUser && <Loader2 className="animate-spin h-4 w-4 mr-2" />} Aanmaken</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

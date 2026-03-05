@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -16,17 +17,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, UserPlus, Loader2 } from 'lucide-react';
-import { useAuth, useFirestore } from '@/firebase';
+import { LogIn, Loader2 } from 'lucide-react';
+import { useAuth } from '@/firebase';
 import {
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
 import type { FirebaseError } from 'firebase/auth';
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
-
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Voer een geldig e-mailadres in.' }),
@@ -38,12 +35,10 @@ type FormValues = z.infer<typeof formSchema>;
 export default function LoginForm() {
   const router = useRouter();
   const auth = useAuth();
-  const db = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState('login');
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<FormValues>({
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
   });
 
@@ -58,17 +53,9 @@ export default function LoginForm() {
         title = 'Login Mislukt';
         description = 'E-mailadres of wachtwoord is onjuist.';
         break;
-      case 'auth/email-already-in-use':
-        title = 'Registratie Mislukt';
-        description = 'Dit e-mailadres is al in gebruik.';
-        break;
-      case 'auth/weak-password':
-        title = 'Registratie Mislukt';
-        description = 'Het wachtwoord is te zwak. Gebruik minimaal 6 tekens.';
-        break;
       case 'auth/user-disabled':
         title = 'Account Gedeactiveerd';
-        description = 'Uw account is gedeactiveerd. Neem contact op met de beheerder.';
+        description = 'Uw account is gedeactiveerd door een beheerder.';
         break;
       default:
         description = error.message;
@@ -80,34 +67,11 @@ export default function LoginForm() {
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     try {
-      if (activeTab === 'login') {
-        const credentials = await signInWithEmailAndPassword(auth, data.email, data.password);
-        
-        // Immediate redirect to improve responsiveness
-        if (data.email.toLowerCase() === 'post@wastelcompany.eu') {
-            router.push('/admin');
-        } else {
-            router.push('/dashboard');
-        }
+      await signInWithEmailAndPassword(auth, data.email, data.password);
+      if (data.email.toLowerCase() === 'post@wastelcompany.eu') {
+          router.push('/admin');
       } else {
-        const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-        const user = userCredential.user;
-
-        const userDocRef = doc(db, 'users', user.uid);
-        await setDoc(userDocRef, {
-          uid: user.uid,
-          email: user.email,
-          createdAt: serverTimestamp(),
-          disabled: false,
-          customerId: user.uid, // Default customerId to the user's own uid
-          customerName: user.email, // Default customer name to the user's email
-        });
-        
-        toast({
-            title: "Registratie succesvol",
-            description: "U wordt nu doorgestuurd naar het dashboard.",
-        });
-        router.push('/dashboard');
+          router.push('/dashboard');
       }
     } catch (error) {
       if (error && typeof error === 'object' && 'code' in error) {
@@ -122,65 +86,35 @@ export default function LoginForm() {
   
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Tabs value={activeTab} className="w-full max-w-sm" onValueChange={(value) => {
-          setActiveTab(value);
-          reset();
-      }}>
-        <Card className="shadow-lg">
-          <CardHeader className="text-center">
-             <CardTitle className="text-3xl font-bold tracking-tight">
-                <span className="text-primary">Chem</span>Stats
-             </CardTitle>
-             <CardDescription>
-                Veiligheidsanalyse van gevaarlijke stoffen.
-             </CardDescription>
-          </CardHeader>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Inloggen</TabsTrigger>
-            <TabsTrigger value="signup">Registreren</TabsTrigger>
-          </TabsList>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <TabsContent value="login">
-              <CardContent className="grid gap-4 py-6">
-                <div className="grid gap-2">
-                  <Label htmlFor="email-login">E-mailadres</Label>
-                  <Input id="email-login" type="email" placeholder="naam@voorbeeld.com" {...register('email')} disabled={isSubmitting} />
-                  {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="password-login">Wachtwoord</Label>
-                  <Input id="password-login" type="password" {...register('password')} disabled={isSubmitting} />
-                  {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Bezig met inloggen...</> : <><LogIn className="mr-2 h-4 w-4" /> Inloggen</>}
-                </Button>
-              </CardFooter>
-            </TabsContent>
-            <TabsContent value="signup">
-               <CardContent className="grid gap-4 py-6">
-                <div className="grid gap-2">
-                  <Label htmlFor="email-signup">E-mailadres</Label>
-                  <Input id="email-signup" type="email" placeholder="naam@voorbeeld.com" {...register('email')} disabled={isSubmitting} />
-                  {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="password-signup">Wachtwoord</Label>
-                  <Input id="password-signup" type="password" {...register('password')} disabled={isSubmitting} />
-                  {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Bezig met registreren...</> : <><UserPlus className="mr-2 h-4 w-4" /> Registreren</>}
-                </Button>
-              </CardFooter>
-            </TabsContent>
-          </form>
-        </Card>
-      </Tabs>
+      <Card className="w-full max-w-sm shadow-lg">
+        <CardHeader className="text-center">
+           <CardTitle className="text-3xl font-bold tracking-tight">
+              <span className="text-primary">Chem</span>Stats
+           </CardTitle>
+           <CardDescription>
+              Log in op uw account om de analyses te bekijken.
+           </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <CardContent className="grid gap-4 py-6">
+            <div className="grid gap-2">
+              <Label htmlFor="email-login">E-mailadres</Label>
+              <Input id="email-login" type="email" placeholder="naam@voorbeeld.com" {...register('email')} disabled={isSubmitting} />
+              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password-login">Wachtwoord</Label>
+              <Input id="password-login" type="password" {...register('password')} disabled={isSubmitting} />
+              {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Bezig...</> : <><LogIn className="mr-2 h-4 w-4" /> Inloggen</>}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
   );
 }
