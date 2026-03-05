@@ -127,6 +127,10 @@
         "quantity": {
           "type": "number",
           "description": "The quantity of the substance present, in tons."
+        },
+        "sdsUri": {
+          "type": "string",
+          "description": "Data URI of the Safety Data Sheet (PDF or image)."
         }
       },
       "required": [
@@ -285,6 +289,6 @@
         }
       }
     ],
-    "reasoning": "The structure tracks historical quantity changes daily and includes AI usage tracking."
+    "reasoning": "The structure tracks historical quantity changes daily and includes AI usage tracking. SDS data URIs are stored alongside substances."
   }
 }

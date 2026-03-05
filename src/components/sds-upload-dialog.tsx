@@ -77,6 +77,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
               arieCategoryIds,
               isNamedSubstance: isNamed,
               namedSubstanceName: namedSubstanceName,
+              sdsUri: dataUri // Store the data URI for later viewing
           });
           
           if (db && user) logAiUsage(db, user.uid, 'SDS_EXTRACTION');
@@ -91,6 +92,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
 
       toast({ title: 'Analyse voltooid', description: `${successCount} van de ${totalFiles} bestand(en) succesvol geanalyseerd.` });
       onOpenChange(false);
+      setFiles(null);
     });
   };
 

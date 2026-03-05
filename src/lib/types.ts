@@ -46,6 +46,7 @@ export interface Substance {
   isNamedSubstance: boolean;
   namedSubstanceName: string | null;
   quantity: number; // in tons
+  sdsUri?: string; // Data URI for the original document
 }
 
 export interface QuantityLog {
