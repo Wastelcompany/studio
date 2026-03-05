@@ -139,15 +139,6 @@ export default function SevesoApp() {
     return `${sanitizedName}.${YYYYMMDD}.${extension}`;
   };
 
-  const base64ToUint8 = (base64: string): Uint8Array => {
-    const binaryString = window.atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes;
-  };
-
   const handleGenerateReport = async (options: { type: 'full' | 'seveso'; includeSds: boolean }) => {
     if (!selectedCompany) return;
     setIsSavingPdf(true);
@@ -214,21 +205,19 @@ export default function SevesoApp() {
             headStyles: { fillColor: [22, 80, 91] },
         });
 
-        const mainReportBytes = doc.output('arraybuffer');
-        let finalPdfBytes: Uint8Array;
-
         if (options.includeSds) {
+            const mainReportArrayBuffer = doc.output('arraybuffer');
             const mergedPdf = await PDFDocument.create();
-            const mainDoc = await PDFDocument.load(mainReportBytes);
+            const mainDoc = await PDFDocument.load(mainReportArrayBuffer);
             const mainPages = await mergedPdf.copyPages(mainDoc, mainDoc.getPageIndices());
             mainPages.forEach(p => mergedPdf.addPage(p));
 
             for (const substance of localInventory) {
                 if (substance.sdsUri) {
                     try {
-                        const [header, base64Data] = substance.sdsUri.split(',');
-                        const mimeType = header.split(':')[1].split(';')[0];
-                        const bytes = base64ToUint8(base64Data);
+                        const response = await fetch(substance.sdsUri);
+                        const bytes = new Uint8Array(await response.arrayBuffer());
+                        const mimeType = substance.sdsUri.split(';')[0].split(':')[1];
                         
                         if (mimeType === 'application/pdf') {
                             const sdsDoc = await PDFDocument.load(bytes);
@@ -251,20 +240,19 @@ export default function SevesoApp() {
                             });
                         }
                     } catch (e) {
-                        console.error(`Error adding SDS for ${substance.productName}:`, e);
+                        console.warn(`Error adding SDS for ${substance.productName}:`, e);
                     }
                 }
             }
-            finalPdfBytes = await mergedPdf.save();
+            const finalPdfBytes = await mergedPdf.save();
+            const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = generateFileName('pdf');
+            link.click();
         } else {
-            finalPdfBytes = new Uint8Array(mainReportBytes);
+            doc.save(generateFileName('pdf'));
         }
-
-        const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = generateFileName('pdf');
-        link.click();
 
         dismiss(toastId);
         toast({ title: "Rapport opgeslagen" });
