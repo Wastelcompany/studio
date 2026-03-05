@@ -50,7 +50,8 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
             substance.arieCategoryIds.forEach(catId => {
                 const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
                 const threshold = getArieThreshold(catId);
-                if (category && category.group === group.group && threshold && threshold > 0) {
+                const itemGroup = (category as any)?.primaryGroup || category?.group;
+                if (category && itemGroup === group.group && threshold && threshold > 0) {
                     contribution += substance.quantity / threshold;
                 }
             });
@@ -67,8 +68,8 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] h-[600px] flex flex-col overflow-hidden p-0">
-        <div className="p-6 pb-2 shrink-0">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col p-0 overflow-hidden">
+        <div className="p-6 shrink-0">
           <DialogHeader>
             <DialogTitle>Details voor: {group.name} ({type.toUpperCase()})</DialogTitle>
             <DialogDescription>
@@ -76,33 +77,35 @@ export default function GroupDetailsDialog({ isOpen, onOpenChange, group, invent
             </DialogDescription>
           </DialogHeader>
         </div>
-        <div className="flex-grow overflow-hidden m-6 mt-0 border rounded-md relative flex flex-col min-h-0">
-          <ScrollArea className="flex-grow h-full w-full">
-            <Table>
-              <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                <TableRow>
-                  <TableHead>Stof</TableHead>
-                  <TableHead className="text-right">Voorraad (ton)</TableHead>
-                  <TableHead className="text-right">Bijdrage (%)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {contributingSubstances.length > 0 ? (
-                  contributingSubstances.map(sub => (
-                    <TableRow key={sub.id}>
-                      <TableCell className="font-medium">{sub.productName}</TableCell>
-                      <TableCell className="text-right">{sub.quantity.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{(sub.contribution * 100).toFixed(1)}%</TableCell>
-                    </TableRow>
-                  ))
-                ) : (
+        <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6">
+          <div className="h-full border rounded-md overflow-hidden bg-muted/10">
+            <ScrollArea className="h-full">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">Geen bijdragende stoffen gevonden.</TableCell>
+                    <TableHead>Stof</TableHead>
+                    <TableHead className="text-right">Voorraad (ton)</TableHead>
+                    <TableHead className="text-right">Bijdrage (%)</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </ScrollArea>
+                </TableHeader>
+                <TableBody>
+                  {contributingSubstances.length > 0 ? (
+                    contributingSubstances.map(sub => (
+                      <TableRow key={sub.id}>
+                        <TableCell className="font-medium">{sub.productName}</TableCell>
+                        <TableCell className="text-right">{sub.quantity.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{(sub.contribution * 100).toFixed(1)}%</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center text-muted-foreground py-8">Geen bijdragende stoffen gevonden.</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -71,8 +71,8 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[85vh] h-[600px] flex flex-col overflow-hidden p-0">
-        <div className="p-6 pb-2 shrink-0">
+      <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
+        <div className="p-6 shrink-0">
           <DialogHeader>
             <DialogTitle>Onderbouwing voor Categorie {categoryId} ({categoryType.toUpperCase()})</DialogTitle>
             <DialogDescription>
@@ -80,33 +80,35 @@ export default function CategoryExplanationDialog({ isOpen, onOpenChange, substa
             </DialogDescription>
           </DialogHeader>
         </div>
-        <div className="flex-grow overflow-hidden m-6 mt-0 border rounded-md relative flex flex-col min-h-0">
-          <ScrollArea className="flex-grow h-full w-full">
-            <Table>
-              <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                <TableRow>
-                  <TableHead>Bron (H-zin / CAS)</TableHead>
-                  <TableHead>Omschrijving</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {explanations.length > 0 ? (
-                  explanations.map((exp, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{exp.source}</TableCell>
-                      <TableCell>{exp.description}</TableCell>
-                    </TableRow>
-                  ))
-                ) : (
+        <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6">
+          <div className="h-full border rounded-md overflow-hidden bg-muted/10">
+            <ScrollArea className="h-full">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                   <TableRow>
-                    <TableCell colSpan={2} className="text-center text-muted-foreground py-8">
-                      Geen directe koppeling gevonden voor deze categorie.
-                    </TableCell>
+                    <TableHead>Bron (H-zin / CAS)</TableHead>
+                    <TableHead>Omschrijving</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </ScrollArea>
+                </TableHeader>
+                <TableBody>
+                  {explanations.length > 0 ? (
+                    explanations.map((exp, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{exp.source}</TableCell>
+                        <TableCell>{exp.description}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-center text-muted-foreground py-8">
+                        Geen directe koppeling gevonden voor deze categorie.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

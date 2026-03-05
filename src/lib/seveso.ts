@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Substance, HazardCategory, NamedSubstance, ThresholdMode, SummationGroup } from '@/lib/types';
@@ -96,6 +95,7 @@ export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = 
   "P6b": { low: 50, high: 200 },
   "P7": { low: 50, high: 200 },
   "P8": { low: 50, high: 200 },
+  "P9": { low: 50, high: 200 },
   "E1": { low: 100, high: 200 },
   "E2": { low: 200, high: 500 },
   "O1": { low: 100, high: 500 },
@@ -214,7 +214,9 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
           }
         }
       });
-      for (const group in sevesoMaxPerGroup) sevesoGroupTotals[group] += sevesoMaxPerGroup[group];
+      for (const group in sevesoMaxPerGroup) {
+        if (sevesoGroupTotals[group] !== undefined) sevesoGroupTotals[group] += sevesoMaxPerGroup[group];
+      }
 
       const arieMaxPerGroup: Record<string, number> = {};
       substance.arieCategoryIds.forEach(catId => {
@@ -227,7 +229,9 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
           if (!arieMaxPerGroup[group] || ratio > arieMaxPerGroup[group]) arieMaxPerGroup[group] = ratio;
         }
       });
-      for (const group in arieMaxPerGroup) arieGroupTotals[group] += arieMaxPerGroup[group];
+      for (const group in arieMaxPerGroup) {
+        if (arieGroupTotals[group] !== undefined) arieGroupTotals[group] += arieMaxPerGroup[group];
+      }
     }
   });
 
