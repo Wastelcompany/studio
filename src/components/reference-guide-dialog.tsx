@@ -69,8 +69,6 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
   }, [namedFilters]);
 
   const clearSevesoFilters = () => setSevesoFilters({ cat: "", desc: "", h: "" });
-  const clearNamedFilters = () => setNamedFilters({ name: "", cas: "" });
-  const clearArieFilters = () => setArieFilters({ cat: "", desc: "", h: "" });
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -79,7 +77,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
           <DialogHeader>
             <DialogTitle>Referentiegids: Beoordelingsmethode</DialogTitle>
             <DialogDescription>
-              Uitleg over de drempelwaardecheck conform Seveso III en Arbo-wetgeving (ARIE). Volgorde: H, P, E, O.
+              Uitleg over de drempelwaardecheck conform Seveso III en Arbo-wetgeving (ARIE).
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -95,7 +93,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
           </div>
           
           <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6 flex flex-col">
-            <TabsContent value="seveso-cats" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1 data-[state=active]:flex">
+            <TabsContent value="seveso-cats" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1">
               <div className="flex justify-end mb-2 shrink-0">
                   {(sevesoFilters.cat || sevesoFilters.desc || sevesoFilters.h) && (
                       <Button variant="ghost" size="sm" onClick={clearSevesoFilters} className="h-7 text-xs">
@@ -111,19 +109,19 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
                             <TableHead className="py-2">
                                 <div className="space-y-1">
                                     <span className="text-[10px] font-bold uppercase">Cat.</span>
-                                    <Input placeholder="Filter..." value={sevesoFilters.cat} onChange={(e) => setSevesoFilters(prev => ({ ...prev, cat: e.target.value }))} className="h-7 text-xs" />
+                                    <Input placeholder="F..." value={sevesoFilters.cat} onChange={(e) => setSevesoFilters(prev => ({ ...prev, cat: e.target.value }))} className="h-7 text-xs" />
                                 </div>
                             </TableHead>
                             <TableHead className="py-2">
                                 <div className="space-y-1">
                                     <span className="text-[10px] font-bold uppercase">Omschrijving</span>
-                                    <Input placeholder="Filter..." value={sevesoFilters.desc} onChange={(e) => setSevesoFilters(prev => ({ ...prev, desc: e.target.value }))} className="h-7 text-xs" />
+                                    <Input placeholder="F..." value={sevesoFilters.desc} onChange={(e) => setSevesoFilters(prev => ({ ...prev, desc: e.target.value }))} className="h-7 text-xs" />
                                 </div>
                             </TableHead>
                             <TableHead className="py-2">
                                 <div className="space-y-1">
                                     <span className="text-[10px] font-bold uppercase">H-Zinnen</span>
-                                    <Input placeholder="Filter..." value={sevesoFilters.h} onChange={(e) => setSevesoFilters(prev => ({ ...prev, h: e.target.value }))} className="h-7 text-xs" />
+                                    <Input placeholder="F..." value={sevesoFilters.h} onChange={(e) => setSevesoFilters(prev => ({ ...prev, h: e.target.value }))} className="h-7 text-xs" />
                                 </div>
                             </TableHead>
                             <TableHead className="text-right py-2 w-24"><span className="text-[10px] font-bold uppercase">Laag (t)</span></TableHead>
@@ -146,7 +144,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
               </div>
             </TabsContent>
 
-            <TabsContent value="seveso-named" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1 data-[state=active]:flex">
+            <TabsContent value="seveso-named" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1">
               <div className="flex-1 min-h-0 border rounded-md overflow-hidden bg-muted/10">
                 <ScrollArea className="h-full w-full">
                   <Table>
@@ -173,7 +171,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
               </div>
             </TabsContent>
 
-            <TabsContent value="arie" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1 data-[state=active]:flex">
+            <TabsContent value="arie" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1">
               <div className="flex-1 min-h-0 border rounded-md overflow-hidden bg-muted/10">
                 <ScrollArea className="h-full w-full">
                   <Table>
@@ -200,7 +198,7 @@ export default function ReferenceGuideDialog({ isOpen, onOpenChange }: Reference
               </div>
             </TabsContent>
 
-            <TabsContent value="arie-named" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1 data-[state=active]:flex">
+            <TabsContent value="arie-named" className="flex-1 min-h-0 flex flex-col mt-0 data-[state=active]:flex-1">
               <div className="flex-1 min-h-0 border rounded-md overflow-hidden bg-muted/10">
                 <ScrollArea className="h-full w-full">
                   <Table>

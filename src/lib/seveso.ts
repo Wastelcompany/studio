@@ -37,7 +37,7 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   "O1": { id: 'O1', name: 'Stoffen met gevarenaanduiding EUH014', group: 'other', displayId: 'O1' },
   "O2": { id: 'O2', name: 'Stoffen die in contact met water ontvlambare gassen ontwikkelen (Cat 1)', group: 'other', displayId: 'O2' },
   "O3": { id: 'O3', name: 'Stoffen met gevarenaanduiding EUH029', group: 'other', displayId: 'O3' },
-  'ARIE-O4': { id: 'ARIE-O4', name: 'Stoffen met EUH001 (in droge toestand ontplofbaar)', group: 'other', displayId: 'O4' },
+  "ARIE-O4": { id: 'ARIE-O4', name: 'Stoffen met EUH001 (in droge toestand ontplofbaar)', group: 'other', displayId: 'O4' },
 };
 
 export const ARIE_THRESHOLDS: Record<string, number> = {

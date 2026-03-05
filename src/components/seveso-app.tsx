@@ -14,7 +14,7 @@ import ReportOptionsDialog from './report-options-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import CategoryExplanationDialog from './category-explanation-dialog';
-import jspdf from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { PDFDocument } from 'pdf-lib';
 import CompanySelector from './company-selector';
@@ -24,7 +24,7 @@ import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc, useAuth 
 import { collection, query, where, doc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb, deleteCompanyFromDb } from '@/lib/companies';
-import { Loader2, UserX, Building2 } from 'lucide-react';
+import { Loader2, Building2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useRouter } from 'next/navigation';
 
@@ -139,7 +139,6 @@ export default function SevesoApp() {
     return `${sanitizedName}.${YYYYMMDD}.${extension}`;
   };
 
-  // Browser-compatible Base64 to Uint8Array
   const base64ToUint8 = (base64: string): Uint8Array => {
     const binaryString = window.atob(base64);
     const bytes = new Uint8Array(binaryString.length);
@@ -155,12 +154,11 @@ export default function SevesoApp() {
     const { id: toastId } = toast({ title: "Rapport genereren...", description: "PDF wordt samengesteld." });
 
     try {
-        const doc = new jspdf('p', 'mm', 'a4');
+        const doc = new jsPDF('p', 'mm', 'a4');
         const stats = calculateSummations(localInventory, thresholdMode);
         
-        // Header
         doc.setFontSize(22);
-        doc.setTextColor(22, 80, 91); // #16505B
+        doc.setTextColor(22, 80, 91);
         doc.text(options.type === 'full' ? "Seveso & ARIE Rapport" : "Seveso Rapport", 20, 30);
         doc.setFontSize(10);
         doc.setTextColor(80, 80, 80);
@@ -168,7 +166,6 @@ export default function SevesoApp() {
         doc.text(`Locatie: ${selectedCompany.address}`, 20, 45);
         doc.text(`Datum: ${new Date().toLocaleDateString('nl-NL')}`, 20, 50);
 
-        // Seveso Summation Table
         doc.setFontSize(14);
         doc.setTextColor(22, 80, 91);
         doc.text("Seveso III Sommatieoverzicht", 20, 65);
@@ -183,7 +180,6 @@ export default function SevesoApp() {
             headStyles: { fillColor: [22, 80, 91] },
         });
 
-        // ARIE Summation Table (only if full report)
         if (options.type === 'full') {
             const lastY = (doc as any).lastAutoTable.cursor.y;
             doc.setFontSize(14);
@@ -201,7 +197,6 @@ export default function SevesoApp() {
             });
         }
 
-        // Inventory Table
         const finalY = (doc as any).lastAutoTable.cursor.y;
         doc.setFontSize(14);
         doc.setTextColor(22, 80, 91);
@@ -219,49 +214,38 @@ export default function SevesoApp() {
             headStyles: { fillColor: [22, 80, 91] },
         });
 
-        // Get Main Report Bytes
         const mainReportBytes = doc.output('arraybuffer');
-        
         let finalPdfBytes: Uint8Array;
 
-        // Append SDS Documents if requested
         if (options.includeSds) {
             const mergedPdf = await PDFDocument.create();
-            
-            // 1. Add Main Report pages
             const mainDoc = await PDFDocument.load(mainReportBytes);
             const mainPages = await mergedPdf.copyPages(mainDoc, mainDoc.getPageIndices());
             mainPages.forEach(p => mergedPdf.addPage(p));
 
-            // 2. Add each SDS
             for (const substance of localInventory) {
                 if (substance.sdsUri) {
                     try {
-                        const parts = substance.sdsUri.split(';');
-                        const mimeType = parts[0].split(':')[1];
-                        const base64Data = parts[1].split(',')[1];
+                        const [header, base64Data] = substance.sdsUri.split(',');
+                        const mimeType = header.split(':')[1].split(';')[0];
+                        const bytes = base64ToUint8(base64Data);
                         
                         if (mimeType === 'application/pdf') {
-                            const sdsDoc = await PDFDocument.load(base64ToUint8(base64Data));
+                            const sdsDoc = await PDFDocument.load(bytes);
                             const sdsPages = await mergedPdf.copyPages(sdsDoc, sdsDoc.getPageIndices());
-                            
                             const sepPage = mergedPdf.addPage();
-                            sepPage.drawText(`SDS BIJLAGE: ${substance.productName}`, { x: 50, y: 750, size: 18 });
-                            
+                            sepPage.drawText(`BIJLAGE: ${substance.productName}`, { x: 50, y: 750, size: 20 });
                             sdsPages.forEach(p => mergedPdf.addPage(p));
                         } else if (mimeType.startsWith('image/')) {
                             const imgPage = mergedPdf.addPage();
-                            imgPage.drawText(`SDS BIJLAGE (Afbeelding): ${substance.productName}`, { x: 50, y: 750, size: 18 });
-                            
-                            const bytes = base64ToUint8(base64Data);
-                            const image = mimeType === 'image/jpeg' 
+                            imgPage.drawText(`BIJLAGE (Afbeelding): ${substance.productName}`, { x: 50, y: 750, size: 20 });
+                            const image = mimeType === 'image/jpeg' || mimeType === 'image/jpg'
                                 ? await mergedPdf.embedJpg(bytes)
                                 : await mergedPdf.embedPng(bytes);
-                            
                             const dims = image.scaleToFit(imgPage.getWidth() - 100, imgPage.getHeight() - 150);
                             imgPage.drawImage(image, {
                                 x: 50,
-                                y: imgPage.getHeight() - 100 - dims.height,
+                                y: imgPage.getHeight() - 120 - dims.height,
                                 width: dims.width,
                                 height: dims.height,
                             });
