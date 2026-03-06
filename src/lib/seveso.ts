@@ -21,231 +21,198 @@ export const ALL_CATEGORIES: Record<string, HazardCategory> = {
   P6b: { id: 'P6b', name: 'Zelfontledende stoffen & Organische peroxiden, Type C,D,E,F', group: 'physical' },
   P7: { id: 'P7', name: 'Pyrofore vloeistoffen en vaste stoffen, categorie 1', group: 'physical' },
   P8: { id: 'P8', name: 'Oxiderende vloeistoffen en vaste stoffen, cat 1, 2, 3', group: 'physical' },
+  P9: { id: 'P9', name: 'Zelfverhittende stoffen en mengsels, cat 1 & 2', group: 'physical' },
   E1: { id: 'E1', name: 'Gevaarlijk voor het aquatisch milieu, acuut 1 of chronisch 1', group: 'environment' },
   E2: { id: 'E2', name: 'Gevaarlijk voor het aquatisch milieu, chronisch 2', group: 'environment' },
   O1: { id: 'O1', name: 'Stoffen met gevarenaanduiding EUH014', group: 'other' },
   O2: { id: 'O2', name: 'Stoffen die in contact met water ontvlambare gassen ontwikkelen (Cat 1)', group: 'other' },
   O3: { id: 'O3', name: 'Stoffen met gevarenaanduiding EUH029', group: 'other' },
   'ARIE-P1a-sub3': { id: 'ARIE-P1a-sub3', name: 'Stoffen/mengsels met explosieve eigenschappen (zonder sub 1.1-1.6)', group: 'physical', displayId: 'P1a (sub 3)' },
-  'ARIE-P6a-1': { id: 'ARIE-P6a-1', name: 'Enkel zelfontledende stoffen/mengsels (Type A/B)', group: 'physical', displayId: 'P6a (Zelfontl.)' },
-  'ARIE-P6a-2': { id: 'ARIE-P6a-2', name: 'Enkel organische peroxiden (Type A/B)', group: 'physical', displayId: 'P6a (Org. Perox.)' },
-  'ARIE-P6b-1': { id: 'ARIE-P6b-1', name: 'Enkel zelfontledende stoffen/mengsels (Type C-F)', group: 'physical', displayId: 'P6b (Zelfontl.)' },
-  'ARIE-P6b-2': { id: 'ARIE-P6b-2', name: 'Enkel organische peroxiden (Type C-F)', group: 'physical', displayId: 'P6b (Org. Perox.)' },
-  'ARIE-P7-1': { id: 'ARIE-P7-1', name: 'Enkel pyrofore vloeistoffen', group: 'physical', displayId: 'P7 (Vl.stof)' },
-  'ARIE-P7-2': { id: 'ARIE-P7-2', name: 'Enkel pyrofore vaste stoffen', group: 'physical', displayId: 'P7 (Vast)' },
-  'ARIE-Vl-1': { id: 'ARIE-Vl-1', name: 'Ontvlambare vloeistoffen, cat. 1', group: 'physical', displayId: 'Vl.stof 1' },
-  'ARIE-Vl-2': { id: 'ARIE-Vl-2', name: 'Ontvlambare vloeistoffen, cat. 2', group: 'physical', displayId: 'Vl.stof 2' },
-  'ARIE-Vl-3': { id: 'ARIE-Vl-3', name: 'Ontvlambare vloeistoffen, cat. 3', group: 'physical', displayId: 'Vl.stof 3' },
-  'ARIE-O4': { id: 'ARIE-O4', name: 'Stoffen met EUH001 (in droge toestand ontplofbaar)', group: 'other', displayId: 'O4 (EUH001)' },
   'ARIE-CMR': { id: 'ARIE-CMR', name: 'Kankerverwekkend/mutageen/reprotoxisch cat 1A/1B', group: 'health', displayId: 'CMR' },
 };
-export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = { /* ... full list ... */ };
-export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = { /* ... full list ... */ };
-export const ARIE_THRESHOLDS: Record<string, number> = { /* ... full list ... */ };
-export const H_PHRASE_MAPPING: Record<string, string[]> = { /* ... full list ... */ };
-export const H_PHRASE_DESCRIPTIONS: Record<string, string> = { /* ... full list ... */ };
+
+export const SEVESO_THRESHOLDS: Record<string, { low: number, high: number }> = {
+  H1: { low: 5, high: 20 },
+  H2: { low: 50, high: 200 },
+  H3: { low: 50, high: 200 },
+  P1a: { low: 10, high: 50 },
+  P1b: { low: 50, high: 200 },
+  P2: { low: 10, high: 50 },
+  P3a: { low: 150, high: 500 },
+  P3b: { low: 5000, high: 50000 },
+  P4: { low: 50, high: 200 },
+  P5a: { low: 10, high: 50 },
+  P5b: { low: 50, high: 200 },
+  P5c: { low: 5000, high: 50000 },
+  P6a: { low: 10, high: 50 },
+  P6b: { low: 50, high: 200 },
+  P7: { low: 50, high: 200 },
+  P8: { low: 50, high: 200 },
+  E1: { low: 100, high: 200 },
+  E2: { low: 200, high: 500 },
+  O1: { low: 100, high: 500 },
+  O2: { low: 100, high: 500 },
+  O3: { low: 100, high: 500 },
+};
+
+export const ARIE_THRESHOLDS: Record<string, number> = {
+  H1: 1.5,
+  H2: 15,
+  H3: 15,
+  H4: 15,
+  'ARIE-CMR': 15,
+  P1a: 3,
+  'ARIE-P1a-sub3': 3,
+  P1b: 15,
+  P2: 3,
+  P3a: 45,
+  P3b: 1500,
+  P4: 15,
+  P5a: 3,
+  P5b: 15,
+  P5c: 1500,
+  P6a: 3,
+  P6b: 15,
+  P7: 15,
+  P8: 15,
+  P9: 15,
+  E1: 30,
+  E2: 150,
+  O1: 30,
+  O2: 30,
+  O3: 15,
+};
+
+export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
+  '67-56-1': { id: 'Named-Methanol', name: 'Methanol', cas: '67-56-1', group: 'named', threshold: { low: 500, high: 5000 } },
+  '75-07-0': { id: 'Named-Acetaldehyde', name: 'Acetaldehyde', cas: '75-07-0', group: 'named', threshold: { low: 10, high: 50 } },
+  '75-21-8': { id: 'Named-Ethyleenoxide', name: 'Ethyleenoxide', cas: '75-21-8', group: 'named', threshold: { low: 5, high: 50 } },
+  '74-85-1': { id: 'Named-Ethyleen', name: 'Ethyleen', cas: '74-85-1', group: 'named', threshold: { low: 50, high: 200 } },
+};
+
+export const H_PHRASE_MAPPING: Record<string, string[]> = {
+  H200: ['P1a'], H201: ['P1a'], H202: ['P1a'], H203: ['P1a'], H204: ['P1b'], H205: ['P1b'],
+  H220: ['P2'], H221: ['P2'], H222: ['P3a'], H223: ['P3a'], H224: ['P5a'], H225: ['P5c'], H226: ['P5c'],
+  H240: ['P6a'], H241: ['P6a'], H242: ['P6b'], H250: ['P7'], H251: ['P9'], H252: ['P9'],
+  H270: ['P4'], H271: ['P8'], H272: ['P8'],
+  H300: ['H1'], H310: ['H1'], H330: ['H1'], H301: ['H2'], H311: ['H2'], H331: ['H2'],
+  H370: ['H3'], H314: ['H4', 'ARIE-H4'], H350: ['ARIE-CMR'], H340: ['ARIE-CMR'], H360: ['ARIE-CMR'],
+  H400: ['E1'], H410: ['E1'], H411: ['E2'],
+  EUH014: ['O1'], EUH029: ['O3'],
+};
+
+export const H_PHRASE_DESCRIPTIONS: Record<string, string> = {
+  H200: 'Instabiele ontplofbare stof', H224: 'Zeer licht ontvlambare vloeistof en damp',
+  H300: 'Dodelijk bij inslikken', H330: 'Dodelijk bij inademing', H314: 'Veroorzaakt ernstige brandwonden',
+};
+
 export const SUMMATION_GROUPS_CONFIG = [
-    { name: 'Gezondheidsgevaren', icon: FlaskConical, group: 'health' },
-    { name: 'Fysische gevaren', icon: Flame, group: 'physical' },
-    { name: 'Milieugevaren', icon: Leaf, group: 'environment' },
-    { name: 'Overige gevaren', icon: AlertTriangle, group: 'other' },
-    { name: 'Benoemde Stoffen', icon: Atom, group: 'named' },
+  { name: 'Gezondheidsgevaren', icon: FlaskConical, group: 'health' },
+  { name: 'Fysische gevaren', icon: Flame, group: 'physical' },
+  { name: 'Milieugevaren', icon: Leaf, group: 'environment' },
+  { name: 'Overige gevaren', icon: AlertTriangle, group: 'other' },
+  { name: 'Benoemde Stoffen', icon: Atom, group: 'named' },
 ] as const;
-export function classifySubstance(hStatements: string[], casNumber: string | null): { sevesoCategoryIds: string[], arieCategoryIds: string[], isNamed: boolean, namedSubstanceName: string | null } {
-    const allCategoryIds = new Set<string>();
-    hStatements.forEach(hStatement => {
-        const code = hStatement.split(' ')[0].toUpperCase();
-        if (H_PHRASE_MAPPING[code]) {
-            H_PHRASE_MAPPING[code].forEach(catId => allCategoryIds.add(catId));
-        }
-    });
-    const sevesoCategoryIds = new Set<string>();
-    const arieCategoryIds = new Set<string>();
-    allCategoryIds.forEach(catId => {
-        if (SEVESO_THRESHOLDS[catId]) {
-            sevesoCategoryIds.add(catId);
-        }
-        if (ARIE_THRESHOLDS[catId]) {
-            arieCategoryIds.add(catId);
-        }
-    });
-    let isNamed = false;
-    let namedSubstanceName = null;
-    if (casNumber && NAMED_SUBSTANCES[casNumber]) {
-        const named = NAMED_SUBSTANCES[casNumber];
-        sevesoCategoryIds.add(named.id);
-        isNamed = true;
-        namedSubstanceName = named.name;
-        if (ARIE_THRESHOLDS[named.id]) {
-            arieCategoryIds.add(named.id);
-        }
+
+export function classifySubstance(hStatements: string[], casNumber: string | null) {
+  const sevesoCategoryIds = new Set<string>();
+  const arieCategoryIds = new Set<string>();
+  
+  hStatements.forEach(hStatement => {
+    const code = hStatement.split(' ')[0].toUpperCase();
+    if (H_PHRASE_MAPPING[code]) {
+      H_PHRASE_MAPPING[code].forEach(catId => {
+        if (SEVESO_THRESHOLDS[catId]) sevesoCategoryIds.add(catId);
+        if (ARIE_THRESHOLDS[catId]) arieCategoryIds.add(catId);
+      });
     }
-    return { sevesoCategoryIds: Array.from(sevesoCategoryIds), arieCategoryIds: Array.from(arieCategoryIds), isNamed, namedSubstanceName };
+  });
+
+  let isNamed = false;
+  let namedSubstanceName = null;
+  if (casNumber && NAMED_SUBSTANCES[casNumber]) {
+    const named = NAMED_SUBSTANCES[casNumber];
+    sevesoCategoryIds.add(named.id);
+    arieCategoryIds.add(named.id);
+    isNamed = true;
+    namedSubstanceName = named.name;
+  }
+
+  return { sevesoCategoryIds: Array.from(sevesoCategoryIds), arieCategoryIds: Array.from(arieCategoryIds), isNamed, namedSubstanceName };
 }
-export function calculateSummations(inventory: Substance[], mode: ThresholdMode): {
-    summationGroups: SummationGroup[],
-    arieSummationGroups: SummationGroup[],
-    overallStatus: 'Geen' | 'Lagedrempel' | 'Hogedrempel',
-    criticalGroup: string | null,
-    arieTotal: number,
-    arieExceeded: boolean,
-} {
-    const sevesoGroupTotals: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0, named: 0 };
-    const arieGroupTotals: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0, named: 0 };
-    inventory.forEach(substance => {
-        if (substance.quantity > 0) {
-            const perGroupMaxRatio: Record<string, number> = {};
-            substance.sevesoCategoryIds.forEach(catId => {
-                const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-                const thresholdInfo = SEVESO_THRESHOLDS[catId] || (category as any)?.threshold;
-                if (category && thresholdInfo) {
-                    const threshold = thresholdInfo[mode];
-                    if (threshold > 0) {
-                        const ratio = substance.quantity / threshold;
-                        if (!perGroupMaxRatio[category.group] || ratio > perGroupMaxRatio[category.group]) {
-                            perGroupMaxRatio[category.group] = ratio;
-                        }
-                    }
-                }
-            });
-            for (const group in perGroupMaxRatio) {
-                sevesoGroupTotals[group] += perGroupMaxRatio[group];
-            }
-            const perGroupMaxArieRatio: Record<string, number> = {};
-            substance.arieCategoryIds.forEach(catId => {
-                const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-                const arieThreshold = ARIE_THRESHOLDS[catId];
-                if (category && arieThreshold && arieThreshold > 0) {
-                    const ratio = substance.quantity / arieThreshold;
-                    if (!perGroupMaxArieRatio[category.group] || ratio > perGroupMaxArieRatio[category.group]) {
-                        perGroupMaxArieRatio[category.group] = ratio;
-                    }
-                }
-            });
-            for (const group in perGroupMaxArieRatio) {
-                arieGroupTotals[group] = (arieGroupTotals[group] || 0) + perGroupMaxArieRatio[group];
-            }
-        }
+
+export function calculateSummations(inventory: Substance[], mode: ThresholdMode) {
+  const sevesoGroupTotals: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0, named: 0 };
+  const arieGroupTotals: Record<string, number> = { health: 0, physical: 0, environment: 0, other: 0, named: 0 };
+  
+  const sevesoCatContribs: Record<string, Record<string, number>> = { health: {}, physical: {}, environment: {}, other: {}, named: {} };
+  const arieCatContribs: Record<string, Record<string, number>> = { health: {}, physical: {}, environment: {}, other: {}, named: {} };
+
+  inventory.forEach(substance => {
+    if (substance.quantity <= 0) return;
+
+    // Seveso
+    substance.sevesoCategoryIds.forEach(catId => {
+      const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+      const threshold = (SEVESO_THRESHOLDS[catId] || (category as any)?.threshold)?.[mode];
+      if (category && threshold > 0) {
+        const ratio = substance.quantity / threshold;
+        sevesoGroupTotals[category.group] += ratio;
+        sevesoCatContribs[category.group][catId] = (sevesoCatContribs[category.group][catId] || 0) + ratio;
+      }
     });
-    const summationGroups: SummationGroup[] = SUMMATION_GROUPS_CONFIG.map(config => ({
-        ...config,
-        totalRatio: sevesoGroupTotals[config.group] || 0,
-        isExceeded: (sevesoGroupTotals[config.group] || 0) >= 1,
-    }));
-    const arieSummationGroups: SummationGroup[] = SUMMATION_GROUPS_CONFIG.map(config => ({
-        ...config,
-        totalRatio: arieGroupTotals[config.group] || 0,
-        isExceeded: false,
-    }));
-    const totalArieRatio = Object.values(arieGroupTotals).reduce((sum, current) => sum + current, 0);
-    const isHighThreshold = summationGroups.some(g => g.totalRatio >= 1 && mode === 'high');
-    const isLowThreshold = summationGroups.some(g => g.totalRatio >= 1);
-    let overallStatus: 'Geen' | 'Lagedrempel' | 'Hogedrempel' = 'Geen';
-    if (isHighThreshold) {
-        overallStatus = 'Hogedrempel';
-    } else if (isLowThreshold) {
-        overallStatus = 'Lagedrempel';
-    }
-    const mostCriticalGroup = summationGroups.filter(g => g.totalRatio > 0).sort((a, b) => b.totalRatio - a.totalRatio)[0];
-    return {
-        summationGroups,
-        arieSummationGroups,
-        overallStatus,
-        criticalGroup: mostCriticalGroup ? mostCriticalGroup.name : null,
-        arieTotal: totalArieRatio,
-        arieExceeded: totalArieRatio >= 1,
-    };
+
+    // ARIE
+    substance.arieCategoryIds.forEach(catId => {
+      const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+      const threshold = ARIE_THRESHOLDS[catId] || (Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId) as any)?.arieThreshold;
+      if (category && threshold > 0) {
+        const ratio = substance.quantity / threshold;
+        arieGroupTotals[category.group] += ratio;
+        arieCatContribs[category.group][catId] = (arieCatContribs[category.group][catId] || 0) + ratio;
+      }
+    });
+  });
+
+  const summationGroups: SummationGroup[] = SUMMATION_GROUPS_CONFIG.map(config => ({
+    ...config,
+    totalRatio: sevesoGroupTotals[config.group],
+    isExceeded: sevesoGroupTotals[config.group] >= 1,
+    categoryContributions: sevesoCatContribs[config.group]
+  }));
+
+  const arieSummationGroups: SummationGroup[] = SUMMATION_GROUPS_CONFIG.map(config => ({
+    ...config,
+    totalRatio: arieGroupTotals[config.group],
+    isExceeded: arieGroupTotals[config.group] >= 1,
+    categoryContributions: arieCatContribs[config.group]
+  }));
+
+  const totalArieRatio = Object.values(arieGroupTotals).reduce((a, b) => a + b, 0);
+
+  return {
+    summationGroups,
+    arieSummationGroups,
+    overallStatus: (summationGroups.some(g => g.isExceeded) ? (mode === 'high' ? 'Hogedrempel' : 'Lagedrempel') : 'Geen') as any,
+    criticalGroup: summationGroups.find(g => g.isExceeded)?.name || null,
+    arieTotal: totalArieRatio,
+    arieExceeded: totalArieRatio >= 1,
+    criticalArieGroup: arieSummationGroups.find(g => g.totalRatio > 0)?.name || null
+  };
 }
-function generateSevesoReferences() {
-    const categories: { hPhrase: string, categoryId: string, categoryName: string, low: number, high: number }[] = [];
-    const namedSubstances: { hPhrase: string, categoryId: string, categoryName: string, low: number, high: number }[] = [];
-    const hPhrasesForCats: Record<string, string[]> = {};
-    for (const [hPhrase, catIds] of Object.entries(H_PHRASE_MAPPING)) {
-        for (const catId of catIds) {
-            if (!hPhrasesForCats[catId]) hPhrasesForCats[catId] = [];
-            hPhrasesForCats[catId].push(hPhrase);
-        }
-    }
-    for (const [catId, threshold] of Object.entries(SEVESO_THRESHOLDS)) {
-        const category = ALL_CATEGORIES[catId];
-        const hPhrases = hPhrasesForCats[catId] || [];
-        if (category) {
-            categories.push({
-                hPhrase: hPhrases.join(', ') || 'Specifiek',
-                categoryId: category.displayId || category.id,
-                categoryName: category.name,
-                low: threshold.low,
-                high: threshold.high,
-            });
-        }
-    }
-    for (const sub of Object.values(NAMED_SUBSTANCES)) {
-        namedSubstances.push({
-            hPhrase: sub.cas,
-            categoryId: sub.name,
-            categoryName: 'Benoemde Stof',
-            low: sub.threshold.low,
-            high: sub.threshold.high,
-        });
-    }
-    const sortOrder = ['H', 'P', 'E', 'O'];
-    const sortedCategories = categories.sort((a, b) => {
-        const groupA = a.categoryId.charAt(0);
-        const groupB = b.categoryId.charAt(0);
-        const indexA = sortOrder.indexOf(groupA);
-        const indexB = sortOrder.indexOf(groupB);
-        if (indexA !== indexB) {
-            if (indexA === -1) return 1;
-            if (indexB === -1) return -1;
-            return indexA - indexB;
-        }
-        return a.categoryId.localeCompare(b.categoryId, undefined, { numeric: true, sensitivity: 'base' });
+
+const generateRefs = () => {
+    const categories: any[] = [];
+    Object.entries(SEVESO_THRESHOLDS).forEach(([id, t]) => {
+        const cat = ALL_CATEGORIES[id];
+        if (cat) categories.push({ categoryId: cat.displayId || id, categoryName: cat.name, hPhrase: 'Zie H-Mappen', low: t.low, high: t.high });
     });
-    return {
-        categories: sortedCategories,
-        namedSubstances: namedSubstances.sort((a, b) => a.categoryId.localeCompare(b.categoryId))
-    };
-}
-function generateArieReference() {
-    const arieReferenceData: { hPhrase: string, categoryId: string, categoryName: string, threshold: number }[] = [];
-    const hPhrasesForArieCats: Record<string, string[]> = {};
-    Object.keys(ARIE_THRESHOLDS).forEach(catId => {
-        hPhrasesForArieCats[catId] = [];
-    });
-    for (const [hPhrase, catIds] of Object.entries(H_PHRASE_MAPPING)) {
-        for (const catId of catIds) {
-            if (hPhrasesForArieCats[catId]) {
-                hPhrasesForArieCats[catId].push(hPhrase);
-            }
-        }
-    }
-    const sortOrder = ['H', 'P', 'E', 'O'];
-    for (const [catId, hPhrases] of Object.entries(hPhrasesForArieCats)) {
-        const category = ALL_CATEGORIES[catId];
-        if (category) {
-            arieReferenceData.push({
-                hPhrase: hPhrases.join(', ') || 'Specifiek',
-                categoryId: category.displayId || category.id,
-                categoryName: category.name,
-                threshold: ARIE_THRESHOLDS[catId]
-            });
-        }
-    }
-    return arieReferenceData.sort((a, b) => {
-        const groupA = (a.categoryId.startsWith('ARIE-') ? (a.categoryId.includes('CMR') || a.categoryId.includes('H-CAT') ? 'H' : 'P') : a.categoryId.charAt(0));
-        const groupB = (b.categoryId.startsWith('ARIE-') ? (b.categoryId.includes('CMR') || b.categoryId.includes('H-CAT') ? 'H' : 'P') : b.categoryId.charAt(0));
-        const indexA = sortOrder.indexOf(groupA);
-        const indexB = sortOrder.indexOf(groupB);
-        if (indexA !== indexB) {
-            if (indexA === -1) return 1;
-            if (indexB === -1) return -1;
-            return indexA - indexB;
-        }
-        return a.categoryId.localeCompare(b.categoryId, undefined, { numeric: true, sensitivity: 'base' });
-    });
-}
-const sevesoRefs = generateSevesoReferences();
-export const SEVESO_CATEGORY_REFERENCE = sevesoRefs.categories;
-export const SEVESO_NAMED_REFERENCE = sevesoRefs.namedSubstances;
-export const ARIE_REFERENCE_GUIDE_DATA = generateArieReference();
-export const ARIE_NAMED_REFERENCE: any[] = [];
+    return { categories, namedSubstances: Object.values(NAMED_SUBSTANCES).map(s => ({ categoryId: s.name, hPhrase: s.cas, low: s.threshold.low, high: s.threshold.high })) };
+};
+const refs = generateRefs();
+export const SEVESO_CATEGORY_REFERENCE = refs.categories;
+export const SEVESO_NAMED_REFERENCE = refs.namedSubstances;
+export const ARIE_REFERENCE_GUIDE_DATA = Object.entries(ARIE_THRESHOLDS).map(([id, t]) => {
+    const cat = ALL_CATEGORIES[id];
+    return { categoryId: cat?.displayId || id, categoryName: cat?.name || id, hPhrase: 'ARIE-specifiek', threshold: t };
+});

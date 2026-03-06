@@ -1,4 +1,3 @@
-
 import type { Timestamp } from 'firebase/firestore';
 
 export type ThresholdMode = 'low' | 'high';
@@ -19,15 +18,6 @@ export interface NamedSubstance extends HazardCategory {
   arieThreshold?: number;
 }
 
-export interface Customer {
-  id: string;
-  name: string;
-  address?: string;
-  kvkNumber?: string;
-  billingEmail?: string;
-  createdAt?: Timestamp;
-}
-
 export interface Company {
   id: string;
   userId: string;
@@ -45,15 +35,8 @@ export interface Substance {
   arieCategoryIds: string[];
   isNamedSubstance: boolean;
   namedSubstanceName: string | null;
-  quantity: number; // in tons
-  sdsUri?: string; // Data URI for the original document
-}
-
-export interface QuantityLog {
-  id: string;
-  date: string; // YYYY-MM-DD
   quantity: number;
-  updatedAt: Timestamp;
+  sdsUri?: string;
 }
 
 export interface SummationGroup {
@@ -74,4 +57,12 @@ export interface UserProfile {
   customerName: string;
   disabled: boolean;
   role?: 'admin' | 'user';
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  address?: string;
+  kvkNumber?: string;
+  createdAt?: Timestamp;
 }
