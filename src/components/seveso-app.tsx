@@ -18,6 +18,7 @@ import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc, useAuth 
 import { collection, query, where, doc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb, deleteCompanyFromDb } from '@/lib/companies';
+import { exportCompanyData, importCompanyData } from '@/lib/backup';
 import { Loader2, UserX, LogOut, Building2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useRouter } from 'next/navigation';
@@ -74,11 +75,19 @@ export default function SevesoApp() {
       const teal = [22, 80, 91];
       const { summationGroups, arieSummationGroups, overallStatus, arieExceeded } = calculateSummations(localInventory, thresholdMode);
 
-      // PDF Helpers with fixed spacing
+      // --- PDF Constants ---
       let currentY = 0;
-      const h1Spacing = 12; const h2Spacing = 8; const pSpacing = 6; const lineH = 5;
+      const h1Spacing = 12;
+      const h2Spacing = 8;
+      const pSpacing = 6;
+      const lineH = 5;
 
-      const checkPage = (h: number) => { if (currentY + h > 280) { doc.addPage(); currentY = 20; } };
+      const checkPage = (h: number) => { 
+        if (currentY + h > 275) { 
+          doc.addPage(); 
+          currentY = 20; 
+        } 
+      };
       
       const addH1 = (text: string) => {
         checkPage(h1Spacing + 10);
@@ -132,14 +141,14 @@ export default function SevesoApp() {
       addP('De classificatie van stoffen vindt plaats op basis van de H-zinnen (Hazard statements) zoals vermeld in de Safety Data Sheets (SDS). Voor elke stof wordt getoetst of deze binnen een van de gedefinieerde gevarencategorieën valt.');
       addP('Conform de wettelijke systematiek wordt een inrichting als plichtig aangemerkt indien de sommatie van de aanwezige hoeveelheden, gedeeld door de geldende drempelwaarden voor een specifieke gevarengroep, een waarde van 1,0 of hoger bereikt.');
 
-      // --- PAGE 3: RESULTS ---
+      // --- PAGE 3: CHAPTER 3: RESULTATEN ---
       doc.addPage(); currentY = 25;
       addH1('3. Resultaten van de Analyse');
       addH2('3.1 Statusoverzicht');
       
       const statusColor = overallStatus === 'Geen' ? [46, 125, 50] : [198, 40, 40];
       doc.setFillColor(245, 245, 245).rect(20, currentY, 170, 30, 'F');
-      doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]).setFontSize(16).setFont('helvetica', 'bold').text(`Seveso Status: ${overallStatus === 'Geen' ? 'Geen Seveso-inrichting' : overallStatus}`, 30, currentY + 12);
+      doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]).setFontSize(16).setFont('helvetica', 'bold').text(`Seveso Status: ${overallStatus === 'Geen' ? 'Geen Seveso-inrichting' : overallStatus + '-inrichting'}`, 30, currentY + 12);
       doc.setTextColor(arieExceeded ? 198 : 46, arieExceeded ? 40 : 125, arieExceeded ? 40 : 50).text(`ARIE Status: ${arieExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig'}`, 30, currentY + 22);
       currentY += 40;
 
@@ -158,48 +167,52 @@ export default function SevesoApp() {
       });
       currentY = (doc as any).lastAutoTable.finalY + 15;
 
-      // --- PAGE 4: CONCLUSION ---
+      // --- PAGE 4: CHAPTER 4: CONCLUSIE ---
+      doc.addPage(); currentY = 25;
       addH1('4. Juridische Conclusie');
       addH2('4.1 Seveso-conclusie');
       if (overallStatus === 'Geen') {
         addP(`Op basis van de huidige inventarisatie en de toegepaste sommatieregels wordt de drempelwaarde van 1,0 niet overschreden. De inrichting wordt op dit moment niet aangemerkt als een Seveso-inrichting.`);
       } else {
-        addP(`De analyse toont aan dat voor de groep '${summationGroups.find(g => g.isExceeded)?.name}' de drempelwaarde is overschreden. De inrichting wordt hiermee aangemerkt als een ${overallStatus}-inrichting.`);
+        const crit = summationGroups.find(g => g.isExceeded);
+        addP(`De analyse toont aan dat voor de groep '${crit?.name}' de drempelwaarde is overschreden (sommatiewaarde: ${crit?.totalRatio.toFixed(2)}). De inrichting wordt hiermee aangemerkt als een ${overallStatus}-inrichting.`);
       }
 
       addH2('4.2 ARIE-conclusie');
       if (!arieExceeded) {
         addP(`De sommatie voor de ARIE-regeling bedraagt ${(calculateSummations(localInventory, thresholdMode).arieTotal * 100).toFixed(1)}%. De drempelwaarde van 1,0 wordt niet bereikt.`);
       } else {
-        addP(`De sommatie voor de ARIE-regeling bedraagt ${(calculateSummations(localInventory, thresholdMode).arieTotal * 100).toFixed(1)}%. Hiermee valt de inrichting onder de ARIE-regeling.`);
+        addP(`De sommatie voor de ARIE-regeling bedraagt ${(calculateSummations(localInventory, thresholdMode).arieTotal * 100).toFixed(1)}%. Hiermee valt de inrichting onder de ARIE-regeling en de bijbehorende verplichtingen uit het Arbeidsomstandighedenbesluit.`);
       }
 
-      // --- PAGE 5: FOLLOW-UP (CONDITIONAL) ---
+      // --- CHAPTER 5: VERVOLGSTAPPEN (CONDITIONEEL) ---
+      let nextChapter = 5;
       if (overallStatus !== 'Geen' || arieExceeded) {
         doc.addPage(); currentY = 25;
         addH1('5. Wettelijke Vervolgstappen');
-        addP('De vastgestelde status brengt dwingende wettelijke verplichtingen met zich mee om de risico\'s op zware ongevallen te beheersen.');
+        addP('De vastgestelde status brengt dwingende wettelijke verplichtingen met zich mee ter voorkoming van zware ongevallen.');
         
         if (overallStatus !== 'Geen') {
           addH2('5.1 Seveso: Verplichtingen');
-          addP('- Formele Kennisgeving: Indiening bij de Omgevingsdienst en Veiligheidsregio.');
-          addP('- PBZO: Schriftelijk Preventiebeleid Zware Ongevallen.');
-          addP('- VBS: Implementatie van een Veiligheidsbeheerssysteem.');
+          addP('Formele Kennisgeving: Indiening bij de Omgevingsdienst en Veiligheidsregio over aanwezige stoffen.');
+          addP('PBZO: Schriftelijk Preventiebeleid Zware Ongevallen ter borging van de veiligheidscultuur.');
+          addP('VBS: Implementatie van een Veiligheidsbeheerssysteem inclusief procedures en middelen.');
         }
         if (arieExceeded) {
           addH2('5.2 ARIE-plicht: Actiepunten');
-          addP('- Melding NLA: Aanmelding bij de Nederlandse Arbeidsinspectie.');
-          addP('- Aanvullende RI&E: Specifieke scenario-analyse voor zware ongevallen.');
-          addP('- Instructie: Aantoonbare training van medewerkers over risico\'s.');
+          addP('Melding NLA: Formele aanmelding bij de Nederlandse Arbeidsinspectie.');
+          addP('Aanvullende RI&E: Scenario-analyse specifiek gericht op zware ongevallen.');
+          addP('Instructie: Aantoonbare training van medewerkers over risico\'s en noodprocedures.');
         }
+        nextChapter = 6;
       }
 
-      // --- FINAL PAGE: INVENTORY ---
+      // --- FINAL CHAPTER: INVENTORY ---
       doc.addPage(); currentY = 25;
-      addH1(`${overallStatus !== 'Geen' || arieExceeded ? '6' : '5'}. Stoffenoverzicht`);
+      addH1(`${nextChapter}. Stoffenoverzicht`);
       autoTable(doc, {
         startY: currentY,
-        head: [['Product', 'CAS', 'Hoeveelheid', 'Seveso Cat', 'ARIE Cat']],
+        head: [['Product', 'CAS', 'Voorraad', 'Seveso Cat', 'ARIE Cat']],
         body: localInventory.map(s => [
           s.productName,
           s.casNumber || '-',
@@ -227,6 +240,43 @@ export default function SevesoApp() {
     if (newCompany) setSelectedCompanyId(newCompany.id);
   };
 
+  const handleExportBackup = async () => {
+    if (!selectedCompanyId) return;
+    const company = companies.find(c => c.id === selectedCompanyId);
+    if (!company) return;
+
+    try {
+      const json = await exportCompanyData(db, company);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ChemStats_Backup_${company.name}_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      toast({ title: "Back-up geëxporteerd" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Export mislukt" });
+    }
+  };
+
+  const handleImportBackup = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !userProfile || !event.target.files?.[0]) return;
+    
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const content = e.target?.result as string;
+      const newId = await importCompanyData(db, user.uid, userProfile.customerId, content);
+      if (newId) {
+        setSelectedCompanyId(newId);
+        toast({ title: "Back-up succesvol hersteld" });
+      } else {
+        toast({ variant: "destructive", title: "Fout bij herstellen", description: "Bestand is mogelijk beschadigd." });
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleAddSubstance = (newSubstance: Omit<Substance, 'id' | 'quantity'>) => {
     if (!selectedCompanyId) return;
     const substanceWithId = { ...newSubstance, id: `sub-${Date.now()}`, quantity: 0 };
@@ -244,8 +294,8 @@ export default function SevesoApp() {
         onPasswordChange={() => setIsPasswordDialogOpen(true)}
         isSavingPdf={isSavingPdf}
         disabled={!selectedCompanyId}
-        onExport={() => {}}
-        onImport={() => {}}
+        onExport={handleExportBackup}
+        onImport={handleImportBackup}
       />
       
       <CompanySelector 
@@ -291,6 +341,19 @@ export default function SevesoApp() {
         {...explanationData}
       />
       <PasswordChangeDialog isOpen={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen} />
+      
+      <AlertDialog open={isDeleteCompanyAlertOpen} onOpenChange={setIsDeleteCompanyAlertOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Bedrijf verwijderen?</AlertDialogTitle>
+                <AlertDialogDescription>Dit verwijdert het geselecteerde bedrijf en alle bijbehorende stoffen definitief. Back-ups worden niet aangetast.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                <AlertDialogAction onClick={() => selectedCompanyId && deleteCompanyFromDb(db, selectedCompanyId).then(() => setSelectedCompanyId(null))} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
