@@ -84,10 +84,10 @@ export const ARIE_THRESHOLDS: Record<string, number> = {
 };
 
 export const NAMED_SUBSTANCES: Record<string, NamedSubstance> = {
-  '67-56-1': { id: 'Named-Methanol', name: 'Methanol', cas: '67-56-1', group: 'named', threshold: { low: 500, high: 5000 } },
-  '75-07-0': { id: 'Named-Acetaldehyde', name: 'Acetaldehyde', cas: '75-07-0', group: 'named', threshold: { low: 10, high: 50 } },
-  '75-21-8': { id: 'Named-Ethyleenoxide', name: 'Ethyleenoxide', cas: '75-21-8', group: 'named', threshold: { low: 5, high: 50 } },
-  '74-85-1': { id: 'Named-Ethyleen', name: 'Ethyleen', cas: '74-85-1', group: 'named', threshold: { low: 50, high: 200 } },
+  '67-56-1': { id: 'Named-Methanol', name: 'Methanol', cas: '67-56-1', group: 'named', threshold: { low: 500, high: 5000 }, arieThreshold: 150 },
+  '75-07-0': { id: 'Named-Acetaldehyde', name: 'Acetaldehyde', cas: '75-07-0', group: 'named', threshold: { low: 10, high: 50 }, arieThreshold: 3 },
+  '75-21-8': { id: 'Named-Ethyleenoxide', name: 'Ethyleenoxide', cas: '75-21-8', group: 'named', threshold: { low: 5, high: 50 }, arieThreshold: 1.5 },
+  '74-85-1': { id: 'Named-Ethyleen', name: 'Ethyleen', cas: '74-85-1', group: 'named', threshold: { low: 50, high: 200 }, arieThreshold: 15 },
 };
 
 export const H_PHRASE_MAPPING: Record<string, string[]> = {
@@ -113,6 +113,15 @@ export const SUMMATION_GROUPS_CONFIG = [
   { name: 'Overige gevaren', icon: AlertTriangle, group: 'other' },
   { name: 'Benoemde Stoffen', icon: Atom, group: 'named' },
 ] as const;
+
+/**
+ * Returns the ARIE threshold for a given category ID or named substance.
+ */
+export function getArieThreshold(catId: string): number {
+  if (ARIE_THRESHOLDS[catId]) return ARIE_THRESHOLDS[catId];
+  const named = Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
+  return named?.arieThreshold || 0;
+}
 
 export function classifySubstance(hStatements: string[], casNumber: string | null) {
   const sevesoCategoryIds = new Set<string>();
@@ -165,7 +174,7 @@ export function calculateSummations(inventory: Substance[], mode: ThresholdMode)
     // ARIE
     substance.arieCategoryIds.forEach(catId => {
       const category = ALL_CATEGORIES[catId] || Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId);
-      const threshold = ARIE_THRESHOLDS[catId] || (Object.values(NAMED_SUBSTANCES).find(ns => ns.id === catId) as any)?.arieThreshold;
+      const threshold = getArieThreshold(catId);
       if (category && threshold > 0) {
         const ratio = substance.quantity / threshold;
         arieGroupTotals[category.group] += ratio;
