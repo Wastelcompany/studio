@@ -1,18 +1,14 @@
-import type {Metadata} from 'next';
-import { Toaster } from "@/components/ui/toaster"
+import type { Metadata } from 'next';
+import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
-import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { SupabaseProvider } from '@/supabase/provider';
 
 export const metadata: Metadata = {
   title: 'ChemStats - Gevaarlijke Stoffen Analyse',
   description: 'Analyseer veiligheidsinformatiebladen (SDS) om uw Seveso en ARIE status te bepalen.',
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -21,9 +17,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased" suppressHydrationWarning>
-        <FirebaseClientProvider>
+        <SupabaseProvider>
           {children}
-        </FirebaseClientProvider>
+        </SupabaseProvider>
         <Toaster />
       </body>
     </html>

@@ -1,4 +1,4 @@
-import type { Timestamp } from 'firebase/firestore';
+
 
 export type ThresholdMode = 'low' | 'high';
 
@@ -51,7 +51,7 @@ export interface SummationGroup {
 export interface UserProfile {
   uid: string;
   email: string;
-  createdAt: Timestamp;
+  createdAt: string;
   displayName?: string;
   customerId: string;
   customerName: string;
@@ -64,5 +64,5 @@ export interface Customer {
   name: string;
   address?: string;
   kvkNumber?: string;
-  createdAt?: Timestamp;
+  createdAt?: string;
 }

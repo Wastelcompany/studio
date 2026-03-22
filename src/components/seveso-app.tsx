@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from 'react';
-import type { Substance, ThresholdMode, Company, UserProfile, Customer } from '@/lib/types';
+import { useState, useEffect, useMemo } from 'react';
+import type { Substance, ThresholdMode, Company, UserProfile } from '@/lib/types';
 import SevesoHeader from '@/components/seveso-header';
 import InventoryTable from '@/components/inventory-table';
 import Dashboard from '@/components/dashboard';
@@ -13,42 +13,63 @@ import CategoryExplanationDialog from './category-explanation-dialog';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import CompanySelector from './company-selector';
-import { calculateSummations, ALL_CATEGORIES, NAMED_SUBSTANCES } from '@/lib/seveso';
-import { useUser, useCollection, useMemoFirebase, useFirestore, useDoc, useAuth } from '@/firebase';
-import { collection, query, where, doc } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
-import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb, deleteCompanyFromDb } from '@/lib/companies';
+import { calculateSummations } from '@/lib/seveso';
+import { useSupabase, useIsAdmin } from '@/supabase/provider';
+import { useRealtimeQuery } from '@/supabase/hooks';
+import { createNewCompany, updateCompanyDetails, addSubstanceToDb, deleteSubstanceFromDb, updateSubstanceQuantityInDb, clearInventoryFromDb, deleteCompanyFromDb, snakeToCamelCompany } from '@/lib/companies';
 import { exportCompanyData, importCompanyData } from '@/lib/backup';
-import { Loader2, UserX, LogOut, Building2 } from 'lucide-react';
+import { Loader2, UserX } from 'lucide-react';
 import { Button } from './ui/button';
 import { useRouter } from 'next/navigation';
 import SdsViewerDialog from './sds-viewer-dialog';
 import PasswordChangeDialog from './password-change-dialog';
+import HistoryDialog from './history-dialog';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function SevesoApp() {
-  const { user, isUserLoading: isAuthLoading } = useUser();
-  const db = useFirestore();
-  const auth = useAuth();
+  const { supabase, user, isUserLoading: isAuthLoading } = useSupabase();
+  const isAdmin = useIsAdmin();
   const router = useRouter();
-  
+
   useEffect(() => {
     if (!isAuthLoading && !user) router.push('/');
   }, [isAuthLoading, user, router]);
 
-  const userProfileRef = useMemoFirebase(() => user ? doc(db, 'users', user.uid) : null, [user, db]);
-  const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<UserProfile>(userProfileRef);
-  
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isLoadingUserProfile, setIsLoadingUserProfile] = useState(true);
+
+  useEffect(() => {
+    if (!user) { setUserProfile(null); setIsLoadingUserProfile(false); return; }
+    setIsLoadingUserProfile(true);
+    supabase.from('user_profiles').select('*').eq('id', user.id).single()
+      .then(({ data }) => {
+        if (data) setUserProfile({ uid: data.id, email: data.email, displayName: data.display_name ?? undefined, customerId: data.customer_id ?? '', customerName: data.customer_name ?? '', disabled: data.disabled, role: data.role, createdAt: data.created_at });
+        setIsLoadingUserProfile(false);
+      });
+  }, [user, supabase]);
+
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
-  const companiesQuery = useMemoFirebase(() => 
-    userProfile?.customerId && !userProfile?.disabled 
-    ? query(collection(db, 'companies'), where('customerId', '==', userProfile.customerId)) 
-    : null, [userProfile, db]);
 
-  const { data: companiesData, isLoading: isLoadingCompanies } = useCollection<Company>(companiesQuery);
-  const companies = useMemo(() => companiesData?.sort((a, b) => a.name.localeCompare(b.name)) ?? [], [companiesData]);
+  const { data: companiesRaw, isLoading: isLoadingCompanies } = useRealtimeQuery<any>(
+    'companies',
+    userProfile?.customerId && !userProfile?.disabled
+      ? (sb) => sb.from('companies').select('*').eq('customer_id', userProfile.customerId).order('name')
+      : null,
+    [userProfile?.customerId, userProfile?.disabled]
+  );
+  const companies: Company[] = useMemo(() => (companiesRaw ?? []).map(snakeToCamelCompany), [companiesRaw]);
 
-  const inventoryQuery = useMemoFirebase(() => selectedCompanyId ? collection(db, 'companies', selectedCompanyId, 'inventory') : null, [selectedCompanyId, db]);
-  const { data: firestoreInventory, isLoading: isLoadingInventory } = useCollection<Substance>(inventoryQuery);
+  const { data: inventoryRaw, isLoading: isLoadingInventory } = useRealtimeQuery<any>(
+    'inventory',
+    selectedCompanyId ? (sb) => sb.from('inventory').select('*').eq('company_id', selectedCompanyId) : null,
+    [selectedCompanyId]
+  );
+  const firestoreInventory: Substance[] = useMemo(() => (inventoryRaw ?? []).map((row: any) => ({
+    id: row.id, productName: row.product_name, casNumber: row.cas_number ?? null,
+    hStatements: row.h_statements ?? [], sevesoCategoryIds: row.seveso_category_ids ?? [],
+    arieCategoryIds: row.arie_category_ids ?? [], isNamedSubstance: row.is_named_substance ?? false,
+    namedSubstanceName: row.named_substance_name ?? null, quantity: Number(row.quantity) ?? 0, sdsUri: row.sds_uri ?? undefined,
+  })), [inventoryRaw]);
 
   const [localInventory, setLocalInventory] = useState<Substance[]>([]);
   useEffect(() => { setLocalInventory(firestoreInventory || []); }, [firestoreInventory]);
@@ -60,8 +81,9 @@ export default function SevesoApp() {
   const [isDeleteCompanyAlertOpen, setIsDeleteCompanyAlertOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [viewerSubstance, setViewerSubstance] = useState<Substance | null>(null);
+  const [historySubstance, setHistorySubstance] = useState<Substance | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [explanationData, setExplanationData] = useState<{ substance: Substance | null; categoryId: string | null; type: 'seveso' | 'arie' | null }>({ substance: null, categoryId: null, type: null });
-  
   const [isSavingPdf, setIsSavingPdf] = useState(false);
   const { toast } = useToast();
 
@@ -69,291 +91,284 @@ export default function SevesoApp() {
     if (!selectedCompanyId) return;
     const company = companies.find(c => c.id === selectedCompanyId);
     setIsSavingPdf(true);
-    
     try {
+      const { data: dbTemplates } = await supabase
+        .from('report_templates')
+        .select('*')
+        .eq('report_type', type);
+
+      const getTpl = (key: string, def: string) => dbTemplates?.find(t => t.section_key === key)?.content || def;
+
       const doc = new jsPDF('p', 'mm', 'a4');
       const teal = [22, 80, 91];
       const { summationGroups, arieSummationGroups, overallStatus, arieExceeded } = calculateSummations(localInventory, thresholdMode);
-
-      // --- PDF Constants ---
       let currentY = 0;
-      const h1Spacing = 12;
-      const h2Spacing = 8;
-      const pSpacing = 6;
-      const lineH = 5;
+      const checkPage = (h: number) => { if (currentY + h > 275) { doc.addPage(); currentY = 20; } };
+      const addH1 = (text: string) => { checkPage(22); doc.setFont('helvetica', 'bold').setFontSize(18).setTextColor(teal[0], teal[1], teal[2]); doc.text(text, 20, currentY); currentY += 12; };
+      const addH2 = (text: string) => { checkPage(18); doc.setFont('helvetica', 'bold').setFontSize(14).setTextColor(50, 50, 50); doc.text(text, 20, currentY); currentY += 8; };
+      const addP = (text: string) => { doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(80, 80, 80); const lines = doc.splitTextToSize(text, 170); checkPage(lines.length * 5 + 6); doc.text(lines, 20, currentY); currentY += lines.length * 5 + 6; };
 
-      const checkPage = (h: number) => { 
-        if (currentY + h > 275) { 
-          doc.addPage(); 
-          currentY = 20; 
-        } 
-      };
-      
-      const addH1 = (text: string) => {
-        checkPage(h1Spacing + 10);
-        doc.setFont('helvetica', 'bold').setFontSize(18).setTextColor(teal[0], teal[1], teal[2]);
-        doc.text(text, 20, currentY);
-        currentY += h1Spacing;
-      };
-
-      const addH2 = (text: string) => {
-        checkPage(h2Spacing + 10);
-        doc.setFont('helvetica', 'bold').setFontSize(14).setTextColor(50, 50, 50);
-        doc.text(text, 20, currentY);
-        currentY += h2Spacing;
-      };
-
-      const addP = (text: string) => {
-        doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(80, 80, 80);
-        const lines = doc.splitTextToSize(text, 170);
-        checkPage(lines.length * lineH + pSpacing);
-        doc.text(lines, 20, currentY);
-        currentY += (lines.length * lineH) + pSpacing;
-      };
-
-      // --- PAGE 1: COVER ---
       doc.setFillColor(teal[0], teal[1], teal[2]).rect(0, 0, 210, 40, 'F');
       doc.setTextColor(255, 255, 255).setFontSize(24).setFont('helvetica', 'bold').text('ChemStats', 20, 25);
       doc.setFontSize(10).setFont('helvetica', 'normal').text('GEVAARLIJKE STOFFEN ANALYSE', 20, 32);
-      
       currentY = 80;
-      doc.setTextColor(teal[0], teal[1], teal[2]).setFontSize(32).setFont('helvetica', 'bold').text('Seveso III & ARIE', 20, currentY);
-      currentY += 12;
-      doc.text('Beoordelingsrapport', 20, currentY);
-      
-      currentY = 140;
-      doc.setTextColor(50, 50, 50).setFontSize(14).setFont('helvetica', 'bold').text('Bedrijfsgegevens:', 20, currentY);
-      currentY += 10;
-      doc.setFont('helvetica', 'normal').text(`Bedrijf: ${company?.name || 'Onbekend'}`, 20, currentY);
-      currentY += 8;
+      doc.setTextColor(teal[0], teal[1], teal[2]).setFontSize(32).setFont('helvetica', 'bold').text(getTpl('title', type === 'full' ? 'Seveso III & ARIE' : 'Seveso III Beoordeling'), 20, currentY); currentY += 12;
+      doc.text(getTpl('subtitle', type === 'full' ? 'Beoordelingsrapport' : 'Samenvatting drempelwaarden'), 20, currentY); currentY = 140;
+      doc.setTextColor(50, 50, 50).setFontSize(14).setFont('helvetica', 'bold').text('Bedrijfsgegevens:', 20, currentY); currentY += 10;
+      doc.setFont('helvetica', 'normal').text(`Bedrijf: ${company?.name || 'Onbekend'}`, 20, currentY); currentY += 8;
       doc.text(`Locatie: ${company?.address || 'Niet opgegeven'}`, 20, currentY);
-      
       doc.setFontSize(9).setTextColor(150, 150, 150).text(`Datum: ${new Date().toLocaleDateString('nl-NL')}`, 20, 280);
-      doc.text(`Rapport ID: CS-${selectedCompanyId?.substring(0,6).toUpperCase()}`, 150, 280);
 
-      // --- PAGE 2: CHAPTER 1 & 2 ---
-      doc.addPage(); currentY = 25;
-      addH1('1. Inleiding en Kaderstelling');
-      addP(`Dit rapport bevat de resultaten van de gevaarlijke stoffen analyse voor ${company?.name}. De beoordeling is uitgevoerd conform de Europese Seveso-III richtlijn (2012/18/EU), in Nederland geïmplementeerd via de Omgevingswet en het Besluit activiteiten leefomgeving (Bal), alsmede de ARIE-regeling (Aanvullende Risico-Inventarisatie en -Evaluatie) uit het Arbeidsomstandighedenbesluit.`);
-      addP('Het doel van deze toetsing is het identificeren van de risico-status van de inrichting om te bepalen of er aanvullende veiligheidsbeheersmaatregelen noodzakelijk zijn ter voorkoming van zware ongevallen.');
-      
-      addH1('2. De Beoordelingssystematiek');
-      addP('De classificatie van stoffen vindt plaats op basis van de H-zinnen (Hazard statements) zoals vermeld in de Safety Data Sheets (SDS). Voor elke stof wordt getoetst of deze binnen een van de gedefinieerde gevarencategorieën valt.');
-      addP('Conform de wettelijke systematiek wordt een inrichting als plichtig aangemerkt indien de sommatie van de aanwezige hoeveelheden, gedeeld door de geldende drempelwaarden voor een specifieke gevarengroep, een waarde van 1,0 of hoger bereikt.');
-
-      // --- PAGE 3: CHAPTER 3: RESULTATEN ---
-      doc.addPage(); currentY = 25;
-      addH1('3. Resultaten van de Analyse');
-      addH2('3.1 Statusoverzicht');
-      
-      const statusColor = overallStatus === 'Geen' ? [46, 125, 50] : [198, 40, 40];
-      doc.setFillColor(245, 245, 245).rect(20, currentY, 170, 30, 'F');
-      doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]).setFontSize(16).setFont('helvetica', 'bold').text(`Seveso Status: ${overallStatus === 'Geen' ? 'Geen Seveso-inrichting' : overallStatus + '-inrichting'}`, 30, currentY + 12);
-      doc.setTextColor(arieExceeded ? 198 : 46, arieExceeded ? 40 : 125, arieExceeded ? 40 : 50).text(`ARIE Status: ${arieExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig'}`, 30, currentY + 22);
-      currentY += 40;
-
-      addH2('3.2 Sommatie per Gevarengroep');
-      autoTable(doc, {
-        startY: currentY,
-        head: [['Gevarengroep', 'Seveso Ratio', 'ARIE Ratio', 'Status']],
-        body: summationGroups.map((g, i) => [
-          g.name,
-          (g.totalRatio * 100).toFixed(1) + '%',
-          (arieSummationGroups[i].totalRatio * 100).toFixed(1) + '%',
-          (g.isExceeded || arieSummationGroups[i].isExceeded) ? 'DREMPEL OVERSCHREDEN' : 'Binnen limiet'
-        ]),
-        headStyles: { fillColor: teal },
-        margin: { left: 20 }
-      });
-      currentY = (doc as any).lastAutoTable.finalY + 15;
-
-      // --- PAGE 4: CHAPTER 4: CONCLUSIE ---
-      doc.addPage(); currentY = 25;
-      addH1('4. Juridische Conclusie');
-      addH2('4.1 Seveso-conclusie');
-      if (overallStatus === 'Geen') {
-        addP(`Op basis van de huidige inventarisatie en de toegepaste sommatieregels wordt de drempelwaarde van 1,0 niet overschreden. De inrichting wordt op dit moment niet aangemerkt als een Seveso-inrichting.`);
-      } else {
-        const crit = summationGroups.find(g => g.isExceeded);
-        addP(`De analyse toont aan dat voor de groep '${crit?.name}' de drempelwaarde is overschreden (sommatiewaarde: ${crit?.totalRatio.toFixed(2)}). De inrichting wordt hiermee aangemerkt als een ${overallStatus}-inrichting.`);
-      }
-
-      addH2('4.2 ARIE-conclusie');
-      if (!arieExceeded) {
-        addP(`De sommatie voor de ARIE-regeling bedraagt ${(calculateSummations(localInventory, thresholdMode).arieTotal * 100).toFixed(1)}%. De drempelwaarde van 1,0 wordt niet bereikt.`);
-      } else {
-        addP(`De sommatie voor de ARIE-regeling bedraagt ${(calculateSummations(localInventory, thresholdMode).arieTotal * 100).toFixed(1)}%. Hiermee valt de inrichting onder de ARIE-regeling en de bijbehorende verplichtingen uit het Arbeidsomstandighedenbesluit.`);
-      }
-
-      // --- CHAPTER 5: VERVOLGSTAPPEN (CONDITIONEEL) ---
-      let nextChapter = 5;
-      if (overallStatus !== 'Geen' || arieExceeded) {
+      if (type === 'full') {
         doc.addPage(); currentY = 25;
-        addH1('5. Wettelijke Vervolgstappen');
-        addP('De vastgestelde status brengt dwingende wettelijke verplichtingen met zich mee ter voorkoming van zware ongevallen.');
-        
-        if (overallStatus !== 'Geen') {
-          addH2('5.1 Seveso: Verplichtingen');
-          addP('Formele Kennisgeving: Indiening bij de Omgevingsdienst en Veiligheidsregio over aanwezige stoffen.');
-          addP('PBZO: Schriftelijk Preventiebeleid Zware Ongevallen ter borging van de veiligheidscultuur.');
-          addP('VBS: Implementatie van een Veiligheidsbeheerssysteem inclusief procedures en middelen.');
-        }
-        if (arieExceeded) {
-          addH2('5.2 ARIE-plicht: Actiepunten');
-          addP('Melding NLA: Formele aanmelding bij de Nederlandse Arbeidsinspectie.');
-          addP('Aanvullende RI&E: Scenario-analyse specifiek gericht op zware ongevallen.');
-          addP('Instructie: Aantoonbare training van medewerkers over risico\'s en noodprocedures.');
-        }
-        nextChapter = 6;
+        addH1('1. Introductie');
+        addP(getTpl('intro', 'Dit rapport is opgesteld conform de Seveso III Richtlijn (2012/18/EU) en de ARIE-regeling (Aanvullende Risico-Inventarisatie en -Evaluatie). Het geeft inzicht in de drempelwaarde-overschrijdingen voor gevaarlijke stoffen.'));
       }
 
-      // --- FINAL CHAPTER: INVENTORY ---
       doc.addPage(); currentY = 25;
-      addH1(`${nextChapter}. Stoffenoverzicht`);
-      autoTable(doc, {
-        startY: currentY,
-        head: [['Product', 'CAS', 'Voorraad', 'Seveso Cat', 'ARIE Cat']],
-        body: localInventory.map(s => [
-          s.productName,
-          s.casNumber || '-',
-          s.quantity.toFixed(2) + ' t',
-          s.sevesoCategoryIds.join(', ') || '-',
-          s.arieCategoryIds.join(', ') || '-'
-        ]),
-        headStyles: { fillColor: teal },
-        margin: { left: 20 }
-      });
+      addH1(type === 'full' ? '3. Resultaten van de Analyse' : 'Resultaten van de Analyse');
 
-      doc.save(`ChemStats_Rapport_${company?.name || 'Export'}.pdf`);
-      toast({ title: "Rapport gegenereerd" });
-    } catch (e) {
-      console.error(e);
-      toast({ variant: "destructive", title: "Fout bij PDF maken" });
-    } finally {
-      setIsSavingPdf(false);
-    }
+      // Status badges
+      const statusColor = overallStatus === 'Geen' ? [46, 125, 50] : [198, 40, 40];
+      const arieColor = arieExceeded ? [198, 40, 40] : [46, 125, 50];
+      doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]).roundedRect(20, currentY, 80, 12, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255).setFontSize(10).setFont('helvetica', 'bold').text(`Seveso: ${overallStatus === 'Geen' ? 'Geen inrichting' : overallStatus + '-inrichting'}`, 24, currentY + 8);
+      doc.setFillColor(arieColor[0], arieColor[1], arieColor[2]).roundedRect(108, currentY, 80, 12, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255).text(`ARIE: ${arieExceeded ? 'ARIE-plichtig' : 'Niet ARIE-plichtig'}`, 112, currentY + 8);
+      currentY += 22;
+
+      // Seveso sommatie voortgangsbalken
+      addH2('Seveso Sommatie');
+      const drawProgressBar = (label: string, percentage: number, exceeded: boolean, y: number) => {
+        const barX = 20, barY = y, barW = 170, barH = 6;
+        const fillW = Math.min(percentage / 100, 1) * barW;
+        const fillColor: [number, number, number] = exceeded ? [198, 40, 40] : [22, 80, 91];
+        // Label en percentage
+        doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(50, 50, 50);
+        doc.text(label, barX, barY - 1);
+        doc.setFont('helvetica', 'bold').setTextColor(exceeded ? 198 : 50, exceeded ? 40 : 50, exceeded ? 40 : 50);
+        doc.text(`${percentage.toFixed(1)}%`, barX + barW - doc.getTextWidth(`${percentage.toFixed(1)}%`), barY - 1);
+        // Achtergrond balk
+        doc.setFillColor(220, 220, 220).rect(barX, barY + 1, barW, barH, 'F');
+        // Gekleurde balk
+        if (fillW > 0) doc.setFillColor(...fillColor).rect(barX, barY + 1, fillW, barH, 'F');
+        return barY + barH + 8;
+      };
+
+      for (const g of summationGroups) {
+        checkPage(18);
+        currentY = drawProgressBar(g.name, g.totalRatio * 100, g.isExceeded, currentY);
+      }
+      currentY += 4;
+
+      // ARIE sommatie voortgangsbalken
+      addH2('ARIE Sommatie');
+      for (let i = 0; i < arieSummationGroups.length; i++) {
+        const g = arieSummationGroups[i];
+        checkPage(18);
+        currentY = drawProgressBar(g.name, g.totalRatio * 100, g.isExceeded, currentY);
+      }
+      currentY += 8;
+
+      doc.addPage(); currentY = 25;
+      addH1(type === 'full' ? '4. Juridische Conclusie' : 'Juridische Conclusie');
+      addH2('4.1 Seveso-conclusie');
+      if (overallStatus === 'Geen') { 
+        addP(getTpl('seveso_conclusion_none', 'Op basis van de huidige inventarisatie wordt de drempelwaarde niet overschreden. De inrichting is geen Seveso-inrichting.')); 
+      }
+      else { 
+        const crit = summationGroups.find(g => g.isExceeded); 
+        addP(`De groep '${crit?.name}' overschrijdt de drempelwaarde (${crit?.totalRatio.toFixed(2)}). De inrichting is een ${overallStatus}-inrichting.`); 
+      }
+      addH2('4.2 ARIE-conclusie');
+      if (arieExceeded) {
+        addP(getTpl('arie_conclusion_exceeded', 'De inrichting valt onder de ARIE-regeling.'));
+      } else {
+        addP(getTpl('arie_conclusion_none', 'De drempelwaarde wordt niet bereikt. De inrichting valt niet onder de ARIE-regeling.'));
+      }
+
+      if (type === 'full') {
+        doc.addPage(); currentY = 25;
+        addH1('5. Inventarislijst');
+        autoTable(doc, { startY: currentY, head: [['Product', 'CAS', 'H-zinnen', 'Hoeveelheid (kg)']], body: localInventory.map(s => [s.productName, s.casNumber || '-', s.hStatements.join(', '), s.quantity.toLocaleString('nl-NL')]), headStyles: { fillColor: teal as any }, margin: { left: 20 } });
+      }
+
+      doc.save(`ChemStats-${company?.name || 'rapport'}-${new Date().toISOString().split('T')[0]}.pdf`);
+    } finally { setIsSavingPdf(false); }
   };
 
-  const handleCreateNewCompany = async () => {
-    if (!user || !userProfile) return;
-    const newCompany = await createNewCompany(db, user.uid, userProfile.customerId);
+  const handleAddSubstance = async (substanceData: Omit<Substance, 'id' | 'quantity'>) => {
+    if (!selectedCompanyId) return;
+    const newSubstance: Substance = { ...substanceData, id: uuidv4(), quantity: 0 };
+    setLocalInventory(prev => [...prev, newSubstance]);
+    await addSubstanceToDb(supabase, selectedCompanyId, newSubstance);
+  };
+
+  const handleDeleteSubstance = async (substanceId: string) => {
+    if (!selectedCompanyId) return;
+    setLocalInventory(prev => prev.filter(s => s.id !== substanceId));
+    await deleteSubstanceFromDb(supabase, selectedCompanyId, substanceId);
+  };
+
+  const handleQuantityChange = (substanceId: string, newQuantity: number) => {
+    if (!selectedCompanyId) return;
+    setLocalInventory(prev => prev.map(s => s.id === substanceId ? { ...s, quantity: newQuantity } : s));
+    updateSubstanceQuantityInDb(supabase, selectedCompanyId, substanceId, newQuantity);
+  };
+
+  const handleClearAll = async () => {
+    if (!selectedCompanyId) return;
+    setLocalInventory([]);
+    await clearInventoryFromDb(supabase, selectedCompanyId);
+    setIsClearAlertOpen(false);
+    toast({ title: 'Inventaris geleegd' });
+  };
+
+  const handleCreateCompany = async () => {
+    if (!user || !userProfile?.customerId) return;
+    const newCompany = await createNewCompany(supabase, user.id, userProfile.customerId);
     if (newCompany) setSelectedCompanyId(newCompany.id);
   };
 
-  const handleExportBackup = async () => {
+  const handleDeleteCompany = async () => {
+    if (!selectedCompanyId) return;
+    await deleteCompanyFromDb(supabase, selectedCompanyId);
+    setSelectedCompanyId(null);
+    setIsDeleteCompanyAlertOpen(false);
+    toast({ title: 'Bedrijf verwijderd' });
+  };
+
+  const handleCompanyNameChange = (name: string) => {
+    if (!selectedCompanyId) return;
+    updateCompanyDetails(supabase, selectedCompanyId, { name });
+  };
+
+  const handleCompanyAddressChange = (address: string) => {
+    if (!selectedCompanyId) return;
+    updateCompanyDetails(supabase, selectedCompanyId, { address });
+  };
+
+  const handleExport = async () => {
     if (!selectedCompanyId) return;
     const company = companies.find(c => c.id === selectedCompanyId);
     if (!company) return;
-
-    try {
-      const json = await exportCompanyData(db, company);
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ChemStats_Backup_${company.name}_${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      toast({ title: "Back-up geëxporteerd" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Export mislukt" });
-    }
+    const json = await exportCompanyData(supabase, company);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `${company.name}-backup.json`; a.click();
+    URL.revokeObjectURL(url);
   };
 
-  const handleImportBackup = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !userProfile || !event.target.files?.[0]) return;
-    
-    const file = event.target.files[0];
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const content = e.target?.result as string;
-      const newId = await importCompanyData(db, user.uid, userProfile.customerId, content);
-      if (newId) {
-        setSelectedCompanyId(newId);
-        toast({ title: "Back-up succesvol hersteld" });
-      } else {
-        toast({ variant: "destructive", title: "Fout bij herstellen", description: "Bestand is mogelijk beschadigd." });
-      }
-    };
-    reader.readAsText(file);
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !userProfile?.customerId) return;
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const json = await file.text();
+    const newId = await importCompanyData(supabase, user.id, userProfile.customerId, json);
+    if (newId) { setSelectedCompanyId(newId); toast({ title: 'Back-up hersteld' }); }
+    else toast({ variant: 'destructive', title: 'Fout bij herstellen' });
   };
 
-  const handleAddSubstance = (newSubstance: Omit<Substance, 'id' | 'quantity'>) => {
-    if (!selectedCompanyId) return;
-    const substanceWithId = { ...newSubstance, id: `sub-${Date.now()}`, quantity: 0 };
-    setLocalInventory(prev => [...prev, substanceWithId]);
-    addSubstanceToDb(db, selectedCompanyId, substanceWithId);
+  const handleShowHistory = (substance: Substance) => {
+    setHistorySubstance(substance);
+    setIsHistoryOpen(true);
   };
+
+  const isLoading = isAuthLoading || isLoadingUserProfile;
+
+  if (isLoading) return <div className="flex h-screen items-center justify-center bg-background"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+
+  // Tijdelijk: disabled check uitgeschakeld voor debugging
+  // if (userProfile?.disabled) return (...);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-screen-2xl mx-auto">
-      <SevesoHeader
-        onUpload={() => setIsSdsUploadOpen(true)}
-        onClearAll={() => setIsClearAlertOpen(true)}
-        onShowReference={() => setIsReferenceGuideOpen(true)}
-        onSaveAsPdf={handleSaveAsPdf}
-        onPasswordChange={() => setIsPasswordDialogOpen(true)}
-        isSavingPdf={isSavingPdf}
-        disabled={!selectedCompanyId}
-        onExport={handleExportBackup}
-        onImport={handleImportBackup}
-      />
-      
-      <CompanySelector 
-        companies={companies}
-        selectedCompanyId={selectedCompanyId}
-        onSelectCompany={setSelectedCompanyId}
-        onCreateNew={handleCreateNewCompany}
-        onDeleteCompany={() => setIsDeleteCompanyAlertOpen(true)}
-        onDetailsChange={(details) => selectedCompanyId && updateCompanyDetails(db, selectedCompanyId, details)}
-        disabled={isLoadingCompanies}
-      />
-      
-      {selectedCompanyId ? (
-        <div className="mt-8 flex flex-col lg:flex-row gap-8">
-            <div className="flex-grow lg:w-2/3">
-                <InventoryTable
-                    inventory={localInventory}
-                    onUpdateQuantity={(id, q) => selectedCompanyId && updateSubstanceQuantityInDb(db, selectedCompanyId, id, q)}
-                    onDelete={(id) => selectedCompanyId && deleteSubstanceFromDb(db, selectedCompanyId, id)}
-                    thresholdMode={thresholdMode}
-                    onUpload={() => setIsSdsUploadOpen(true)}
-                    onShowExplanation={(sId, cId, type) => setExplanationData({ substance: localInventory.find(s => s.id === sId)!, categoryId: cId, type })}
-                />
-            </div>
-            <aside className="lg:w-1/3 lg:sticky lg:top-8 h-fit">
-                <Dashboard inventory={localInventory} thresholdMode={thresholdMode} setThresholdMode={setThresholdMode} />
-            </aside>
-        </div>
-      ) : (
-          <div className="mt-12 flex flex-col items-center justify-center text-center p-12 border-2 border-dashed rounded-2xl bg-muted/10">
-              <Building2 className="w-12 h-12 text-primary mb-6" />
-              <h2 className="text-2xl font-bold">Welkom bij ChemStats</h2>
-              <p className="text-muted-foreground mt-2">Selecteer of maak een bedrijf om te beginnen.</p>
-              <Button onClick={handleCreateNewCompany} variant="secondary" className="mt-8">Nieuw bedrijf</Button>
-          </div>
-      )}
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto max-w-7xl px-4 py-6 space-y-6">
+        <SevesoHeader
+          onUpload={() => setIsSdsUploadOpen(true)}
+          onClearAll={() => setIsClearAlertOpen(true)}
+          onShowReference={() => setIsReferenceGuideOpen(true)}
+          onExport={handleExport}
+          onImport={handleImport}
+          onSaveAsPdf={handleSaveAsPdf}
+          onPasswordChange={() => setIsPasswordDialogOpen(true)}
+          onGoToAdmin={() => router.push('/admin')}
+          isSavingPdf={isSavingPdf}
+          disabled={!selectedCompanyId}
+          isAdmin={isAdmin}
+        />
 
-      <SdsUploadDialog isOpen={isSdsUploadOpen} onOpenChange={setIsSdsUploadOpen} onAddSubstance={handleAddSubstance} />
-      <ReferenceGuideDialog isOpen={isReferenceGuideOpen} onOpenChange={setIsReferenceGuideOpen} />
-      <CategoryExplanationDialog
-        isOpen={!!explanationData.substance}
-        onOpenChange={(open) => !open && setExplanationData({ substance: null, categoryId: null, type: null })}
-        {...explanationData}
-      />
-      <PasswordChangeDialog isOpen={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen} />
-      
-      <AlertDialog open={isDeleteCompanyAlertOpen} onOpenChange={setIsDeleteCompanyAlertOpen}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Bedrijf verwijderen?</AlertDialogTitle>
-                <AlertDialogDescription>Dit verwijdert het geselecteerde bedrijf en alle bijbehorende stoffen definitief. Back-ups worden niet aangetast.</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Annuleren</AlertDialogCancel>
-                <AlertDialogAction onClick={() => selectedCompanyId && deleteCompanyFromDb(db, selectedCompanyId).then(() => setSelectedCompanyId(null))} className="bg-destructive text-destructive-foreground">Verwijderen</AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <CompanySelector
+          companies={companies}
+          selectedCompanyId={selectedCompanyId}
+          onSelectCompany={setSelectedCompanyId}
+          onCreateNew={handleCreateCompany}
+          onDeleteCompany={() => setIsDeleteCompanyAlertOpen(true)}
+          onDetailsChange={({ name, address }) => {
+            if (name !== undefined) handleCompanyNameChange(name);
+            if (address !== undefined) handleCompanyAddressChange(address);
+          }}
+          disabled={isLoadingCompanies}
+        />
+
+        {selectedCompanyId && (
+          <div className="flex flex-col lg:flex-row gap-6 items-start">
+            <div className="flex-1 min-w-0">
+              <InventoryTable
+                inventory={localInventory}
+                thresholdMode={thresholdMode}
+                onUpload={() => setIsSdsUploadOpen(true)}
+                onDelete={handleDeleteSubstance}
+                onUpdateQuantity={handleQuantityChange}
+                onViewSds={setViewerSubstance}
+                onShowHistory={handleShowHistory}
+                onShowExplanation={(substanceId, categoryId, type) => {
+                  const substance = localInventory.find(s => s.id === substanceId) || null;
+                  if (substance) setExplanationData({ substance, categoryId, type });
+                }}
+              />
+            </div>
+            <div className="w-full lg:w-[400px] shrink-0">
+              <Dashboard
+                inventory={localInventory}
+                thresholdMode={thresholdMode}
+                setThresholdMode={setThresholdMode}
+              />
+            </div>
+          </div>
+        )}
+
+        <SdsUploadDialog isOpen={isSdsUploadOpen} onOpenChange={setIsSdsUploadOpen} onAddSubstance={handleAddSubstance} />
+        <ReferenceGuideDialog isOpen={isReferenceGuideOpen} onOpenChange={setIsReferenceGuideOpen} />
+        <PasswordChangeDialog isOpen={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen} />
+        <SdsViewerDialog
+          isOpen={!!viewerSubstance}
+          onOpenChange={(open) => { if (!open) setViewerSubstance(null); }}
+          substance={viewerSubstance}
+        />
+        <HistoryDialog isOpen={isHistoryOpen} onOpenChange={setIsHistoryOpen} substance={historySubstance} companyId={selectedCompanyId} />
+        <CategoryExplanationDialog
+          isOpen={!!explanationData.substance && !!explanationData.categoryId && !!explanationData.type}
+          onOpenChange={(open) => { if (!open) setExplanationData({ substance: null, categoryId: null, type: null }); }}
+          substance={explanationData.substance}
+          categoryId={explanationData.categoryId}
+          categoryType={explanationData.type}
+        />
+
+        <AlertDialog open={isClearAlertOpen} onOpenChange={setIsClearAlertOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader><AlertDialogTitle>Inventaris wissen?</AlertDialogTitle><AlertDialogDescription>Alle stoffen worden verwijderd. Dit kan niet ongedaan worden gemaakt.</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogFooter><AlertDialogCancel>Annuleren</AlertDialogCancel><AlertDialogAction onClick={handleClearAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Wissen</AlertDialogAction></AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={isDeleteCompanyAlertOpen} onOpenChange={setIsDeleteCompanyAlertOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader><AlertDialogTitle>Bedrijf verwijderen?</AlertDialogTitle><AlertDialogDescription>Het bedrijf en alle bijbehorende data worden permanent verwijderd.</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogFooter><AlertDialogCancel>Annuleren</AlertDialogCancel><AlertDialogAction onClick={handleDeleteCompany} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Verwijderen</AlertDialogAction></AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 }

@@ -15,11 +15,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UploadCloud } from 'lucide-react';
-import { aiMsdsDataExtraction } from '@/ai/flows/ai-msds-data-extraction';
 import { classifySubstance } from '@/lib/seveso';
 import type { Substance } from '@/lib/types';
-import { useFirestore, useUser } from '@/firebase';
-import { logAiUsage } from '@/lib/admin';
+import { useSupabase } from '@/supabase/provider';
+
 
 interface SdsUploadDialogProps {
   isOpen: boolean;
@@ -33,8 +32,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
   const [files, setFiles] = useState<File[] | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast, dismiss } = useToast();
-  const db = useFirestore();
-  const { user } = useUser();
+  const { supabase, user } = useSupabase();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -64,7 +62,16 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
               reader.onerror = () => reject(new Error(`Kon het bestand ${file.name} niet lezen`));
           });
 
-          const result = await aiMsdsDataExtraction({ documentDataUri: dataUri });
+          const response = await fetch('/api/analyze-sds', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ documentDataUri: dataUri }),
+          });
+          if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || `Server fout ${response.status}`);
+          }
+          const result = await response.json();
           if (!result.productName) throw new Error(`Kon productnaam niet extraheren uit ${file.name}.`);
 
           const { sevesoCategoryIds, arieCategoryIds, isNamed, namedSubstanceName } = classifySubstance(result.hStatements || [], result.casNumber || null);
@@ -80,7 +87,7 @@ export default function SdsUploadDialog({ isOpen, onOpenChange, onAddSubstance }
               sdsUri: dataUri // Store the data URI for later viewing
           });
           
-          if (db && user) logAiUsage(db, user.uid, 'SDS_EXTRACTION');
+          if (user) { const { logAiUsage } = await import('@/lib/admin'); logAiUsage(supabase, user.id, 'SDS_EXTRACTION'); }
           successCount++;
         } catch (error: any) {
           toast({ variant: 'destructive', title: `Analyse Mislukt voor ${file.name}`, description: error.message });

@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Trash2, FileSpreadsheet, Upload } from "lucide-react";
+import { Trash2, FileSpreadsheet, Upload, FileText, History } from "lucide-react";
 import type { Substance, ThresholdMode, HazardCategory } from "@/lib/types";
 import { ALL_CATEGORIES, NAMED_SUBSTANCES, SEVESO_THRESHOLDS, ARIE_THRESHOLDS } from "@/lib/seveso";
 import { Progress } from './ui/progress';
@@ -26,6 +26,8 @@ interface InventoryTableProps {
   onDelete: (id: string) => void;
   thresholdMode: ThresholdMode;
   onUpload: () => void;
+  onViewSds: (substance: Substance) => void;
+  onShowHistory: (substance: Substance) => void;
   onShowExplanation: (substanceId: string, categoryId: string, type: 'seveso' | 'arie') => void;
 }
 
@@ -141,7 +143,7 @@ function Contributions({ substance, mode }: { substance: Substance, mode: Thresh
 }
 
 
-export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, thresholdMode, onUpload, onShowExplanation }: InventoryTableProps) {
+export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, thresholdMode, onUpload, onViewSds, onShowHistory, onShowExplanation }: InventoryTableProps) {
   if (inventory.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-16 px-4 border-2 border-dashed rounded-lg">
@@ -235,7 +237,13 @@ export default function InventoryTable({ inventory, onUpdateQuantity, onDelete, 
                 <TableCell>
                   <Contributions substance={substance} mode={thresholdMode} />
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right space-x-1">
+                  <Button variant="ghost" size="icon" onClick={() => onViewSds(substance)} aria-label={`Bekijk SDS ${substance.productName}`}>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => onShowHistory(substance)} aria-label={`Geschiedenis ${substance.productName}`}>
+                    <History className="h-4 w-4 text-muted-foreground" />
+                  </Button>
                   <Button variant="ghost" size="icon" onClick={() => onDelete(substance.id)} aria-label={`Verwijder ${substance.productName}`}>
                     <Trash2 className="h-4 w-4 text-muted-foreground" />
                   </Button>

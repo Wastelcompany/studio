@@ -1,94 +1,35 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { UserProfile, Customer } from '@/lib/types';
 
-import { collection, doc, getDocs, query, updateDoc, where, writeBatch, deleteDoc, Timestamp, addDoc, setDoc, serverTimestamp, type Firestore } from 'firebase/firestore';
-import type { UserProfile, Company, Customer } from '@/lib/types';
-
-/**
- * Toggles the disabled status of a user in Firestore.
- */
-export const toggleUserDisabledStatus = async (db: Firestore, uid: string, currentStatus: boolean): Promise<void> => {
-    const userDocRef = doc(db, 'users', uid);
-    await updateDoc(userDocRef, {
-        disabled: !currentStatus
-    });
+export const toggleUserDisabledStatus = async (supabase: SupabaseClient, uid: string, currentStatus: boolean): Promise<void> => {
+  const { error } = await supabase.from('user_profiles').update({ disabled: !currentStatus }).eq('id', uid);
+  if (error) throw error;
 };
 
-/**
- * Updates a user's role (admin/user).
- */
-export const updateUserRole = async (db: Firestore, uid: string, newRole: 'admin' | 'user'): Promise<void> => {
-    const userDocRef = doc(db, 'users', uid);
-    await updateDoc(userDocRef, {
-        role: newRole
-    });
+export const updateUserRole = async (supabase: SupabaseClient, uid: string, newRole: 'admin' | 'user'): Promise<void> => {
+  const { error } = await supabase.from('user_profiles').update({ role: newRole }).eq('id', uid);
+  if (error) throw error;
 };
 
-/**
- * Updates a user's customer group and migrates their existing companies to the new group.
- */
-export const updateUserGroup = async (db: Firestore, userToUpdate: UserProfile, newCustomerName: string): Promise<void> => {
-    const usersRef = collection(db, 'users');
-    const companiesRef = collection(db, 'companies');
-    
-    let targetCustomerId: string;
-    const q = query(usersRef, where('customerName', '==', newCustomerName));
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-        targetCustomerId = querySnapshot.docs[0].data().customerId;
-    } else {
-        targetCustomerId = userToUpdate.uid;
+export const updateUserGroup = async (supabase: SupabaseClient, userToUpdate: UserProfile, newCustomerName: string): Promise<void> => {
+  const { data: existing } = await supabase.from('user_profiles').select('customer_id').eq('customer_name', newCustomerName).limit(1).single();
+  let targetCustomerId = existing?.customer_id ?? userToUpdate.customerId;
+  await supabase.from('user_profiles').update({ customer_id: targetCustomerId, customer_name: newCustomerName }).eq('id', userToUpdate.uid);
+  if (userToUpdate.customerId) {
+    const { data: userCompanies } = await supabase.from('companies').select('id').eq('customer_id', userToUpdate.customerId).eq('user_id', userToUpdate.uid);
+    if (userCompanies && userCompanies.length > 0) {
+      const ids = userCompanies.map((c: any) => c.id);
+      await supabase.from('companies').update({ customer_id: targetCustomerId }).in('id', ids);
     }
-
-    const batch = writeBatch(db);
-
-    const userDocRef = doc(db, 'users', userToUpdate.uid);
-    batch.update(userDocRef, {
-        customerId: targetCustomerId,
-        customerName: newCustomerName,
-    });
-
-    if (userToUpdate.customerId) {
-        const userCompaniesQuery = query(companiesRef, where('customerId', '==', userToUpdate.customerId));
-        const companiesSnapshot = await getDocs(userCompaniesQuery);
-        const companiesToUpdate = companiesSnapshot.docs.filter(doc => doc.data().userId === userToUpdate.uid);
-
-        if (companiesToUpdate.length > 0) {
-            companiesToUpdate.forEach(companyDoc => {
-                batch.update(companyDoc.ref, { customerId: targetCustomerId });
-            });
-        }
-    }
-    
-    await batch.commit();
+  }
 };
 
-/**
- * Creates a new Customer record manually or from KVK data.
- */
-export const createCustomerRecord = async (db: Firestore, customerInfo: { name: string, address: string, kvkNumber: string }): Promise<string> => {
-    const customersColRef = collection(db, 'customers');
-    const newCustomerDoc = doc(customersColRef);
-    await setDoc(newCustomerDoc, {
-        id: newCustomerDoc.id,
-        name: customerInfo.name,
-        address: customerInfo.address,
-        kvkNumber: customerInfo.kvkNumber,
-        createdAt: serverTimestamp(),
-    });
-    return newCustomerDoc.id;
+export const createCustomerRecord = async (supabase: SupabaseClient, customerInfo: { name: string; address: string; kvkNumber: string }): Promise<string> => {
+  const { data, error } = await supabase.from('customers').insert({ name: customerInfo.name, address: customerInfo.address, kvk_number: customerInfo.kvkNumber }).select('id').single();
+  if (error || !data) throw error;
+  return data.id;
 };
 
-/**
- * Logs AI usage for analytics.
- */
-export const logAiUsage = async (db: Firestore, userId: string, type: 'SDS_EXTRACTION' | 'KVK_SEARCH'): Promise<void> => {
-  const logsRef = collection(db, 'ai_usage_logs');
-  const estimatedCost = type === 'SDS_EXTRACTION' ? 0.015 : 0.002;
-  await addDoc(logsRef, {
-    userId,
-    type,
-    model: 'gemini-2.5-flash-lite',
-    timestamp: serverTimestamp(),
-    estimatedCost
-  });
+export const logAiUsage = async (supabase: SupabaseClient, userId: string, type: 'SDS_EXTRACTION' | 'KVK_SEARCH', model?: string, estimatedCost?: number): Promise<void> => {
+  await supabase.from('ai_usage_logs').insert({ user_id: userId, type, model: model ?? null, estimated_cost: estimatedCost ?? 0 });
 };
