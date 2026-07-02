@@ -28,7 +28,7 @@ export default function AdminPage() {
   const { supabase, user, isUserLoading, userProfile } = useSupabase();
   const { toast } = useToast();
 
-  const isAdmin = user?.email === 'post@wastelcompany.eu' || user?.email === 'admin@chemstats.nl' || userProfile?.role === 'admin';
+  const isAdmin = user?.email === 'post@wastelcompany.eu' || user?.email === 'admin@chemstats.nl' || user?.email === 'ai@spawnp.nl' || userProfile?.role === 'admin';
 
   const [isCustomerDialogOpen, setIsCustomerDialogOpen] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState('');
