@@ -109,7 +109,7 @@ export default function SevesoApp() {
       const addP = (text: string) => { doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(80, 80, 80); const lines = doc.splitTextToSize(text, 170); checkPage(lines.length * 5 + 6); doc.text(lines, 20, currentY); currentY += lines.length * 5 + 6; };
 
       doc.setFillColor(teal[0], teal[1], teal[2]).rect(0, 0, 210, 40, 'F');
-      doc.setTextColor(255, 255, 255).setFontSize(24).setFont('helvetica', 'bold').text('ChemStats', 20, 25);
+      doc.setTextColor(255, 255, 255).setFontSize(24).setFont('helvetica', 'bold').text('SevesoTool', 20, 25);
       doc.setFontSize(10).setFont('helvetica', 'normal').text('GEVAARLIJKE STOFFEN ANALYSE', 20, 32);
       currentY = 80;
       doc.setTextColor(teal[0], teal[1], teal[2]).setFontSize(32).setFont('helvetica', 'bold').text(getTpl('title', type === 'full' ? 'Seveso III & ARIE' : 'Seveso III Beoordeling'), 20, currentY); currentY += 12;
@@ -193,7 +193,7 @@ export default function SevesoApp() {
         autoTable(doc, { startY: currentY, head: [['Product', 'CAS', 'H-zinnen', 'Hoeveelheid (kg)']], body: localInventory.map(s => [s.productName, s.casNumber || '-', s.hStatements.join(', '), s.quantity.toLocaleString('nl-NL')]), headStyles: { fillColor: teal as any }, margin: { left: 20 } });
       }
 
-      doc.save(`ChemStats-${company?.name || 'rapport'}-${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`SevesoTool-${company?.name || 'rapport'}-${new Date().toISOString().split('T')[0]}.pdf`);
     } finally { setIsSavingPdf(false); }
   };
 

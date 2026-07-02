@@ -4,7 +4,7 @@ import './globals.css';
 import { SupabaseProvider } from '@/supabase/provider';
 
 export const metadata: Metadata = {
-  title: 'ChemStats - Gevaarlijke Stoffen Analyse',
+  title: 'SevesoTool - Gevaarlijke Stoffen Analyse',
   description: 'Analyseer veiligheidsinformatiebladen (SDS) om uw Seveso en ARIE status te bepalen.',
 };
 

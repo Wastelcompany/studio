@@ -106,6 +106,7 @@ export function useIsAdmin() {
   return (
     user?.email === 'admin@chemstats.nl' ||
     user?.email === 'post@wastelcompany.eu' ||
+    user?.email === 'ai@spawnp.nl' ||
     userProfile?.role === 'admin'
   );
 }

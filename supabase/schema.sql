@@ -1,5 +1,5 @@
 -- ============================================================
--- ChemStats / SevesoApp — Supabase Schema
+-- SevesoTool / SevesoApp — Supabase Schema
 -- Voer dit script uit in de Supabase SQL Editor
 -- ============================================================
 

@@ -48,13 +48,14 @@ export default function LoginForm() {
       // Sign in
       const { error } = await supabase.auth.signInWithPassword({ email: data.email, password: data.password });
       if (error) {
+        console.error('Supabase login error:', error);
         let description = 'E-mailadres of wachtwoord is onjuist.';
         if (error.message.includes('disabled')) description = 'Uw account is gedeactiveerd door een beheerder.';
-        toast({ variant: 'destructive', title: 'Login Mislukt', description });
+        toast({ variant: 'destructive', title: 'Login Mislukt', description: `${description} (${error.message})` });
         setIsSubmitting(false);
         return;
       }
-      const adminEmails = ['post@wastelcompany.eu', 'admin@chemstats.nl'];
+      const adminEmails = ['post@wastelcompany.eu', 'admin@chemstats.nl', 'ai@spawnp.nl'];
       if (adminEmails.includes(data.email.toLowerCase())) {
         router.push('/admin');
       } else {
