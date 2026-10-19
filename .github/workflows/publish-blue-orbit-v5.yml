@@ -1,0 +1,35 @@
+name: Publish Blue Orbit V5 watchface package
+on:
+  push:
+    branches: [watchfaces/blue-orbit-v5-release-20261019]
+    paths:
+      - '.github/workflows/publish-blue-orbit-v5.yml'
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified compiled watchface ZPK
+        env:
+          SOURCE_URL: 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-c554-8210-aad7-485425e65db7/raw?se=2026-10-19T05%3A52%3A59Z&sp=r&sv=2026-02-06&sr=b&scid=edd3f214-c572-5c36-b256-a6fbfa86b248&skoid=6658dbdd-f305-4d30-8f6b-d62218202cb9&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-19T04%3A18%3A42Z&ske=2026-10-20T04%3A18%3A42Z&sks=b&skv=2026-02-06&sig=/x5dVHFQuuzRcw4oVQ2R/9ZvzwLOPbTSHrzHgJvQa9o%3D'
+        run: |
+          curl --fail --silent --show-error --location --max-time 60 "$SOURCE_URL" -o BlueOrbit_Active3_Premium_v5.zpk
+          echo '346f0c7f682ad0452ef9117908df621f5a917568ef1bcc4d5c8999e8542b69b1  BlueOrbit_Active3_Premium_v5.zpk' | sha256sum -c -
+          test "$(stat -c %s BlueOrbit_Active3_Premium_v5.zpk)" -eq 589223
+      - name: Publish public direct-download release for Zepp QR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create blue-orbit-v5-20261019 BlueOrbit_Active3_Premium_v5.zpk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Blue Orbit v5 – Amazfit Active 3 Premium" \
+            --notes "Compiled Zepp OS watchface package. Version 1.4.0, appId 108619820, 466px. For installation via Zepp developer QR code."
+          echo "ZEPP_V5_PUBLIC_URL=https://github.com/$GITHUB_REPOSITORY/releases/download/blue-orbit-v5-20261019/BlueOrbit_Active3_Premium_v5.zpk"
+          echo "ZEPP_V5_QR_PAYLOAD=watchface://github.com/$GITHUB_REPOSITORY/releases/download/blue-orbit-v5-20261019/BlueOrbit_Active3_Premium_v5.zpk"
+      - name: Verify published binary SHA256
+        run: |
+          URL="https://github.com/$GITHUB_REPOSITORY/releases/download/blue-orbit-v5-20261019/BlueOrbit_Active3_Premium_v5.zpk"
+          curl --fail --silent --show-error --location --retry 2 --max-time 60 "$URL" -o published_v5.zpk
+          echo '346f0c7f682ad0452ef9117908df621f5a917568ef1bcc4d5c8999e8542b69b1  published_v5.zpk' | sha256sum -c -
