@@ -1,0 +1,35 @@
+name: Publish Blue Orbit Minimal watchface download
+on:
+  push:
+    branches:
+      - watchfaces/blue-orbit-minimal-v1-20261020
+    paths:
+      - '.github/workflows/publish-blue-orbit-minimal.yml'
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate distinct watchface binary
+        run: |
+          FILE=watchfaces/blue-orbit-minimal-v1/BlueOrbit_Minimal_Active3_Premium_v1.zpk
+          test "$(stat -c %s "$FILE")" -eq 445326
+          echo 'ae630afec8ca500ab686fb969d56fcd6ee2c66c32d63863c67d731be23b8affa  watchfaces/blue-orbit-minimal-v1/BlueOrbit_Minimal_Active3_Premium_v1.zpk' | sha256sum -c -
+      - name: Release as separate permanent Zepp watchface
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create blue-orbit-minimal-v1-20261020 \
+            watchfaces/blue-orbit-minimal-v1/BlueOrbit_Minimal_Active3_Premium_v1.zpk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Blue Orbit Minimal v1 — Amazfit Active 3 Premium" \
+            --notes "Separate Zepp OS watchface; app ID 108619821. Blue Orbit Classic v5 (108619820) remains installed independently."
+      - name: Confirm published download matches compiled package
+        run: |
+          URL="https://github.com/$GITHUB_REPOSITORY/releases/download/blue-orbit-minimal-v1-20261020/BlueOrbit_Minimal_Active3_Premium_v1.zpk"
+          curl --fail --silent --show-error --retry 3 --location --max-time 70 "$URL" -o verification.zpk
+          echo 'ae630afec8ca500ab686fb969d56fcd6ee2c66c32d63863c67d731be23b8affa  verification.zpk' | sha256sum -c -
+          echo "ZEPP_INSTALL_QR=watchface://github.com/$GITHUB_REPOSITORY/releases/download/blue-orbit-minimal-v1-20261020/BlueOrbit_Minimal_Active3_Premium_v1.zpk"
