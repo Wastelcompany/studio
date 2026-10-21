@@ -1,0 +1,50 @@
+name: Publish verified Vuurtoren v3 for Zepp QR
+on:
+  push:
+    branches:
+      - watchfaces/vuurtoren-v3-qr-20261021
+    paths:
+      - .github/workflows/publish-vuurtoren-v3.yml
+  workflow_dispatch:
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: write
+    steps:
+      - name: Download actual Vuurtoren v3 watchface and validate byte-for-byte
+        env:
+          SOURCE_URL: 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-1abc-81f4-89d2-e08741d85191/raw?se=2026-10-21T08%3A09%3A14Z&sp=r&sv=2026-02-06&sr=b&scid=d86ba6f3-3d63-5adb-9d62-a85c496bd375&skoid=6658dbdd-f305-4d30-8f6b-d62218202cb9&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-21T05%3A21%3A22Z&ske=2026-10-22T05%3A21%3A22Z&sks=b&skv=2026-02-06&sig=DkvMDY1DUENE9rwcRCfm9ioHO5BKliKwGn1ep5p4SSA%3D'
+        run: |
+          curl --fail --silent --show-error --location --retry 3 --max-time 75 "$SOURCE_URL" -o Vuurtoren_Active3_Premium_v3.zpk
+          echo 'fdc324022ef48a161eeed57f29ca18efb30d7f5bdb0b363a9a95dba4f7f65e3e  Vuurtoren_Active3_Premium_v3.zpk' | sha256sum -c -
+          test "$(stat -c %s Vuurtoren_Active3_Premium_v3.zpk)" -eq 607671
+          python3 - <<'PY'
+          import zipfile,io,json
+          f='Vuurtoren_Active3_Premium_v3.zpk'
+          with zipfile.ZipFile(f) as z:
+            with zipfile.ZipFile(io.BytesIO(z.read('device.zip'))) as d:
+              a=json.loads(d.read('app.json'))
+              assert a['app']['appId']==108619822
+              assert a['app']['version']['code']==3
+              assert 'watchface/index.bin' in d.namelist()
+              assert 'assets/background.png' in d.namelist()
+          print('VALIDATED_VUURTOREN_V3_APP_ID_108619822')
+          PY
+      - name: Publish permanent GitHub release for Zepp developer QR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create vuurtoren-v3-20261021 Vuurtoren_Active3_Premium_v3.zpk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Vuurtoren v3 — Amazfit Active 3 Premium" \
+            --notes "Vuurtoren v3 (1.2.0) independent Zepp OS watchface with better full-screen lighthouse background and readout meter rings. Existing Blue Orbit variants remain separate."
+      - name: Check published QR target downloads exact v3 ZPK
+        run: |
+          URL="https://github.com/$GITHUB_REPOSITORY/releases/download/vuurtoren-v3-20261021/Vuurtoren_Active3_Premium_v3.zpk"
+          curl --fail --silent --show-error --location --retry 3 --max-time 75 "$URL" -o public_download.zpk
+          echo 'fdc324022ef48a161eeed57f29ca18efb30d7f5bdb0b363a9a95dba4f7f65e3e  public_download.zpk' | sha256sum -c -
+          echo "ZEPP_V3_PAYLOAD=watchface://github.com/$GITHUB_REPOSITORY/releases/download/vuurtoren-v3-20261021/Vuurtoren_Active3_Premium_v3.zpk"
+          echo PUBLIC_V3_FILE_HASH_VERIFIED
