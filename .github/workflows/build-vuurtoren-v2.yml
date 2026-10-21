@@ -1,0 +1,96 @@
+name: Build and publish Vuurtoren v2 Zepp watchface
+on:
+  push:
+    branches: [watchfaces/vuurtoren-v2-20261021]
+    paths: ['.github/workflows/build-vuurtoren-v2.yml']
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Retrieve exact Vuurtoren v2 source
+        env:
+          SOURCE_URL: 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-98bc-81f4-97c1-d8d9232e37e9/raw?se=2026-10-21T06%3A21%3A36Z&sp=r&sv=2026-02-06&sr=b&scid=cb936e80-79f2-50e2-9227-b075c53778b4&skoid=6658dbdd-f305-4d30-8f6b-d62218202cb9&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-21T04%3A09%3A06Z&ske=2026-10-22T04%3A09%3A06Z&sks=b&skv=2026-02-06&sig=WQHBmpfDXgMsiVqJeVdNJnP1PfposgCqDJNFx2D7SSM%3D'
+        run: |
+          curl -fsSL --retry 2 --max-time 90 "$SOURCE_URL" -o Vuurtoren_v2_source.zip
+          echo 'feae181981384f00f1910a1fab75f8ee56e329f88eaf60f5ed5699a369cd8b41  Vuurtoren_v2_source.zip' | sha256sum -c -
+          unzip -q Vuurtoren_v2_source.zip
+          python3 - <<'PY'
+          import json,struct,pathlib
+          d=pathlib.Path('Vuurtoren')
+          app=json.loads((d/'app.json').read_text())
+          assert app['app']['appId']==108619822
+          assert app['app']['version']['code']==2
+          assert app['targets']['active-3-premium']['designWidth']==466
+          p=d/'assets'/'active-3-premium'
+          assert len(list(p.glob('*.png')))==64
+          bg=(p/'background.png').read_bytes()
+          assert struct.unpack('>II',bg[16:24])==(466,466)
+          js=(d/'watchface'/'index.js').read_text()
+          assert 'MAAN ' in js and 'ZON ' in js and 'nextEvent' in js
+          print('V2_SOURCE_VERIFIED',app['app']['appId'])
+          PY
+          node --check Vuurtoren/watchface/index.js
+      - name: Install official Zepp compiler
+        run: npm install --global @zeppos/zeus-cli
+      - name: Compile genuine Zepp OS watchface
+        working-directory: Vuurtoren
+        run: |
+          set -o pipefail
+          timeout 240 zeus build 2>&1 | tee build.log
+          ls -lh dist
+      - name: Validate binary app ID and extract files
+        run: |
+          python3 - <<'PY'
+          import zipfile,pathlib,io,json,shutil
+          builds=list(pathlib.Path('Vuurtoren/dist').glob('*.zab'))
+          assert len(builds)==1,builds
+          with zipfile.ZipFile(builds[0]) as zab:
+              manifest=json.loads(zab.read('manifest.json'))
+              n=next(x for x in zab.namelist() if x.endswith('.zpk'))
+              zpk=zab.read(n)
+          with zipfile.ZipFile(io.BytesIO(zpk)) as pkg:
+              with zipfile.ZipFile(io.BytesIO(pkg.read('device.zip'))) as dev:
+                  app=json.loads(dev.read('app.json'))
+                  assert app['app']['appName']=='Vuurtoren'
+                  assert app['app']['appId']==108619822
+                  assert app['app']['version']['code']==2
+                  assert 'assets/background.png' in dev.namelist()
+                  assert 'watchface/index.bin' in dev.namelist()
+          assert {x['deviceSource'] for x in manifest['zpks'][0]['platforms']} == {10944768,10944769,10944771,10948867}
+          shutil.copy2(builds[0],'Vuurtoren_Active3_Premium_v2.zab')
+          pathlib.Path('Vuurtoren_Active3_Premium_v2.zpk').write_bytes(zpk)
+          print('VUURTOREN_V2_COMPILED_AND_VERIFIED')
+          PY
+          sha256sum Vuurtoren_Active3_Premium_v2.zab Vuurtoren_Active3_Premium_v2.zpk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Vuurtoren-V2-Active3-Premium
+          path: |
+            Vuurtoren_Active3_Premium_v2.zab
+            Vuurtoren_Active3_Premium_v2.zpk
+            Vuurtoren/build.log
+          if-no-files-found: error
+      - name: Publish permanent separate V2 release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create vuurtoren-v2-20261021 \
+            Vuurtoren_Active3_Premium_v2.zab \
+            Vuurtoren_Active3_Premium_v2.zpk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Vuurtoren v2 – Amazfit Active 3 Premium" \
+            --notes "Updated Vuurtoren watchface with original lighthouse sunset photo, legible Sun and Moon NEXT event times plus OP/ONDER labels and updated digital dial. Existing separate Blue Orbit faces unaffected."
+      - name: Verify public Zepp package byte for byte
+        run: |
+          URL="https://github.com/$GITHUB_REPOSITORY/releases/download/vuurtoren-v2-20261021/Vuurtoren_Active3_Premium_v2.zpk"
+          curl -fsSL --retry 3 --max-time 75 "$URL" -o verified-v2.zpk
+          cmp verified-v2.zpk Vuurtoren_Active3_Premium_v2.zpk
+          echo 'PUBLIC_VUURTOREN_V2_ZPK_VERIFIED'
+          echo "ZEPP_QR=watchface://github.com/$GITHUB_REPOSITORY/releases/download/vuurtoren-v2-20261021/Vuurtoren_Active3_Premium_v2.zpk"
